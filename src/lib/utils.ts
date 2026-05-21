@@ -125,8 +125,9 @@ export interface RoleAssignment {
   role: ColorRole;
 }
 
-// Assigns semantic UI roles to palette colors using luminance + saturation
-export function assignColorRoles(colors: { hex: string }[]): RoleAssignment[] {
+// Assigns semantic UI roles to palette colors using luminance + saturation.
+// dark=true inverts luminance priority: darkest→background, lightest→text.
+export function assignColorRoles(colors: { hex: string }[], dark = false): RoleAssignment[] {
   if (colors.length === 0) return [];
 
   const analyzed = colors.map((c) => {
@@ -136,7 +137,8 @@ export function assignColorRoles(colors: { hex: string }[]): RoleAssignment[] {
     return { hex: c.hex, hsl, lum };
   });
 
-  const byLuminance = [...analyzed].sort((a, b) => b.lum - a.lum);
+  // In dark mode, sort ascending (darkest first); in light mode, descending (lightest first)
+  const byLuminance = [...analyzed].sort((a, b) => dark ? a.lum - b.lum : b.lum - a.lum);
   const results: RoleAssignment[] = [];
   const used = new Set<string>();
 
@@ -147,8 +149,10 @@ export function assignColorRoles(colors: { hex: string }[]): RoleAssignment[] {
 
   const unused = () => byLuminance.filter((c) => !used.has(c.hex));
 
+  // Background: lightest in light mode, darkest in dark mode (first after sort)
   assign(byLuminance[0].hex, "background");
 
+  // Text: opposite end of luminance spectrum
   if (byLuminance.length >= 2) {
     assign(byLuminance[byLuminance.length - 1].hex, "text");
   }
@@ -160,7 +164,7 @@ export function assignColorRoles(colors: { hex: string }[]): RoleAssignment[] {
     assign(mostSat.hex, "accent");
   }
 
-  // surface: lightest remaining (byLuminance already sorted high→low)
+  // surface: next in luminance direction (second darkest in dark, second lightest in light)
   const r2 = unused();
   if (r2.length > 0) {
     assign(r2[0].hex, "surface");

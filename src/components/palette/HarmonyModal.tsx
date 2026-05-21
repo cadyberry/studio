@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Monitor, Printer } from "lucide-react";
+import { X, Monitor, Printer, Moon } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import {
@@ -329,14 +329,19 @@ function RoleCard({
   );
 }
 
+type ViewMode = "screen" | "dark" | "print";
+
 export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
-  const [printMode, setPrintMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("screen");
 
   if (!palette) return null;
 
-  const roles = assignColorRoles(palette.colors);
-  const bgHex   = roles.find((r) => r.role === "background")?.hex ?? "#ffffff";
-  const textHex = roles.find((r) => r.role === "text")?.hex ?? "#000000";
+  const printMode = viewMode === "print";
+  const darkMode  = viewMode === "dark";
+
+  const roles = assignColorRoles(palette.colors, darkMode);
+  const bgHex   = roles.find((r) => r.role === "background")?.hex ?? (darkMode ? "#111111" : "#ffffff");
+  const textHex = roles.find((r) => r.role === "text")?.hex ?? (darkMode ? "#ffffff" : "#000000");
 
   // Pre-compute all print simulations (memoized across renders via Map in render scope)
   const simCache = new Map<string, PrintSimResult>();
@@ -395,34 +400,36 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
               <div>
                 <h2 className="text-base font-semibold">{palette.name}</h2>
                 <p className="text-xs text-[var(--muted)] mt-0.5">
-                  {printMode ? "Print preview — CMYK simulation" : "Harmony view — palette applied as a UI system"}
+                  {printMode
+                    ? "Print preview — CMYK simulation"
+                    : darkMode
+                    ? "Dark mode — roles inverted for dark UI"
+                    : "Harmony view — palette applied as a UI system"}
                 </p>
               </div>
               <div className="flex items-center gap-1">
-                {/* Screen / Print toggle */}
+                {/* Screen / Dark / Print toggle */}
                 <div className="flex items-center rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden mr-1">
-                  <button
-                    onClick={() => setPrintMode(false)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                      !printMode
-                        ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <Monitor size={11} />
-                    Screen
-                  </button>
-                  <button
-                    onClick={() => setPrintMode(true)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                      printMode
-                        ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <Printer size={11} />
-                    Print
-                  </button>
+                  {(
+                    [
+                      { mode: "screen" as ViewMode, icon: Monitor, label: "Screen" },
+                      { mode: "dark"   as ViewMode, icon: Moon,    label: "Dark"   },
+                      { mode: "print"  as ViewMode, icon: Printer,  label: "Print"  },
+                    ] as const
+                  ).map(({ mode, icon: Icon, label }) => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium transition-colors border-r border-[var(--border)] last:border-r-0 ${
+                        viewMode === mode
+                          ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      <Icon size={11} />
+                      {label}
+                    </button>
+                  ))}
                 </div>
                 <Button variant="ghost" size="sm" onClick={onClose}>
                   <X size={14} />
@@ -465,6 +472,7 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
               {!printMode && (
                 <span className="ml-auto opacity-60">
                   {bgTextContrast >= 7 ? "AAA pass" : bgTextContrast >= 4.5 ? "AA pass" : "Below AA — adjust text or bg"}
+                  {darkMode && " (dark mode)"}
                 </span>
               )}
             </div>
@@ -472,7 +480,7 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
             {/* Color roles */}
             <div className="mt-4">
               <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-2">
-                {printMode ? "CMYK Breakdown" : "Color Roles"}
+                {printMode ? "CMYK Breakdown" : darkMode ? "Dark Roles" : "Color Roles"}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {roles.map((assignment, i) => (
@@ -491,6 +499,8 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
             <p className="text-[10px] text-[var(--muted)] mt-3 leading-relaxed">
               {printMode
                 ? "Simulated using sRGB → CMYK conversion with 300% total area coverage limit. ΔE is CIE76 color difference. Actual print output depends on your POD provider's ICC profile."
+                : darkMode
+                ? "Dark mode inverts luminance priority: darkest color → background, lightest → text. Accent and secondary are still saturation-ranked. Contrast badges show WCAG 2.1 ratios."
                 : "Roles are auto-assigned by luminance & saturation. Contrast badges show WCAG 2.1 ratios against background/text."}
             </p>
           </div>
