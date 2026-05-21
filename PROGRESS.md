@@ -2,6 +2,38 @@
 
 ---
 
+## 2026-05-21 — Session 12: Nudge Controls + Cohesion Score Badge
+
+### What was done
+- **HSL nudge controls in SwatchEditor** — finally delivered after 8 sessions of deferral
+  - Each H/S/L slider row now has `−` and `+` micro-buttons flanking the value display
+  - H steps ±5° with wraparound (355° + 5 → 0°, 0° − 5 → 355°) using circular modulo
+  - S and L step ±5% clamped to 0–100
+  - Uses functional `setState` to avoid stale closure; value display always reflects true state
+  - Tooltip on each button shows the unit (`−5°` / `+5%`) so intent is clear at a glance
+- **Cohesion score inline badge on collection sidebar rows**
+  - Each collection row now shows its cohesion score (0–100) directly in the sidebar, no modal needed
+  - Color-coded: green ≥ 80 (Unified), sky blue ≥ 60 (Cohesive), amber ≥ 40 (Developing), rose < 40 (Fragmented)
+  - Only renders when collection has ≥ 2 palettes (single-palette collections have no meaningful score)
+  - Score adapts to active state: inherits currentColor at reduced opacity so it stays legible on accent background
+- **`computeCohesionScore()` extracted to utils.ts**
+  - Reusable function with same three-axis formula as CohesionModal (hue 50%, saturation 30%, lightness 20%)
+  - Accepts a loose `{ colors: { hex: string }[] }[]` type — no Palette import required
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Functional setState for nudge** — avoids stale `hsl` closure: the updater receives the latest state, so rapid clicking doesn't drift
+- **Wraparound H, clamped S/L** — hue is circular and wrapping feels natural; saturation and lightness have hard semantic boundaries (no color at 0% sat, white/black at 0/100% lightness), clamping is correct
+- **Score as number, not just dot** — a numeric score is more actionable than a colored dot; you know immediately whether 72 is worth opening the modal for more detail or not
+- **`computeCohesionScore` in utils, not imported from CohesionModal** — CohesionModal also computes outliers, labels, and per-axis breakdowns that page.tsx doesn't need; a thin utility function keeps the import cheap
+
+### What's next (Session 13)
+- **Palette count by tag in sidebar** — the sidebar shows collections but not tag distribution; a small "Mine 4 · Trend 7 · Shared 2" summary would make the left panel more informative
+- **Keyboard nudge via arrow keys** — when a slider is focused, the native slider already moves by 1; adding shift+arrow = 10 step would be a power-user shortcut
+- **Swatch reorder** — drag swatches within a palette to reorder them (left→right) without editing colors
+
+---
+
 ## 2026-05-21 — Session 11: Custom User Tags
 
 ### What was done
