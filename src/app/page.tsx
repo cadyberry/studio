@@ -17,7 +17,7 @@ import { computeCohesionScore } from "@/lib/utils";
 import type { Palette, Collection } from "@/types";
 
 export default function Home() {
-  const { palettes, collections, addPalette } = usePaletteStore();
+  const { palettes, collections, addPalette, duplicatePalette } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -304,6 +304,7 @@ export default function Home() {
                       onAssignCollection={setCollectionTarget}
                       onHarmony={setHarmonyTarget}
                       onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
+                      onDuplicate={(p) => duplicatePalette(p.id)}
                     />
                   ))}
                 </AnimatePresence>

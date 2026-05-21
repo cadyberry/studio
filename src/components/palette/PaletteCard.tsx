@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -17,6 +17,7 @@ interface PaletteCardProps {
   onAssignCollection: (palette: Palette) => void;
   onHarmony: (palette: Palette) => void;
   onEditSwatch: (palette: Palette, swatchIndex: number) => void;
+  onDuplicate: (palette: Palette) => void;
 }
 
 type NamingState =
@@ -25,12 +26,13 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
   }));
   const [confirming, setConfirming] = useState(false);
+  const [duplicated, setDuplicated] = useState(false);
   const [naming, setNaming] = useState<NamingState>({ type: "idle" });
   const [tagging, setTagging] = useState(false);
   const [tagInput, setTagInput] = useState("");
@@ -115,6 +117,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const applyName = (name: string) => {
     updatePalette(palette.id, { name });
     setNaming({ type: "idle" });
+  };
+
+  const handleDuplicate = () => {
+    onDuplicate(palette);
+    setDuplicated(true);
+    setTimeout(() => setDuplicated(false), 1500);
   };
 
   const handleDelete = () => {
@@ -249,6 +257,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           </Button>
           <Button variant="ghost" size="sm" onClick={() => onExport(palette)} title="Export">
             <Download size={13} />
+          </Button>
+          <Button
+            variant={duplicated ? "outline" : "ghost"}
+            size="sm"
+            onClick={handleDuplicate}
+            title="Duplicate palette"
+          >
+            {duplicated ? <Check size={13} className="text-green-500" /> : <CopyPlus size={13} />}
           </Button>
           <Button
             variant={confirming ? "danger" : "ghost"}

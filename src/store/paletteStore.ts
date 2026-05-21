@@ -12,6 +12,7 @@ interface PaletteStore {
   addPalette: (palette: Omit<Palette, "id" | "createdAt" | "updatedAt">) => Palette;
   updatePalette: (id: string, updates: Partial<Palette>) => void;
   deletePalette: (id: string) => void;
+  duplicatePalette: (id: string) => Palette | null;
 
   addCollection: (name: string, description?: string) => Collection;
   updateCollection: (id: string, updates: Partial<Collection>) => void;
@@ -48,6 +49,17 @@ export const usePaletteStore = create<PaletteStore>()(
 
       deletePalette: (id) => {
         set((s) => ({ palettes: s.palettes.filter((p) => p.id !== id) }));
+      },
+
+      duplicatePalette: (id) => {
+        const palette = get().palettes.find((p) => p.id === id);
+        if (!palette) return null;
+        return get().addPalette({
+          name: `${palette.name} (copy)`,
+          colors: [...palette.colors],
+          tags: [...palette.tags],
+          collectionId: palette.collectionId,
+        });
       },
 
       addCollection: (name, description) => {
