@@ -9,6 +9,7 @@ import PaletteCard from "@/components/palette/PaletteCard";
 import ExportModal from "@/components/palette/ExportModal";
 import RenameModal from "@/components/palette/RenameModal";
 import CollectionModal from "@/components/palette/CollectionModal";
+import HarmonyModal from "@/components/palette/HarmonyModal";
 import type { Palette } from "@/types";
 
 export default function Home() {
@@ -18,6 +19,7 @@ export default function Home() {
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
   const [renameTarget, setRenameTarget] = useState<Palette | null>(null);
   const [collectionTarget, setCollectionTarget] = useState<Palette | null>(null);
+  const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
 
   const filtered = palettes.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
@@ -137,6 +139,7 @@ export default function Home() {
                       onExport={setExportTarget}
                       onRename={setRenameTarget}
                       onAssignCollection={setCollectionTarget}
+                      onHarmony={setHarmonyTarget}
                     />
                   ))}
                 </AnimatePresence>
@@ -150,6 +153,7 @@ export default function Home() {
       <ExportModal palette={exportTarget} onClose={() => setExportTarget(null)} />
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />
+      <HarmonyModal palette={harmonyTarget} onClose={() => setHarmonyTarget(null)} />
     </div>
   );
 }

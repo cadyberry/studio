@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2 } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { Palette } from "@/types";
@@ -13,9 +13,10 @@ interface PaletteCardProps {
   onExport: (palette: Palette) => void;
   onRename: (palette: Palette) => void;
   onAssignCollection: (palette: Palette) => void;
+  onHarmony: (palette: Palette) => void;
 }
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony }: PaletteCardProps) {
   const deletePalette = usePaletteStore((s) => s.deletePalette);
   const [confirming, setConfirming] = useState(false);
 
@@ -73,6 +74,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         </div>
 
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="sm" onClick={() => onHarmony(palette)} title="Harmony view">
+            <Eye size={13} />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onRename(palette)} title="Rename">
             <Edit2 size={13} />
           </Button>
