@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-21 — Session 14: Sort Palette Grid
+
+### What was done
+- **Sort palette grid** — a compact sort control now lives in the Library header row, to the right of the search input
+  - Five sort modes: Newest (default), Oldest, Name A→Z, Name Z→A, Most colors
+  - Styled as an icon + native `<select>` combo — accessible, zero dependencies, hover accent border for affordance
+  - `sortBy` state derives a `sorted` array from `filtered` after all existing filters (search, collection, tag) apply — sort and filter compose cleanly
+  - Sort icon (`ArrowUpDown`) from lucide-react communicates the control's purpose at a glance without a label
+  - Uses `localeCompare` for name sorts (handles accented characters, case-insensitive)
+  - Only renders when `palettes.length > 0` (matches search bar's visibility rule)
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Sort after filter** — applying sort to the already-filtered list is correct; sorting the full store and then filtering would give wrong counts
+- **Native `<select>` over custom dropdown** — five simple options don't need a custom component; native is accessible, keyboard-navigable, and touch-friendly out of the box
+- **"Newest" as default** — new extractions should appear at the top; this matches how the store `addPalette` prepends to the array, so the default feels instant
+
+### What's next (Session 15)
+- **Palette count by tag in sidebar** — show "Mine 4 · Trend 7 · Shared 2" summary below the Discover button so the left panel shows live inventory without switching context
+- **Keyboard nudge in SwatchEditor (Shift+Arrow)** — step H/S/L by 10 units with Shift+Arrow on the focused range slider
+- **Duplicate palette action** — one-click copy of any palette with "(copy)" suffix, useful for experimenting with edits while preserving the original
+
+---
+
 ## 2026-05-21 — Session 13: Swatch Drag-to-Reorder
 
 ### What was done
