@@ -178,3 +178,101 @@ export function assignColorRoles(colors: { hex: string }[]): RoleAssignment[] {
 
   return results;
 }
+
+// ─── CMYK & Print Simulation ──────────────────────────────────────────────────
+
+export interface CmykValues {
+  c: number; // 0-100
+  m: number;
+  y: number;
+  k: number;
+}
+
+export function rgbToCmyk(r: number, g: number, b: number): CmykValues {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const k = 1 - Math.max(rn, gn, bn);
+  if (k >= 1) return { c: 0, m: 0, y: 0, k: 100 };
+  const denom = 1 - k;
+  return {
+    c: Math.round(((1 - rn - k) / denom) * 100),
+    m: Math.round(((1 - gn - k) / denom) * 100),
+    y: Math.round(((1 - bn - k) / denom) * 100),
+    k: Math.round(k * 100),
+  };
+}
+
+export function cmykToRgb(c: number, m: number, y: number, k: number): { r: number; g: number; b: number } {
+  const cn = c / 100, mn = m / 100, yn = y / 100, kn = k / 100;
+  return {
+    r: Math.round(255 * (1 - cn) * (1 - kn)),
+    g: Math.round(255 * (1 - mn) * (1 - kn)),
+    b: Math.round(255 * (1 - yn) * (1 - kn)),
+  };
+}
+
+// Apply total area coverage limit (standard offset print is 300%)
+function applyInkLimit(c: number, m: number, y: number, k: number): CmykValues {
+  const limit = 300;
+  const total = c + m + y + k;
+  if (total <= limit) return { c, m, y, k };
+  const cmy = c + m + y;
+  if (cmy === 0) return { c, m, y, k: Math.min(k, limit) };
+  const scale = (limit - k) / cmy;
+  return {
+    c: Math.round(c * scale),
+    m: Math.round(m * scale),
+    y: Math.round(y * scale),
+    k,
+  };
+}
+
+function toLinearRgb(v: number): number {
+  const n = v / 255;
+  return n <= 0.04045 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+}
+
+function rgbToLab(r: number, g: number, b: number): { L: number; a: number; b: number } {
+  const rl = toLinearRgb(r), gl = toLinearRgb(g), bl = toLinearRgb(b);
+  // sRGB D65 matrix
+  const x = rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375;
+  const y = rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750;
+  const z = rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041;
+  // D65 white point
+  const f = (t: number) => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  const fx = f(x / 0.95047);
+  const fy = f(y / 1.00000);
+  const fz = f(z / 1.08883);
+  return { L: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) };
+}
+
+export function deltaE(hex1: string, hex2: string): number {
+  const a = hexToRgb(hex1);
+  const b = hexToRgb(hex2);
+  if (!a || !b) return 0;
+  const lab1 = rgbToLab(a.r, a.g, a.b);
+  const lab2 = rgbToLab(b.r, b.g, b.b);
+  return Math.sqrt((lab1.L - lab2.L) ** 2 + (lab1.a - lab2.a) ** 2 + (lab1.b - lab2.b) ** 2);
+}
+
+export interface PrintSimResult {
+  printHex: string;
+  cmyk: CmykValues;
+  deltaE: number;
+  risk: "safe" | "caution" | "high";
+}
+
+export function simulateCmykPrint(hex: string): PrintSimResult {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return { printHex: hex, cmyk: { c: 0, m: 0, y: 0, k: 0 }, deltaE: 0, risk: "safe" };
+  const raw = rgbToCmyk(rgb.r, rgb.g, rgb.b);
+  const capped = applyInkLimit(raw.c, raw.m, raw.y, raw.k);
+  const printRgb = cmykToRgb(capped.c, capped.m, capped.y, capped.k);
+  const printHex = rgbToHex(printRgb.r, printRgb.g, printRgb.b);
+  const dE = deltaE(hex, printHex);
+  return {
+    printHex,
+    cmyk: capped,
+    deltaE: Math.round(dE * 10) / 10,
+    risk: dE < 3 ? "safe" : dE < 10 ? "caution" : "high",
+  };
+}
