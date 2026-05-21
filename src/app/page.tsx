@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2 } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Extractor from "@/components/palette/Extractor";
 import PaletteCard from "@/components/palette/PaletteCard";
@@ -11,7 +11,8 @@ import RenameModal from "@/components/palette/RenameModal";
 import CollectionModal from "@/components/palette/CollectionModal";
 import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
-import type { Palette } from "@/types";
+import CohesionModal from "@/components/palette/CohesionModal";
+import type { Palette, Collection } from "@/types";
 
 export default function Home() {
   const { palettes, collections } = usePaletteStore();
@@ -22,6 +23,7 @@ export default function Home() {
   const [collectionTarget, setCollectionTarget] = useState<Palette | null>(null);
   const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
+  const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
 
   const filtered = palettes.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
@@ -79,20 +81,29 @@ export default function Home() {
                   </button>
                   {collections.map((c) => {
                     const count = palettes.filter((p) => p.collectionId === c.id).length;
+                    const isActive = activeCollection === c.id;
                     return (
-                      <button
-                        key={c.id}
-                        onClick={() => setActiveCollection(c.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
-                          activeCollection === c.id
-                            ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                            : "hover:bg-[var(--surface-2)] text-[var(--foreground)]"
-                        }`}
-                      >
-                        <FolderOpen size={13} />
-                        <span className="truncate">{c.name}</span>
-                        <span className="ml-auto text-xs opacity-60">{count}</span>
-                      </button>
+                      <div key={c.id} className="group/col flex items-center gap-1">
+                        <button
+                          onClick={() => setActiveCollection(c.id)}
+                          className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
+                            isActive
+                              ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                              : "hover:bg-[var(--surface-2)] text-[var(--foreground)]"
+                          }`}
+                        >
+                          <FolderOpen size={13} />
+                          <span className="truncate">{c.name}</span>
+                          <span className="ml-auto text-xs opacity-60">{count}</span>
+                        </button>
+                        <button
+                          onClick={() => setCohesionTarget(c)}
+                          className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"
+                          title="Cohesion view"
+                        >
+                          <BarChart2 size={12} />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -161,6 +172,11 @@ export default function Home() {
         palette={editTarget?.palette ?? null}
         swatchIndex={editTarget?.swatchIndex ?? 0}
         onClose={() => setEditTarget(null)}
+      />
+      <CohesionModal
+        collection={cohesionTarget}
+        palettes={cohesionTarget ? palettes.filter((p) => p.collectionId === cohesionTarget.id) : []}
+        onClose={() => setCohesionTarget(null)}
       />
     </div>
   );
