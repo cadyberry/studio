@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-21 — Session 15: Duplicate Palette Action
+
+### What was done
+- **Duplicate palette** — a `CopyPlus` icon button in the PaletteCard hover actions row creates an instant copy of any palette
+  - One-click creates a new palette named `"[original name] (copy)"` prepended to the library grid
+  - Copies all colors (in their current reordered arrangement), tags, and collectionId — the duplicate is fully independent
+  - Brief `Check` icon flash for 1.5s confirms the action without any toast or modal interruption
+  - `duplicatePalette(id)` action added to Zustand store; wraps `addPalette` with shallow-copied colors/tags to prevent shared references
+  - Button placed between Export and Delete in the hover row; `outline` variant during the `duplicated` state keeps visual hierarchy
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Shallow copy of colors and tags arrays** — referencing the original array would mean edits to the copy mutate the original; spread prevents this
+- **`(copy)` suffix, not `(1)`** — conveys intent ("this is a working copy") rather than implying a sequence
+- **No prompt or modal** — a duplicate is instant and reversible (just delete it); confirming would add friction to a low-risk action
+- **Green `Check` in-place, no toast** — the button itself is the feedback surface; a floating toast would be overkill for a single-card action
+
+### What's next (Session 16)
+- **Palette count by tag in sidebar** — show "Mine 4 · Trend 7" summary below the Discover button for live inventory at a glance
+- **Keyboard nudge in SwatchEditor (Shift+Arrow)** — step H/S/L by 10 units when Shift is held on a focused range slider
+- **Bulk palette actions** — checkbox-select multiple cards, then assign to collection or delete all at once
+
+---
+
 ## 2026-05-21 — Session 14: Sort Palette Grid
 
 ### What was done
