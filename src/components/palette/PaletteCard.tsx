@@ -113,13 +113,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       <div className="px-3 py-2.5 flex items-center justify-between">
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{palette.name}</div>
-          <div className="text-xs text-[var(--muted)] mt-0.5">
-            {palette.colors.length} colors
+          <div className="flex flex-wrap items-center gap-1 mt-0.5">
+            <span className="text-xs text-[var(--muted)]">{palette.colors.length} colors</span>
             {palette.collectionId && (
-              <span className="ml-1.5 bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px]">
+              <span className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)]">
                 in collection
               </span>
             )}
+            {palette.tags?.map((tag) => (
+              <span
+                key={tag}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                  tag === "trend"
+                    ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+                    : tag === "shared"
+                    ? "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
+                    : "bg-[var(--surface-2)] text-[var(--muted)]"
+                }`}
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         </div>
 

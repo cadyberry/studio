@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Extractor from "@/components/palette/Extractor";
 import PaletteCard from "@/components/palette/PaletteCard";
@@ -26,6 +26,7 @@ export default function Home() {
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
+  const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
 
   useEffect(() => {
@@ -45,11 +46,20 @@ export default function Home() {
     }
   }, []);
 
+  const allUniqueTags = Array.from(new Set(palettes.flatMap((p) => p.tags ?? [])));
+  const untaggedCount = palettes.filter((p) => !p.tags?.length).length;
+
   const filtered = palettes.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCollection =
       activeCollection === "all" || p.collectionId === activeCollection;
-    return matchesSearch && matchesCollection;
+    const matchesTag =
+      activeTag === "all"
+        ? true
+        : activeTag === "__mine__"
+        ? !p.tags?.length
+        : p.tags?.includes(activeTag);
+    return matchesSearch && matchesCollection && matchesTag;
   });
 
   return (
@@ -170,6 +180,50 @@ export default function Home() {
               )}
             </div>
 
+            {/* Tag filter pills */}
+            <AnimatePresence>
+              {allUniqueTags.length > 0 && (
+                <motion.div
+                  key="tag-pills"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap gap-1.5 pb-1">
+                    {[
+                      { key: "all", label: "All", count: palettes.length },
+                      ...(untaggedCount > 0 ? [{ key: "__mine__", label: "Mine", count: untaggedCount }] : []),
+                      ...allUniqueTags.map((tag) => ({
+                        key: tag,
+                        label: tag.charAt(0).toUpperCase() + tag.slice(1),
+                        count: palettes.filter((p) => p.tags?.includes(tag)).length,
+                      })),
+                    ].map(({ key, label, count }) => (
+                      <button
+                        key={key}
+                        onClick={() => setActiveTag(key)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                          activeTag === key
+                            ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
+                            : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        {key !== "all" && key !== "__mine__" && (
+                          <Tag size={9} className="flex-shrink-0" />
+                        )}
+                        {label}
+                        <span className={`text-[10px] ${activeTag === key ? "opacity-70" : "opacity-50"}`}>
+                          {count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {palettes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="flex gap-1.5 mb-4">
@@ -180,7 +234,17 @@ export default function Home() {
                 <p className="text-sm text-[var(--muted)]">Drop an image to extract your first palette</p>
               </div>
             ) : filtered.length === 0 ? (
-              <p className="text-sm text-[var(--muted)] py-8 text-center">No palettes match your search.</p>
+              <div className="py-8 text-center">
+                <p className="text-sm text-[var(--muted)]">No palettes match your filters.</p>
+                {(search || activeTag !== "all") && (
+                  <button
+                    onClick={() => { setSearch(""); setActiveTag("all"); }}
+                    className="mt-2 text-xs text-[var(--accent)] hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence mode="popLayout">
