@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2 } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { Palette } from "@/types";
@@ -30,8 +30,36 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   }));
   const [confirming, setConfirming] = useState(false);
   const [naming, setNaming] = useState<NamingState>({ type: "idle" });
+  const [tagging, setTagging] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  const openTagging = () => {
+    setNaming({ type: "idle" });
+    setTagging(true);
+    setTimeout(() => tagInputRef.current?.focus(), 50);
+  };
+
+  const closeTagging = () => {
+    setTagging(false);
+    setTagInput("");
+  };
+
+  const commitTag = (raw: string) => {
+    const tag = raw.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 24);
+    if (!tag) return;
+    const existing = palette.tags ?? [];
+    if (existing.includes(tag)) return;
+    updatePalette(palette.id, { tags: [...existing, tag] });
+  };
+
+  const removeTag = (tag: string) => {
+    updatePalette(palette.id, { tags: (palette.tags ?? []).filter((t) => t !== tag) });
+  };
 
   const handleNameWithAI = async () => {
+    setTagging(false);
+    setTagInput("");
     setNaming({ type: "loading" });
     try {
       const res = await fetch("/api/name-palette", {
@@ -160,6 +188,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           <Button variant="ghost" size="sm" onClick={() => onAssignCollection(palette)} title="Add to collection">
             <FolderOpen size={13} />
           </Button>
+          <Button
+            variant={tagging ? "outline" : "ghost"}
+            size="sm"
+            onClick={tagging ? closeTagging : openTagging}
+            title="Manage tags"
+          >
+            <Tag size={13} />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onExport(palette)} title="Export">
             <Download size={13} />
           </Button>
@@ -212,6 +248,89 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 </div>
               </>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tag editor overlay */}
+      <AnimatePresence>
+        {tagging && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                Tags
+              </span>
+              <button
+                onClick={closeTagging}
+                className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+              >
+                <X size={11} />
+              </button>
+            </div>
+
+            {/* Current tags */}
+            {(palette.tags ?? []).length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {(palette.tags ?? []).map((tag) => (
+                  <span
+                    key={tag}
+                    className={`flex items-center gap-1 pl-1.5 pr-1 py-0.5 rounded text-[10px] font-medium ${
+                      tag === "trend"
+                        ? "bg-rose-100 text-rose-600"
+                        : tag === "shared"
+                        ? "bg-sky-100 text-sky-600"
+                        : "bg-[var(--surface-2)] text-[var(--muted)]"
+                    }`}
+                  >
+                    {tag}
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="ml-0.5 rounded-full hover:bg-black/10 transition-colors p-px"
+                      title={`Remove tag "${tag}"`}
+                    >
+                      <X size={8} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Tag input */}
+            <input
+              ref={tagInputRef}
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  commitTag(tagInput);
+                  setTagInput("");
+                } else if (e.key === "Escape") {
+                  closeTagging();
+                } else if (e.key === "Backspace" && tagInput === "") {
+                  const tags = palette.tags ?? [];
+                  if (tags.length > 0) removeTag(tags[tags.length - 1]);
+                }
+              }}
+              onBlur={() => {
+                if (tagInput.trim()) {
+                  commitTag(tagInput);
+                  setTagInput("");
+                }
+              }}
+              placeholder={(palette.tags ?? []).length === 0 ? "Add a tag…" : "Add another…"}
+              className="w-full text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
+              maxLength={24}
+              spellCheck={false}
+            />
+            <p className="text-[9px] text-[var(--muted)] mt-1">Enter or comma to add · Backspace to remove last</p>
           </motion.div>
         )}
       </AnimatePresence>
