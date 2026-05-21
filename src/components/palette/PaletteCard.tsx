@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { Palette } from "@/types";
@@ -14,9 +14,10 @@ interface PaletteCardProps {
   onRename: (palette: Palette) => void;
   onAssignCollection: (palette: Palette) => void;
   onHarmony: (palette: Palette) => void;
+  onEditSwatch: (palette: Palette, swatchIndex: number) => void;
 }
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch }: PaletteCardProps) {
   const deletePalette = usePaletteStore((s) => s.deletePalette);
   const [confirming, setConfirming] = useState(false);
 
@@ -45,16 +46,32 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             className="flex-1 relative group/swatch cursor-pointer"
             style={{ backgroundColor: color.hex }}
             onClick={() => navigator.clipboard.writeText(color.hex)}
-            title={color.hex}
+            title={`${color.hex} — click to copy`}
           >
+            {/* Hex label on hover */}
             <div
-              className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity"
+              className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
               style={{ color: getContrastColor(color.hex) }}
             >
               <span className="text-[9px] font-mono font-bold tracking-wider">
                 {color.hex.slice(1).toUpperCase()}
               </span>
             </div>
+            {/* Edit pencil */}
+            <button
+              className="absolute top-1 right-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
+              style={{
+                backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                color: getContrastColor(color.hex),
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditSwatch(palette, i);
+              }}
+              title="Edit color"
+            >
+              <Pencil size={9} />
+            </button>
           </div>
         ))}
       </div>

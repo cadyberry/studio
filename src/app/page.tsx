@@ -10,6 +10,7 @@ import ExportModal from "@/components/palette/ExportModal";
 import RenameModal from "@/components/palette/RenameModal";
 import CollectionModal from "@/components/palette/CollectionModal";
 import HarmonyModal from "@/components/palette/HarmonyModal";
+import SwatchEditor from "@/components/palette/SwatchEditor";
 import type { Palette } from "@/types";
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
   const [renameTarget, setRenameTarget] = useState<Palette | null>(null);
   const [collectionTarget, setCollectionTarget] = useState<Palette | null>(null);
   const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
+  const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
 
   const filtered = palettes.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
@@ -140,6 +142,7 @@ export default function Home() {
                       onRename={setRenameTarget}
                       onAssignCollection={setCollectionTarget}
                       onHarmony={setHarmonyTarget}
+                      onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
                     />
                   ))}
                 </AnimatePresence>
@@ -154,6 +157,11 @@ export default function Home() {
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />
       <HarmonyModal palette={harmonyTarget} onClose={() => setHarmonyTarget(null)} />
+      <SwatchEditor
+        palette={editTarget?.palette ?? null}
+        swatchIndex={editTarget?.swatchIndex ?? 0}
+        onClose={() => setEditTarget(null)}
+      />
     </div>
   );
 }
