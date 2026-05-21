@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
-import type { Palette } from "@/types";
+import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
+
+type KeyedColor = ColorSwatch & { _key: string };
 
 interface PaletteCardProps {
   palette: Palette;
@@ -33,6 +35,39 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [tagging, setTagging] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const tagInputRef = useRef<HTMLInputElement>(null);
+
+  // Ordered colors with stable keys for drag-to-reorder
+  const [orderedColors, setOrderedColors] = useState<KeyedColor[]>(() =>
+    palette.colors.map((c, i) => ({ ...c, _key: `${palette.id}-${i}` }))
+  );
+  const orderedColorsRef = useRef(orderedColors);
+  const dragEndTimeRef = useRef(0);
+
+  // Sync when palette.colors changes (swatch edits, external updates)
+  useEffect(() => {
+    setOrderedColors((prev) => {
+      if (prev.length !== palette.colors.length) {
+        const fresh = palette.colors.map((c, i) => ({ ...c, _key: `${palette.id}-${i}-${Date.now()}` }));
+        orderedColorsRef.current = fresh;
+        return fresh;
+      }
+      // Preserve order and keys; update hex/name values in place
+      const updated = prev.map((kc, i) => ({ ...kc, hex: palette.colors[i].hex, name: palette.colors[i].name }));
+      orderedColorsRef.current = updated;
+      return updated;
+    });
+  }, [palette.colors, palette.id]);
+
+  const handleReorder = (newOrder: KeyedColor[]) => {
+    setOrderedColors(newOrder);
+    orderedColorsRef.current = newOrder;
+  };
+
+  const handleDragEnd = () => {
+    dragEndTimeRef.current = Date.now();
+    const plain = orderedColorsRef.current.map(({ _key: _k, ...c }) => c);
+    updatePalette(palette.id, { colors: plain });
+  };
 
   const openTagging = () => {
     setNaming({ type: "idle" });
@@ -99,15 +134,31 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       exit={{ opacity: 0, scale: 0.96 }}
       className="group bg-[var(--surface)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden hover:shadow-md hover:border-[var(--border)] transition-shadow duration-200 relative"
     >
-      {/* Swatch strip */}
-      <div className="flex h-28">
-        {palette.colors.map((color, i) => (
-          <div
-            key={i}
-            className="flex-1 relative group/swatch cursor-pointer"
-            style={{ backgroundColor: color.hex }}
-            onClick={() => navigator.clipboard.writeText(color.hex)}
-            title={`${color.hex} — click to copy`}
+      {/* Swatch strip — drag to reorder */}
+      <Reorder.Group
+        as="div"
+        axis="x"
+        values={orderedColors}
+        onReorder={handleReorder}
+        className="flex h-28"
+        style={{ listStyle: "none", margin: 0, padding: 0 }}
+      >
+        {orderedColors.map((color, i) => (
+          <Reorder.Item
+            key={color._key}
+            value={color}
+            as="div"
+            style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
+            className="group/swatch cursor-grab active:cursor-grabbing"
+            onDragEnd={handleDragEnd}
+            onClick={() => {
+              // Ignore click if it immediately followed a drag release
+              if (Date.now() - dragEndTimeRef.current > 250) {
+                navigator.clipboard.writeText(color.hex);
+              }
+            }}
+            title={`${color.hex} — drag to reorder · click to copy`}
+            whileDrag={{ scale: 1.04, zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
           >
             {/* Hex label on hover */}
             <div
@@ -133,9 +184,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             >
               <Pencil size={9} />
             </button>
-          </div>
+          </Reorder.Item>
         ))}
-      </div>
+      </Reorder.Group>
 
       {/* Info row */}
       <div className="px-3 py-2.5 flex items-center justify-between">
