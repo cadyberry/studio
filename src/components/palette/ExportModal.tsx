@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson } from "lucide-react";
-import { exportAsPngStrip, copyCssVariables, copyHexList, getJsonExport } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, Printer } from "lucide-react";
+import { exportAsPngStrip, copyCssVariables, copyHexList, getJsonExport, copyCmykList } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor } from "@/lib/utils";
@@ -51,6 +51,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "Structured palette data with hex + RGB",
       icon: FileJson,
       onClick: () => { navigator.clipboard.writeText(getJsonExport(palette)); flash("json"); },
+    },
+    {
+      key: "cmyk",
+      label: "Copy as CMYK",
+      desc: "C/M/Y/K channel values — for print specs",
+      icon: Printer,
+      onClick: () => { copyCmykList(palette); flash("cmyk"); },
     },
   ];
 

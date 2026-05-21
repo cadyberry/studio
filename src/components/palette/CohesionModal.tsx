@@ -10,6 +10,7 @@ interface CohesionModalProps {
   collection: Collection | null;
   palettes: Palette[];
   onClose: () => void;
+  onEditPalette?: (palette: Palette, swatchIndex: number) => void;
 }
 
 interface CohesionAnalysis {
@@ -161,12 +162,25 @@ function MetricRow({ label, score, description }: {
   );
 }
 
-function PaletteStrip({ palette, isOutlier }: { palette: Palette; isOutlier: boolean }) {
+function PaletteStrip({
+  palette,
+  isOutlier,
+  onEdit,
+}: {
+  palette: Palette;
+  isOutlier: boolean;
+  onEdit?: (palette: Palette) => void;
+}) {
+  const Tag = onEdit ? "button" : "div";
   return (
-    <div
-      className={`flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 transition-colors ${
+    <Tag
+      onClick={onEdit ? () => onEdit(palette) : undefined}
+      title={onEdit ? `Edit ${palette.name}` : undefined}
+      className={`w-full flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 transition-colors text-left ${
         isOutlier
           ? "bg-rose-50 ring-1 ring-rose-200"
+          : onEdit
+          ? "hover:bg-[var(--surface-2)] cursor-pointer"
           : "hover:bg-[var(--surface-2)]"
       }`}
     >
@@ -184,11 +198,11 @@ function PaletteStrip({ palette, isOutlier }: { palette: Palette; isOutlier: boo
       <div className="w-4 shrink-0 flex justify-center">
         {isOutlier && <AlertTriangle size={11} className="text-rose-400" />}
       </div>
-    </div>
+    </Tag>
   );
 }
 
-export default function CohesionModal({ collection, palettes, onClose }: CohesionModalProps) {
+export default function CohesionModal({ collection, palettes, onClose, onEditPalette }: CohesionModalProps) {
   if (!collection) return null;
 
   const analysis = analyzeCollectionCohesion(palettes);
@@ -275,6 +289,7 @@ export default function CohesionModal({ collection, palettes, onClose }: Cohesio
                         key={p.id}
                         palette={p}
                         isOutlier={analysis.outlierIndex === i}
+                        onEdit={onEditPalette ? (pal) => { onClose(); onEditPalette(pal, 0); } : undefined}
                       />
                     ))}
                   </div>

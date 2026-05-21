@@ -1,7 +1,7 @@
 "use client";
 
 import type { Palette } from "@/types";
-import { hexToRgb } from "./utils";
+import { hexToRgb, rgbToCmyk } from "./utils";
 
 export function exportAsPngStrip(palette: Palette): void {
   const SWATCH_W = 120;
@@ -46,6 +46,18 @@ export function copyCssVariables(palette: Palette): void {
 export function copyHexList(palette: Palette): void {
   const hexes = palette.colors.map((c) => c.hex).join(", ");
   navigator.clipboard.writeText(hexes);
+}
+
+export function copyCmykList(palette: Palette): void {
+  const lines = palette.colors
+    .map((c) => {
+      const rgb = hexToRgb(c.hex);
+      if (!rgb) return `${c.hex.toUpperCase()}: C0 M0 Y0 K100`;
+      const { c: cy, m, y, k } = rgbToCmyk(rgb.r, rgb.g, rgb.b);
+      return `${c.hex.toUpperCase()}  C${cy} M${m} Y${y} K${k}`;
+    })
+    .join("\n");
+  navigator.clipboard.writeText(lines);
 }
 
 export function getJsonExport(palette: Palette): string {

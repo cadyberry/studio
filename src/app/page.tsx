@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2 } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Extractor from "@/components/palette/Extractor";
 import PaletteCard from "@/components/palette/PaletteCard";
@@ -12,10 +12,11 @@ import CollectionModal from "@/components/palette/CollectionModal";
 import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
+import TrendLibrary from "@/components/palette/TrendLibrary";
 import type { Palette, Collection } from "@/types";
 
 export default function Home() {
-  const { palettes, collections } = usePaletteStore();
+  const { palettes, collections, addPalette } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -24,6 +25,7 @@ export default function Home() {
   const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
+  const [showTrendLibrary, setShowTrendLibrary] = useState(false);
 
   const filtered = palettes.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
@@ -58,6 +60,25 @@ export default function Home() {
                 Extract
               </h2>
               <Extractor />
+            </div>
+
+            {/* Discover button */}
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-3">
+                Discover
+              </h2>
+              <button
+                onClick={() => setShowTrendLibrary(true)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-2)] transition-all text-sm group"
+              >
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-rose-200 via-violet-200 to-sky-200 flex items-center justify-center flex-shrink-0">
+                  <Compass size={13} className="text-violet-600" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-[var(--foreground)]">Trend Library</div>
+                  <div className="text-[11px] text-[var(--muted)]">22 seasonal palettes to fork</div>
+                </div>
+              </button>
             </div>
 
             {/* Collections sidebar */}
@@ -177,7 +198,16 @@ export default function Home() {
         collection={cohesionTarget}
         palettes={cohesionTarget ? palettes.filter((p) => p.collectionId === cohesionTarget.id) : []}
         onClose={() => setCohesionTarget(null)}
+        onEditPalette={(palette, swatchIndex) => setEditTarget({ palette, swatchIndex })}
       />
+      {showTrendLibrary && (
+        <TrendLibrary
+          onClose={() => setShowTrendLibrary(false)}
+          onFork={(colors, name) => {
+            addPalette({ name, colors: colors.map((hex) => ({ hex })), tags: ["trend"] });
+          }}
+        />
+      )}
     </div>
   );
 }
