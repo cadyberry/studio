@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-05-21 — Session 8: Shareable Palette URLs
+
+### What was done
+- Built **shareable palette URLs** — any saved palette can now be shared as a link anyone can open, no account required
+- `GET /p?n=PaletteName&c=hex1,hex2,...` — URL-encoded palette with a beautiful standalone page
+  - Large color strip, individual swatches with one-click hex copy, "Copy all" action
+  - Dynamic `<title>` metadata per palette name
+  - Invalid/empty URL handled gracefully with a back-to-app link
+- **Fork to library** — the share page has a "Fork to my library" button; when clicked, takes the viewer to `/?fork=...` where the main app detects the param on load and shows a toast prompt to save the palette (tagged as "shared")
+- **Copy Share Link** — sixth action added to the Export modal (Link2 icon), copies the full share URL to clipboard alongside PNG, hex, CSS, JSON, CMYK options
+- Production build: clean compile, zero TypeScript errors; `/p` correctly server-rendered as dynamic route
+
+### Key decisions
+- **URL-only, zero backend** — palette data fully encoded in the URL; no database, no auth, works forever as a static link
+- **Fork prompt as toast** — rather than a modal or redirect, the fork offer appears as a bottom-center toast that dismisses cleanly; non-disruptive for users who arrive at the main app via other means
+- **"shared" tag on forked palettes** — distinguishes user-created from shared/trend palettes; enables future filtering
+- **`window.history.replaceState`** — strips `?fork=` from the URL after reading it so refresh doesn't re-prompt
+
+### What's next (Session 9)
+- Tag-based filtering: let users filter library by tag (trend, shared, etc.)
+- Palette nudge controls: from swatch editor, arrow buttons to step hue/saturation by ±5 without dragging
+- AI palette naming: call Claude API to suggest evocative names for extracted palettes
+
 ## 2026-05-21 — Session 6: Dark Mode Preview
 
 ### What was done
