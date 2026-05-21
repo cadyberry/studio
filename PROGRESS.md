@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-05-21 — Session 6: Dark Mode Preview
+
+### What was done
+- Added **Dark Mode Preview** as a third toggle state in Harmony View (Screen / Dark / Print)
+- Extended `assignColorRoles()` with a `dark` parameter that inverts the luminance sort order: in dark mode the darkest color becomes background, lightest becomes text, while accent/secondary are still ranked by saturation
+- Replaced the old Screen/Print two-button toggle with a three-button Screen/Dark/Print control (Moon icon for dark)
+- All contextual text in HarmonyModal updates per mode: subtitle, "Color Roles" / "Dark Roles" / "CMYK Breakdown" label, WCAG contrast summary note, and footer footnote
+- WCAG contrast badges recompute correctly against the dark-assigned background/text roles
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Single param, no duplicate function** — `dark=false` default keeps all existing callers (CohesionModal, etc.) unchanged; only HarmonyModal passes `dark=true`
+- **Saturation-based accent stays the same** — in both light and dark mode, the most saturated color is best for buttons/highlights; only the luminance poles (bg/text) swap
+- **No hardcoded dark backgrounds** — the dark roles emerge entirely from the palette itself, so every palette gets a unique, authentic dark interpretation
+
+### What's next (Session 7)
+- "Copy as CMYK" in Export modal — add a fifth export action that copies CMYK channel values (c, m, y, k percentages) for each color, useful when sending specs to a POD print provider
+- Palette editing from cohesion view — click any palette strip in CohesionModal to jump to that palette's swatch editor
+- Trend/season palette library — a curated set of seasonal starting palettes creators can fork into their library
+
+---
+
 ## 2026-05-21 — Session 1: Vision + MVP
 
 ### What was done
