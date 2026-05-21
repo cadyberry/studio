@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag, ArrowUpDown } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Extractor from "@/components/palette/Extractor";
 import PaletteCard from "@/components/palette/PaletteCard";
@@ -29,6 +29,7 @@ export default function Home() {
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors">("newest");
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -61,6 +62,16 @@ export default function Home() {
         ? !p.tags?.length
         : p.tags?.includes(activeTag);
     return matchesSearch && matchesCollection && matchesTag;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case "newest": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case "oldest": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case "name-asc": return a.name.localeCompare(b.name);
+      case "name-desc": return b.name.localeCompare(a.name);
+      case "most-colors": return b.colors.length - a.colors.length;
+    }
   });
 
   return (
@@ -182,20 +193,37 @@ export default function Home() {
           {/* Right panel — Library */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0">
                 Library
               </h2>
               {palettes.length > 0 && (
-                <div className="flex-1 relative">
-                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search palettes…"
-                    className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
-                  />
-                </div>
+                <>
+                  <div className="flex-1 relative">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search palettes…"
+                      className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[var(--surface)] px-2 py-1.5 text-[var(--muted)] hover:border-[var(--accent)] transition-colors">
+                    <ArrowUpDown size={11} className="shrink-0" />
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                      className="bg-transparent outline-none text-xs text-[var(--foreground)] cursor-pointer appearance-none"
+                      aria-label="Sort palettes"
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="oldest">Oldest</option>
+                      <option value="name-asc">Name A→Z</option>
+                      <option value="name-desc">Name Z→A</option>
+                      <option value="most-colors">Most colors</option>
+                    </select>
+                  </div>
+                </>
               )}
             </div>
 
@@ -252,7 +280,7 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-[var(--muted)]">Drop an image to extract your first palette</p>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-sm text-[var(--muted)]">No palettes match your filters.</p>
                 {(search || activeTag !== "all") && (
@@ -267,7 +295,7 @@ export default function Home() {
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence mode="popLayout">
-                  {filtered.map((palette) => (
+                  {sorted.map((palette) => (
                     <PaletteCard
                       key={palette.id}
                       palette={palette}
