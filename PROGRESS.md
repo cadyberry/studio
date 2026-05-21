@@ -110,3 +110,34 @@
 - "Dark preview" toggle in Harmony View: invert role assignments to simulate dark mode interpretation
 - CMYK shift preview: show how screen RGB colors shift when printed (sRGB → CMYK gamut mapping approximation)
 - Palette editing from the cohesion view: click a palette strip to jump to its swatch editor
+
+---
+
+## 2026-05-21 — Session 5: CMYK Print Preview
+
+### What was done
+- Built **CMYK print simulation** inside Harmony View — the most creator-relevant feature for POD work
+- Added full color science pipeline to `utils.ts`:
+  - `rgbToCmyk` / `cmykToRgb` — standard conversion
+  - `applyInkLimit` — 300% Total Area Coverage cap (industry standard for offset printing)
+  - `rgbToLab` — sRGB → linear → XYZ (D65) → CIELAB conversion pipeline
+  - `deltaE` — CIE76 color difference (perceptually accurate distance)
+  - `simulateCmykPrint` — full round-trip returning print hex, CMYK values, ΔE, and risk level (safe/caution/high)
+- Updated `HarmonyModal.tsx`:
+  - **Screen / Print toggle** in the header animates the swatch strip and entire mock shop preview through CMYK simulation
+  - Print mode: each color role shows CMYK channel bars (C/M/Y/K with color-coded tracks) + ΔE risk badge
+  - Screen / print side-by-side swatches in each role card so shift is visually obvious
+  - Warning banner appears automatically when high-risk (ΔE > 10) or caution (ΔE 3–10) colors are detected
+  - Footer note explains the 300% TAC limit and ICC profile caveat honestly
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **CIE76 over simpler RGB distance** — RGB Euclidean distance doesn't match human perception; LAB space gives meaningful ΔE thresholds (< 3 = safe, 3–10 = review, > 10 = shift)
+- **300% TAC as the standard** — industry default for offset/digital; some POD providers go 280% but 300% is the safe common baseline
+- **All client-side** — the simulation is just math; zero new dependencies, zero latency, works offline
+- **Print mode animates the full mock shop** — you see the entire UI color story shift, not just isolated swatches
+
+### What's next (Session 6)
+- Dark mode preview toggle: invert luminance roles to see how the palette reads in a dark UI
+- Palette editing from the cohesion view: click a palette strip in CohesionModal to jump to swatch editor
+- "Copy as CMYK" export option in the Export modal
