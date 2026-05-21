@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-21 — Session 10: Tag-Based Filtering
+
+### What was done
+- Built **tag-based palette filtering** — a pill row above the palette grid that filters by tag (All / Mine / Trend / Shared / any future tag)
+  - Pills appear automatically when any palettes have tags (animated in with Framer Motion height transition)
+  - "All" shows every palette; "Mine" shows only untagged (user-extracted) palettes; each tag name shows palettes with that tag
+  - Count badge on every pill shows how many palettes match
+  - Active pill highlighted with accent color; inactive pills hover with accent border
+  - "Clear filters" inline link appears below the grid when filters return zero results
+  - Tag + search + collection filters all compose together (AND logic)
+- Added **tag badges on PaletteCard** — small colored pills in the info row show each palette's tags
+  - "trend" renders rose-colored badge; "shared" renders sky-blue badge; custom tags get neutral color
+  - Sits alongside the existing "in collection" chip in the same flex row
+
+### Key decisions
+- **"Mine" as a virtual tag** (`__mine__` sentinel) — untagged palettes don't have an explicit "mine" tag, but users still need a way to filter to just their extracted work; sentinel avoids polluting the tag data model
+- **Pills computed from live data** — no static tag registry; new tags added anywhere in the app appear in the pill row automatically
+- **AND composition** — tag filter compounds with collection + search rather than replacing them; more precise without extra UI complexity
+
+### What's next (Session 11)
+- Palette nudge controls: arrow buttons in SwatchEditor to step hue/saturation by ±5 without dragging
+- Cohesion score badge: small score badge on collection sidebar rows without opening the modal
+- Custom user tags: let users add/remove free-form tags on any palette card
+
+---
+
 ## 2026-05-21 — Session 9: AI Palette Naming
 
 ### What was done
