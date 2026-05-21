@@ -83,3 +83,30 @@
 - Collection cohesion view: stack all palettes in a collection to check brand unity
 - "Dark preview" toggle in Harmony View
 - CMYK shift preview (see how screen colors shift in print)
+
+---
+
+## 2026-05-21 — Session 4: Collection Cohesion View
+
+### What was done
+- Built **CohesionModal** — brand unity analysis for a collection of palettes
+  - Stacked palette strips: every palette in the collection displayed side-by-side so creators can visually scan for outliers at a glance
+  - **Cohesion Score (0–100)** with animated score reveal and label: Fragmented / Developing / Cohesive / Unified
+  - **Three-axis breakdown** with animated bars:
+    - Hue Harmony — uses circular statistics (mean resultant length R) so the hue wraparound at 0°/360° doesn't distort the score; includes dominant hue family name ("Warm-leaning", "Blues family", etc.)
+    - Saturation consistency — standard deviation of all palette saturation values, normalized
+    - Lightness balance — same approach for lightness
+  - **Outlier detection** — per-palette deviation from collection mean; flags the most deviant palette with a warning icon and explanatory callout when it's 2× more distant than average
+  - Composite header strip assembled from all palette colors in the collection
+- Added BarChart2 icon button to each collection row in sidebar (reveals on hover, separate from the select-collection button to avoid nested-button HTML)
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Circular statistics for hue** — naïve mean/std of hue degrees fails badly at wraparound (e.g., red at 5° and red at 355° would appear as opposites). Used mean resultant length (R) from circular statistics instead, giving an accurate cohesion signal.
+- **Separate cohesion button from collection select** — sidebar row is now a flex group: the main button selects the collection, the BarChart2 button opens cohesion view (both at top level, no nested buttons)
+- **Threshold for outlier callout** — requires 3+ palettes, max distance > 2× average AND > 25 units, to avoid false positives on small or uniform collections
+
+### What's next (Session 5)
+- "Dark preview" toggle in Harmony View: invert role assignments to simulate dark mode interpretation
+- CMYK shift preview: show how screen RGB colors shift when printed (sRGB → CMYK gamut mapping approximation)
+- Palette editing from the cohesion view: click a palette strip to jump to its swatch editor
