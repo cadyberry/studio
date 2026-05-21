@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2 } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { Palette } from "@/types";
@@ -17,9 +17,42 @@ interface PaletteCardProps {
   onEditSwatch: (palette: Palette, swatchIndex: number) => void;
 }
 
+type NamingState =
+  | { type: "idle" }
+  | { type: "loading" }
+  | { type: "names"; names: string[] }
+  | { type: "error" };
+
 export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch }: PaletteCardProps) {
-  const deletePalette = usePaletteStore((s) => s.deletePalette);
+  const { deletePalette, updatePalette } = usePaletteStore((s) => ({
+    deletePalette: s.deletePalette,
+    updatePalette: s.updatePalette,
+  }));
   const [confirming, setConfirming] = useState(false);
+  const [naming, setNaming] = useState<NamingState>({ type: "idle" });
+
+  const handleNameWithAI = async () => {
+    setNaming({ type: "loading" });
+    try {
+      const res = await fetch("/api/name-palette", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ colors: palette.colors.map((c) => c.hex) }),
+      });
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      if (!data.names?.length) throw new Error("No names returned");
+      setNaming({ type: "names", names: data.names });
+    } catch {
+      setNaming({ type: "error" });
+      setTimeout(() => setNaming({ type: "idle" }), 2000);
+    }
+  };
+
+  const applyName = (name: string) => {
+    updatePalette(palette.id, { name });
+    setNaming({ type: "idle" });
+  };
 
   const handleDelete = () => {
     if (confirming) {
@@ -36,7 +69,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      className="group bg-[var(--surface)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden hover:shadow-md hover:border-[var(--border)] transition-shadow duration-200"
+      className="group bg-[var(--surface)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden hover:shadow-md hover:border-[var(--border)] transition-shadow duration-200 relative"
     >
       {/* Swatch strip */}
       <div className="flex h-28">
@@ -91,6 +124,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         </div>
 
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNameWithAI}
+            title="Name with AI"
+            disabled={naming.type === "loading"}
+          >
+            {naming.type === "loading" ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Wand2 size={13} />
+            )}
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onHarmony(palette)} title="Harmony view">
             <Eye size={13} />
           </Button>
@@ -113,6 +159,48 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           </Button>
         </div>
       </div>
+
+      {/* AI naming overlay */}
+      <AnimatePresence>
+        {(naming.type === "names" || naming.type === "error") && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/95 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+          >
+            {naming.type === "error" ? (
+              <p className="text-xs text-[var(--muted)] text-center">Couldn&apos;t generate names — try again</p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                    AI Suggestions
+                  </span>
+                  <button
+                    onClick={() => setNaming({ type: "idle" })}
+                    className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {naming.names.map((name, i) => (
+                    <button
+                      key={i}
+                      onClick={() => applyName(name)}
+                      className="w-full text-left text-sm px-2.5 py-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--accent)] hover:text-[var(--accent-fg)] transition-colors font-medium truncate"
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
