@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-21 — Session 11: Custom User Tags
+
+### What was done
+- Built **custom user tag management** — a Tag icon in the PaletteCard hover actions row opens an inline tag editor overlay
+  - Click Tag icon: overlay slides up (same pattern as AI naming overlay), auto-focuses the input
+  - Type a tag name and press Enter or comma to add it instantly
+  - Backspace on empty input removes the last tag (standard tag-input muscle memory)
+  - Escape closes the editor
+  - Blur commits any typed-but-not-yet-added tag automatically
+  - Existing tags displayed as removable pills with × buttons — "trend"/"shared" tags keep their distinct colors; user tags render in neutral style
+  - Tags sanitized: lowercase, spaces→hyphens, alphanumeric+hyphens only, max 24 chars; duplicates silently ignored
+  - Tag button highlights (outline variant) when the editor is open; AI naming overlay auto-closes when tagging opens and vice versa
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Inline overlay, not a modal** — keeps the editing experience in context with the actual palette colors, matches the AI naming overlay pattern already established
+- **Backspace-to-remove-last** — standard UX for tag inputs (Gmail, GitHub labels); no extra click needed
+- **Blur commits** — typing a tag and clicking elsewhere saves it; no "forgotten tags" from partial input
+- **Sanitization in commitTag** — tags are normalized before saving so "Dark Academia" and "dark-academia" both produce the same tag; no dirty data in localStorage
+
+### What's next (Session 12)
+- Palette nudge controls: arrow buttons in SwatchEditor to step H/S/L by ±5 without dragging
+- Cohesion score badge: show computed score inline on collection sidebar rows (avoid opening modal just to see the number)
+- Palette count by tag: show per-tag counts in the sidebar as well as the pill row
+
+---
+
 ## 2026-05-21 — Session 10: Tag-Based Filtering
 
 ### What was done
