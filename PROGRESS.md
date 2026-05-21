@@ -56,3 +56,30 @@
 - Palette editing: click any swatch in the library to open a color picker and swap/nudge that color
 - Collection cohesion view: when viewing a collection, stack all palettes to see if they feel like one brand
 - "Dark preview" toggle in Harmony View: swap background and text roles to see dark mode interpretation
+
+---
+
+## 2026-05-21 — Session 3: Swatch Color Editor
+
+### What was done
+- Built **SwatchEditor** — a full color editing modal triggered by a pencil icon on any swatch
+  - Native `<input type="color">` for visual selection
+  - HSL sliders (H 0–360°, S 0–100%, L 0–100%) with live CSS gradient tracks (rainbow for hue, saturation/lightness context-aware)
+  - Hex text input with blur/enter validation and auto-normalization
+  - Live palette strip preview with the edited swatch highlighted (ring inset)
+  - WCAG contrast badges against white and black (AA threshold highlighted)
+  - Original color swatch for reference; Reset button (disabled when unchanged)
+- Added `hslToRgb`, `hslToHex`, `isValidHex` utilities to `utils.ts`
+- Updated `PaletteCard`: pencil icon appears on individual swatch hover (stops propagation so copy-on-click still works)
+- Wired `SwatchEditor` into `page.tsx` with `editTarget` state
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **HSL as intermediate state** — sliders operate in HSL space (more intuitive for "nudge hue" or "lighten") while hex is kept in sync for copy/save
+- **Gradient slider tracks** are pure CSS, showing context (saturation slider shows actual current lightness, not just a gray→saturated band) so creators see exactly what they'll get
+- **Pencil separate from copy click** — edit icon uses stopPropagation; body click still copies hex, preserving muscle memory
+
+### What's next (Session 4)
+- Collection cohesion view: stack all palettes in a collection to check brand unity
+- "Dark preview" toggle in Harmony View
+- CMYK shift preview (see how screen colors shift in print)
