@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-05-21 — Session 9: AI Palette Naming
+
+### What was done
+- Built **AI Palette Naming** — the Wand2 button on any palette card calls Claude Opus 4.7 and returns 3 evocative name suggestions instantly
+  - New POST `/api/name-palette` route using `@anthropic-ai/sdk` with `claude-opus-4-7`, `effort: "low"` for fast, cheap naming calls
+  - Wand2 icon added to the PaletteCard hover actions row (alongside Eye, Edit2, etc.)
+  - Loading state: spinner while waiting for the API response
+  - Names slide in as an overlay panel at the bottom of the card — tap any name to apply it immediately
+  - Error state auto-dismisses after 2s if the API call fails
+  - Dismiss button (X) to close without selecting
+- Production build: clean compile, zero TypeScript errors; `/api/name-palette` correctly server-rendered as dynamic route
+
+### Key decisions
+- **Server-side API route** — API key stays server-side, never exposed to the browser
+- **`effort: "low"`** — palette naming is a simple creative task; low effort is fast (< 1s) and uses minimal tokens
+- **Overlay panel over the card** — keeps the suggested names in context next to the actual palette colors, making the choice obvious
+- **No model round-trip for rejection** — close the panel with X; no second API call needed
+
+### What's next (Session 10)
+- Tag-based filtering: filter the library by tag (trend, shared, etc.) using a pill row above the palette grid
+- Palette nudge controls: hue/saturation arrow buttons in SwatchEditor for stepping by ±5 without dragging
+- Cohesion score badge: small cohesion score visible on collection rows in the sidebar without opening the modal
+
+---
+
 ## 2026-05-21 — Session 8: Shareable Palette URLs
 
 ### What was done
