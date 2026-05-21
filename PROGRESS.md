@@ -163,3 +163,28 @@
 - Dark mode preview toggle: invert luminance roles to see how the palette reads in a dark UI
 - Palette editing from the cohesion view: click a palette strip in CohesionModal to jump to swatch editor
 - "Copy as CMYK" export option in the Export modal
+
+---
+
+## 2026-05-21 — Session 7: Trend Library + CMYK Export + Cohesion Edit Jump
+
+### What was done
+- Built **Trend Library** — 22 curated seasonal palettes creators can fork into their library
+  - 5 season tabs: Spring, Summer, Fall, Winter, Evergreen (4 palettes each + 6 evergreen)
+  - Each palette shown as a color strip with name and mood tags; hovering any swatch reveals its hex code
+  - "Fork" button saves a copy to the user's library (tagged as "trend"); shows "Saved ✓" feedback for 2s
+  - Season gradient header animates when switching tabs
+  - Opens as a bottom-sheet modal (mobile-first) with a "Discover" entry in the left sidebar
+- **Copy as CMYK**: fifth action added to Export modal — copies all colors as `#HEX  C__ M__ Y__ K__` lines, ready to paste into a print spec document
+- **Cohesion → Edit jump**: clicking any palette strip in CohesionModal closes the cohesion view and opens that palette's swatch editor at swatch 0 — so "outlier" palettes flagged by the cohesion analysis are one click from fixing
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **22 palettes in data file, zero backend** — trend palettes are authored in `trendPalettes.ts`; no API call, no latency, works offline; easy to add more in future sessions
+- **Fork creates a full copy** — forked palettes are fully editable, have "trend" tag for filtering later; original trend palette stays unchanged in the library
+- **Cohesion edit uses onClose+setEditTarget sequence** — closes cohesion modal first, then opens swatch editor, avoiding z-index stacking issues
+
+### What's next (Session 8)
+- Tag-based filtering: surface the "trend" tag and let users filter library by tag
+- Palette editing nudges: from the swatch editor, add arrow buttons to nudge hue/saturation by small amounts without dragging sliders
+- Share palette: generate a URL-encoded palette link that anyone can open to see the palette (no account needed)
