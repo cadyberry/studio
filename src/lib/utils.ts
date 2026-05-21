@@ -280,3 +280,35 @@ export function simulateCmykPrint(hex: string): PrintSimResult {
     risk: dE < 3 ? "safe" : dE < 10 ? "caution" : "high",
   };
 }
+
+// ─── Collection Cohesion Score ────────────────────────────────────────────────
+
+// Returns an overall cohesion score (0–100) for a set of palettes using the
+// same three-axis formula as CohesionModal: hue harmony (50%), saturation
+// consistency (30%), lightness balance (20%).
+export function computeCohesionScore(palettes: { colors: { hex: string }[] }[]): number {
+  const allHsl = palettes.flatMap((p) =>
+    p.colors
+      .map((c) => { const rgb = hexToRgb(c.hex); return rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b) : null; })
+      .filter((v): v is { h: number; s: number; l: number } => v !== null)
+  );
+  if (allHsl.length === 0) return 0;
+
+  const hueRads = allHsl.map((h) => (h.h * Math.PI) / 180);
+  const meanSin = hueRads.reduce((s, r) => s + Math.sin(r), 0) / hueRads.length;
+  const meanCos = hueRads.reduce((s, r) => s + Math.cos(r), 0) / hueRads.length;
+  const R = Math.sqrt(meanSin ** 2 + meanCos ** 2);
+  const hueScore = Math.round(R * 100);
+
+  const sats = allHsl.map((h) => h.s);
+  const satMean = sats.reduce((a, b) => a + b, 0) / sats.length;
+  const satStd = Math.sqrt(sats.reduce((sum, s) => sum + (s - satMean) ** 2, 0) / sats.length);
+  const satScore = Math.max(0, Math.round(100 - (satStd / 35) * 100));
+
+  const lights = allHsl.map((h) => h.l);
+  const lightMean = lights.reduce((a, b) => a + b, 0) / lights.length;
+  const lightStd = Math.sqrt(lights.reduce((sum, l) => sum + (l - lightMean) ** 2, 0) / lights.length);
+  const lightScore = Math.max(0, Math.round(100 - (lightStd / 35) * 100));
+
+  return Math.round(hueScore * 0.5 + satScore * 0.3 + lightScore * 0.2);
+}

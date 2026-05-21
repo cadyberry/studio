@@ -13,6 +13,7 @@ import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
+import { computeCohesionScore } from "@/lib/utils";
 import type { Palette, Collection } from "@/types";
 
 export default function Home() {
@@ -129,7 +130,14 @@ export default function Home() {
                     <span className="ml-auto text-xs opacity-60">{palettes.length}</span>
                   </button>
                   {collections.map((c) => {
-                    const count = palettes.filter((p) => p.collectionId === c.id).length;
+                    const collectionPalettes = palettes.filter((p) => p.collectionId === c.id);
+                    const count = collectionPalettes.length;
+                    const cohesionScore = count >= 2 ? computeCohesionScore(collectionPalettes) : null;
+                    const scoreColor =
+                      cohesionScore === null ? undefined :
+                      cohesionScore >= 80 ? "#10b981" :
+                      cohesionScore >= 60 ? "#0ea5e9" :
+                      cohesionScore >= 40 ? "#f59e0b" : "#f43f5e";
                     const isActive = activeCollection === c.id;
                     return (
                       <div key={c.id} className="group/col flex items-center gap-1">
@@ -141,9 +149,20 @@ export default function Home() {
                               : "hover:bg-[var(--surface-2)] text-[var(--foreground)]"
                           }`}
                         >
-                          <FolderOpen size={13} />
+                          <FolderOpen size={13} className="shrink-0" />
                           <span className="truncate">{c.name}</span>
-                          <span className="ml-auto text-xs opacity-60">{count}</span>
+                          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                            {cohesionScore !== null && (
+                              <span
+                                className="text-[9px] font-bold tabular-nums leading-none"
+                                style={{ color: isActive ? "currentColor" : scoreColor, opacity: isActive ? 0.75 : 1 }}
+                                title={`Cohesion score: ${cohesionScore}/100`}
+                              >
+                                {cohesionScore}
+                              </span>
+                            )}
+                            <span className="text-xs opacity-60">{count}</span>
+                          </div>
                         </button>
                         <button
                           onClick={() => setCohesionTarget(c)}

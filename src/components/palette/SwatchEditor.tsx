@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw } from "lucide-react";
+import { X, RotateCcw, Minus, Plus } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
@@ -59,6 +59,23 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
     const newHex = hslToHex(newHsl.h, newHsl.s, newHsl.l);
     setHex(newHex);
     setHexInput(newHex);
+  }, []);
+
+  const nudge = useCallback((key: "h" | "s" | "l", dir: 1 | -1) => {
+    const step = 5;
+    setHsl((prev) => {
+      let next: number;
+      if (key === "h") {
+        next = ((prev.h + dir * step) % 360 + 360) % 360;
+      } else {
+        next = Math.max(0, Math.min(100, prev[key] + dir * step));
+      }
+      const updated = { ...prev, [key]: Math.round(next) };
+      const newHex = hslToHex(updated.h, updated.s, updated.l);
+      setHex(newHex);
+      setHexInput(newHex);
+      return updated;
+    });
   }, []);
 
   const handleSave = () => {
@@ -146,8 +163,8 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
             {/* HSL Sliders */}
             <div className="space-y-2.5">
               {sliders.map(({ label, value, max, unit, gradient, key }) => (
-                <div key={key} className="flex items-center gap-2.5">
-                  <span className="text-[10px] font-mono font-bold w-3 text-[var(--muted)] select-none">
+                <div key={key} className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold w-3 text-[var(--muted)] select-none shrink-0">
                     {label}
                   </span>
                   <div className="relative flex-1 h-3.5 flex items-center">
@@ -174,9 +191,26 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                         [&::-webkit-slider-thumb]:shadow"
                     />
                   </div>
-                  <span className="text-[10px] font-mono w-9 text-right tabular-nums text-[var(--muted)] select-none">
-                    {value}{unit}
-                  </span>
+                  {/* Nudge controls ± 5 step */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => nudge(key, -1)}
+                      className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
+                      title={`−5${unit}`}
+                    >
+                      <Minus size={9} />
+                    </button>
+                    <span className="text-[10px] font-mono w-8 text-center tabular-nums text-[var(--muted)] select-none">
+                      {value}{unit}
+                    </span>
+                    <button
+                      onClick={() => nudge(key, 1)}
+                      className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
+                      title={`+5${unit}`}
+                    >
+                      <Plus size={9} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
