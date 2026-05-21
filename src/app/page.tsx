@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Extractor from "@/components/palette/Extractor";
 import PaletteCard from "@/components/palette/PaletteCard";
@@ -26,6 +26,24 @@ export default function Home() {
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
+  const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const fork = url.searchParams.get("fork");
+    if (!fork) return;
+    const [name, colorsStr] = fork.split("|");
+    if (!name || !colorsStr) return;
+    const colors = colorsStr
+      .split(",")
+      .filter((h) => /^[0-9a-fA-F]{6}$/.test(h))
+      .map((h) => ({ hex: `#${h}` }));
+    if (colors.length > 0) {
+      setForkPrompt({ name: decodeURIComponent(name), colors });
+      url.searchParams.delete("fork");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
 
   const filtered = palettes.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
@@ -208,6 +226,48 @@ export default function Home() {
           }}
         />
       )}
+
+      {/* Fork-from-share toast */}
+      <AnimatePresence>
+        {forkPrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] shadow-2xl px-5 py-4 flex items-center gap-4 max-w-sm w-[calc(100vw-2rem)]"
+          >
+            {/* Palette strip preview */}
+            <div className="flex rounded-md overflow-hidden h-10 w-20 flex-shrink-0">
+              {forkPrompt.colors.map((c, i) => (
+                <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} />
+              ))}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{forkPrompt.name}</p>
+              <p className="text-xs text-[var(--muted)]">Fork this palette to your library?</p>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={() => {
+                  addPalette({ name: forkPrompt.name, colors: forkPrompt.colors, tags: ["shared"] });
+                  setForkPrompt(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] bg-[var(--accent)] text-[var(--accent-fg)] text-xs font-medium hover:opacity-90 transition-opacity"
+              >
+                <BookMarked size={11} />
+                Fork
+              </button>
+              <button
+                onClick={() => setForkPrompt(null)}
+                className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

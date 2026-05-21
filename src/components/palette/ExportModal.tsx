@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, Printer } from "lucide-react";
-import { exportAsPngStrip, copyCssVariables, copyHexList, getJsonExport, copyCmykList } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, Printer, Link2 } from "lucide-react";
+import { exportAsPngStrip, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor } from "@/lib/utils";
@@ -58,6 +58,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "C/M/Y/K channel values — for print specs",
       icon: Printer,
       onClick: () => { copyCmykList(palette); flash("cmyk"); },
+    },
+    {
+      key: "share",
+      label: "Copy Share Link",
+      desc: "Anyone with the link can view & fork this palette",
+      icon: Link2,
+      onClick: () => { navigator.clipboard.writeText(getPaletteShareUrl(palette)); flash("share"); },
     },
   ];
 

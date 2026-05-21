@@ -3,6 +3,12 @@
 import type { Palette } from "@/types";
 import { hexToRgb, rgbToCmyk } from "./utils";
 
+export function getPaletteShareUrl(palette: Palette): string {
+  const base = typeof window !== "undefined" ? window.location.origin : "";
+  const colors = palette.colors.map((c) => c.hex.replace("#", "")).join(",");
+  return `${base}/p?n=${encodeURIComponent(palette.name)}&c=${colors}`;
+}
+
 export function exportAsPngStrip(palette: Palette): void {
   const SWATCH_W = 120;
   const SWATCH_H = 80;
