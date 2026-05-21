@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-21 — Session 13: Swatch Drag-to-Reorder
+
+### What was done
+- **Swatch drag-to-reorder** — colors within any palette can now be dragged horizontally to rearrange their position
+  - `Reorder.Group` (axis="x") replaces the static flex container for the swatch strip
+  - Each `Reorder.Item` carries a stable `_key` (`paletteId-index`) that survives reordering so React doesn't churn
+  - `orderedColorsRef` stays current during the drag via `handleReorder`, so `onDragEnd` always commits the final order without stale-closure issues
+  - 250ms guard on `onClick` prevents copy-to-clipboard firing after a drag release (pointer-up timing overlap)
+  - `whileDrag` lifts the active swatch with `scale: 1.04` + drop shadow for tactile feedback
+  - Cursor is `grab` at rest, `grabbing` during drag — immediately communicates draggability
+  - `onDragEnd` commits the new order to Zustand (localStorage) so the order persists across sessions
+  - Pencil-to-edit button still works via `stopPropagation`; click-to-copy still works for pure clicks
+  - `useEffect` syncs hex values when a swatch is edited externally while preserving the user's established order
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Stable keys by initial position, not hex value** — duplicate hex values in a palette would break Framer Motion's identity tracking if we used hex as the key; index-at-mount avoids this entirely
+- **Ref for current order** — state updates are async; keeping `orderedColorsRef` current in `handleReorder` ensures `onDragEnd` reads the true final order even if React hasn't flushed yet
+- **250ms drag guard** — Framer Motion fires pointer-up → onClick after drag ends; any click within 250ms of `dragEndTimeRef.current` is suppressed
+- **Commit on drag end, not on every reorder tick** — `onReorder` fires many times per second during drag; only committing on `onDragEnd` avoids hundreds of localStorage writes
+
+### What's next (Session 14)
+- **Palette count by tag in sidebar** — show "Mine 4 · Trend 7 · Shared 2" summary below the Discover button for a quick inventory at a glance
+- **Keyboard nudge in SwatchEditor (Shift+Arrow)** — native range slider moves 1 unit per arrow key; adding Shift+Arrow = 10-step would be a meaningful power-user shortcut
+- **Sort palette grid** — a sort dropdown (newest, oldest, name A→Z, most colors) would help when the library grows large
+
 ## 2026-05-21 — Session 12: Nudge Controls + Cohesion Score Badge
 
 ### What was done
