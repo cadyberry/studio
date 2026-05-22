@@ -98,6 +98,24 @@ export function formatDate(isoString: string): string {
   }).format(new Date(isoString));
 }
 
+export function formatRelativeAge(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return diffMin === 1 ? "1 min ago" : `${diffMin} min ago`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return diffHour === 1 ? "1 hour ago" : `${diffHour} hours ago`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 7) return diffDay === 1 ? "yesterday" : `${diffDay} days ago`;
+  const diffWeek = Math.floor(diffDay / 7);
+  if (diffWeek < 5) return diffWeek === 1 ? "1 week ago" : `${diffWeek} weeks ago`;
+  const diffMonth = Math.floor(diffDay / 30);
+  if (diffMonth < 12) return diffMonth === 1 ? "1 month ago" : `${diffMonth} months ago`;
+  const diffYear = Math.floor(diffDay / 365);
+  return diffYear === 1 ? "1 year ago" : `${diffYear} years ago`;
+}
+
 // WCAG relative luminance
 export function getRelativeLuminance(hex: string): number {
   const rgb = hexToRgb(hex);

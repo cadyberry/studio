@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, type PaletteMood } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -345,6 +345,18 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             <Trash2 size={13} />
           </Button>
         </div>
+      </div>
+
+      {/* Age indicator — visible on hover */}
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-3 py-1 border-t border-[var(--border)] bg-[var(--surface-2)]/60 flex items-center justify-between">
+        <span className="text-[10px] text-[var(--muted)]">
+          Created {formatRelativeAge(palette.createdAt)}
+        </span>
+        {palette.updatedAt !== palette.createdAt && (
+          <span className="text-[10px] text-[var(--muted)]">
+            Edited {formatRelativeAge(palette.updatedAt)}
+          </span>
+        )}
       </div>
 
       {/* AI naming overlay */}
