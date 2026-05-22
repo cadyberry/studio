@@ -2,6 +2,36 @@
 
 ---
 
+## 2026-05-22 — Session 24: CMYK Print Risk Badges on PNG Export + Clipboard Hex Import
+
+### What was done
+- **CMYK print risk badges on the PNG reference card** — the most actionable print-workflow upgrade yet
+  - `simulateCmykPrint` is now called for every swatch at export time; for any color where the RGB→CMYK→RGB round-trip produces a perceptual shift (ΔE > 3), a badge is overlaid directly on the swatch in the color strip
+  - **Badge content**: shows the exact ΔE value (e.g. `ΔE 8.2`) in a rounded pill; on very narrow swatches (<54px) collapses to `!` to fit
+  - **Badge colors**: amber (`rgba(217,119,6,0.92)`) for caution (ΔE 3–10), rose/red (`rgba(225,29,72,0.92)`) for high risk (ΔE > 10); safe swatches get no badge — no noise for colors that print accurately
+  - **"Print preview" sliver**: a 10px strip at the bottom of each risky swatch shows the actual predicted print color (after ink limit and CMYK round-trip), labeled "print" — Cady can see the shift right on the card without looking anything up
+  - **Colored CMYK values in label area**: CMYK rows are now rendered in amber for caution and rose for high-risk swatches, neutral gray for safe — risk reads at a glance even without the badge visible
+  - **Footer legend**: when any swatch has risk, the footer switches from the centered branding to a two-color legend ("amber = caution ΔE 3–10 · red = high risk ΔE > 10") with branding right-aligned
+  - Safe palettes (all ΔE < 3): no badges, standard footer — no visual noise added for colors that print cleanly
+- **Clipboard hex auto-import on focus** (deferred from Sessions 22 & 23)
+  - In hex mode, focusing the textarea now silently reads the clipboard; if it contains valid hex codes and the textarea is empty, it pre-fills the field — instant paste-without-paste for Cady's common workflow of copying hex codes from Midjourney or her design tools
+  - Clipboard permission denial is caught silently; no error UI shown
+- Production build: clean compile, zero TypeScript errors, all routes passing
+
+### Key decisions
+- **Badge on swatch strip, not in label area** — the swatch is where the eye goes first; the badge is physically co-located with the color it describes; the label area already carries CMYK data and adding a 5th row would crowd it
+- **"Print preview" sliver** — the most direct answer to "what will this look like?" is showing the actual predicted color, not just a number; a 10px sliver is perceptible but not dominant
+- **ΔE value in badge, not just ⚠** — ΔE 3.1 and ΔE 18.9 both mean "shift" but the severity is very different; showing the number lets Cady decide whether a particular color is acceptable for her product
+- **Amber/rose color coding in CMYK label rows** — reinforces the badge color system in the data area; if badges aren't immediately noticed, the colored text is a second channel carrying the same signal
+- **Silent clipboard read, no UX** — clipboard auto-import is a power-user shortcut; surfacing it with a toast or button would add clutter for users who don't use it; silence is the right default
+
+### What's next (Session 25)
+- **Palette aging indicator** — "created N days ago" relative timestamp shown on card hover; helps Cady understand which palettes are from recent work vs. old drops
+- **Batch export** — select multiple palettes → download a ZIP of individual PNG cards; useful when preparing a full collection for a print run
+- **Collection cover palette** — designate one palette in a collection as the "cover", shown prominently at the top of the collection view
+
+---
+
 ## 2026-05-22 — Session 23: Mood Filter in Library
 
 ### What was done
