@@ -14,8 +14,19 @@ import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
-import { computeCohesionScore, deltaE, isValidHex } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, type PaletteMood } from "@/lib/utils";
 import type { Palette, Collection } from "@/types";
+
+const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
+
+const MOOD_PILL_STYLES: Record<PaletteMood, { dot: string; activeClass: string; inactiveClass: string }> = {
+  warm:   { dot: "#f59e0b", activeClass: "bg-amber-100 text-amber-700 border-amber-300",    inactiveClass: "text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50" },
+  cool:   { dot: "#0ea5e9", activeClass: "bg-sky-100 text-sky-700 border-sky-300",          inactiveClass: "text-sky-600 border-sky-200 hover:border-sky-400 hover:bg-sky-50" },
+  earthy: { dot: "#84cc16", activeClass: "bg-lime-100 text-lime-700 border-lime-300",        inactiveClass: "text-lime-600 border-lime-200 hover:border-lime-400 hover:bg-lime-50" },
+  vivid:  { dot: "#f43f5e", activeClass: "bg-rose-100 text-rose-700 border-rose-300",        inactiveClass: "text-rose-500 border-rose-200 hover:border-rose-400 hover:bg-rose-50" },
+  muted:  { dot: "#71717a", activeClass: "bg-zinc-100 text-zinc-700 border-zinc-300",        inactiveClass: "text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50" },
+  dreamy: { dot: "#8b5cf6", activeClass: "bg-violet-100 text-violet-700 border-violet-300",  inactiveClass: "text-violet-500 border-violet-200 hover:border-violet-400 hover:bg-violet-50" },
+};
 
 function getTagDotColor(tag: string): string {
   if (tag === "trend") return "#fb7185";
@@ -41,6 +52,7 @@ export default function Home() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
+  const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -67,7 +79,7 @@ export default function Home() {
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
   const COLOR_MATCH_THRESHOLD = 25;
 
-  const filtered = palettes.filter((p) => {
+  const baseFiltered = palettes.filter((p) => {
     const matchesCollection =
       activeCollection === "all" || p.collectionId === activeCollection;
     const matchesTag =
@@ -85,6 +97,17 @@ export default function Home() {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     return matchesSearch && matchesCollection && matchesTag;
   });
+
+  const moodCounts = new Map<PaletteMood, number>();
+  for (const p of baseFiltered) {
+    const mood = getPaletteMood(p.colors);
+    moodCounts.set(mood, (moodCounts.get(mood) ?? 0) + 1);
+  }
+
+  const filtered =
+    activeMood === "all"
+      ? baseFiltered
+      : baseFiltered.filter((p) => getPaletteMood(p.colors) === activeMood);
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -429,6 +452,61 @@ export default function Home() {
               )}
             </AnimatePresence>
 
+            {/* Mood filter pills */}
+            <AnimatePresence>
+              {moodCounts.size >= 2 && (
+                <motion.div
+                  key="mood-pills"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5">
+                      Mood
+                    </span>
+                    <button
+                      onClick={() => setActiveMood("all")}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                        activeMood === "all"
+                          ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
+                          : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      All
+                      <span className={`text-[10px] ${activeMood === "all" ? "opacity-70" : "opacity-50"}`}>
+                        {baseFiltered.length}
+                      </span>
+                    </button>
+                    {MOOD_ORDER.filter((m) => moodCounts.has(m)).map((mood) => {
+                      const count = moodCounts.get(mood)!;
+                      const style = MOOD_PILL_STYLES[mood];
+                      const isActive = activeMood === mood;
+                      const label = mood.charAt(0).toUpperCase() + mood.slice(1);
+                      return (
+                        <button
+                          key={mood}
+                          onClick={() => setActiveMood(isActive ? "all" : mood)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            isActive ? style.activeClass : style.inactiveClass
+                          }`}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: style.dot }}
+                          />
+                          {label}
+                          <span className="text-[10px] opacity-60">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {palettes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="flex gap-1.5 mb-4">
@@ -445,11 +523,12 @@ export default function Home() {
                     ? `No palettes contain a similar color (ΔE ≤ ${COLOR_MATCH_THRESHOLD}).`
                     : "No palettes match your filters."}
                 </p>
-                {(validColorSearch || search || activeTag !== "all") && (
+                {(validColorSearch || search || activeTag !== "all" || activeMood !== "all") && (
                   <button
                     onClick={() => {
                       setSearch("");
                       setActiveTag("all");
+                      setActiveMood("all");
                       setColorSearchActive(false);
                       setColorSearchHex("");
                     }}
