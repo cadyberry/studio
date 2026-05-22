@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag, ArrowUpDown } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag, ArrowUpDown, Trash2, CheckSquare } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
+import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
 import PaletteCard from "@/components/palette/PaletteCard";
 import ExportModal from "@/components/palette/ExportModal";
@@ -17,7 +18,7 @@ import { computeCohesionScore } from "@/lib/utils";
 import type { Palette, Collection } from "@/types";
 
 export default function Home() {
-  const { palettes, collections, addPalette, duplicatePalette } = usePaletteStore();
+  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -30,6 +31,8 @@ export default function Home() {
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors">("newest");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -73,6 +76,25 @@ export default function Home() {
       case "most-colors": return b.colors.length - a.colors.length;
     }
   });
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+    setBulkDeleteConfirm(false);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setBulkDeleteConfirm(false);
+  }, []);
+
+  const selectAllVisible = useCallback(() => {
+    setSelectedIds(new Set(sorted.map((p) => p.id)));
+    setBulkDeleteConfirm(false);
+  }, [sorted]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -305,6 +327,9 @@ export default function Home() {
                       onHarmony={setHarmonyTarget}
                       onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
                       onDuplicate={(p) => duplicatePalette(p.id)}
+                      isSelected={selectedIds.has(palette.id)}
+                      selectionActive={selectedIds.size > 0}
+                      onSelect={toggleSelect}
                     />
                   ))}
                 </AnimatePresence>
@@ -338,6 +363,94 @@ export default function Home() {
           }}
         />
       )}
+
+      {/* Bulk action bar */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            key="bulk-bar"
+            initial={{ y: 72, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 72, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+            className="fixed bottom-0 inset-x-0 z-50 bg-[var(--surface)]/95 backdrop-blur-md border-t border-[var(--border)] shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
+          >
+            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <CheckSquare size={14} className="text-[var(--accent)] shrink-0" />
+                <span className="text-sm font-medium">
+                  {selectedIds.size} palette{selectedIds.size !== 1 ? "s" : ""} selected
+                </span>
+                {sorted.length > selectedIds.size && (
+                  <button
+                    onClick={selectAllVisible}
+                    className="text-xs text-[var(--accent)] hover:underline shrink-0"
+                  >
+                    Select all {sorted.length}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1" />
+
+              {/* Assign to collection */}
+              {collections.length > 0 && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <FolderOpen size={13} className="text-[var(--muted)]" />
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      const colId = e.target.value === "__none__" ? undefined : e.target.value;
+                      assignPalettesToCollection([...selectedIds], colId);
+                      clearSelection();
+                      e.target.value = "";
+                    }}
+                    className="text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-1.5 outline-none focus:border-[var(--accent)] cursor-pointer transition-colors"
+                    aria-label="Assign to collection"
+                  >
+                    <option value="" disabled>Move to collection…</option>
+                    <option value="__none__">Remove from collection</option>
+                    {collections.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Bulk delete */}
+              <Button
+                variant={bulkDeleteConfirm ? "danger" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (bulkDeleteConfirm) {
+                    deletePalettes([...selectedIds]);
+                    clearSelection();
+                  } else {
+                    setBulkDeleteConfirm(true);
+                    setTimeout(() => setBulkDeleteConfirm(false), 2500);
+                  }
+                }}
+                className="shrink-0 gap-1.5"
+              >
+                <Trash2 size={13} />
+                {bulkDeleteConfirm
+                  ? `Delete ${selectedIds.size}?`
+                  : `Delete ${selectedIds.size}`}
+              </Button>
+
+              {/* Clear selection */}
+              <button
+                onClick={clearSelection}
+                className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors shrink-0"
+                title="Clear selection"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Fork-from-share toast */}
       <AnimatePresence>

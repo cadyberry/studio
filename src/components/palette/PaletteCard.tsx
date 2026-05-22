@@ -18,6 +18,9 @@ interface PaletteCardProps {
   onHarmony: (palette: Palette) => void;
   onEditSwatch: (palette: Palette, swatchIndex: number) => void;
   onDuplicate: (palette: Palette) => void;
+  isSelected?: boolean;
+  selectionActive?: boolean;
+  onSelect?: (id: string) => void;
 }
 
 type NamingState =
@@ -26,7 +29,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -140,8 +143,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      className="group bg-[var(--surface)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden hover:shadow-md hover:border-[var(--border)] transition-shadow duration-200 relative"
+      className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
+        isSelected ? "border-[var(--accent)] shadow-sm" : "border-[var(--border)]"
+      }`}
     >
+      {/* Selection checkbox */}
+      {onSelect && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSelect(palette.id); }}
+          title={isSelected ? "Deselect" : "Select"}
+          className={`absolute top-2 left-2 z-10 w-[18px] h-[18px] rounded-[3px] flex items-center justify-center transition-all duration-150 ${
+            isSelected
+              ? "bg-[var(--accent)] opacity-100"
+              : selectionActive
+              ? "bg-white/80 border border-white/60 opacity-100"
+              : "bg-white/80 border border-white/60 opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          {isSelected && <Check size={11} className="text-[var(--accent-fg)]" />}
+        </button>
+      )}
+
       {/* Swatch strip — drag to reorder */}
       <Reorder.Group
         as="div"
