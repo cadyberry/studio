@@ -3,12 +3,21 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check } from "lucide-react";
-import { getContrastColor, deltaE } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
 
 type KeyedColor = ColorSwatch & { _key: string };
+
+const MOOD_STYLES: Record<PaletteMood, { bg: string; text: string; label: string }> = {
+  vivid:  { bg: "bg-rose-100 dark:bg-rose-900/30",   text: "text-rose-600 dark:text-rose-400",   label: "vivid"  },
+  muted:  { bg: "bg-zinc-100 dark:bg-zinc-800",       text: "text-zinc-500 dark:text-zinc-400",   label: "muted"  },
+  warm:   { bg: "bg-amber-100 dark:bg-amber-900/30",  text: "text-amber-600 dark:text-amber-400", label: "warm"   },
+  earthy: { bg: "bg-lime-100 dark:bg-lime-900/30",    text: "text-lime-700 dark:text-lime-400",   label: "earthy" },
+  cool:   { bg: "bg-sky-100 dark:bg-sky-900/30",      text: "text-sky-600 dark:text-sky-400",     label: "cool"   },
+  dreamy: { bg: "bg-violet-100 dark:bg-violet-900/30",text: "text-violet-600 dark:text-violet-400",label: "dreamy"},
+};
 
 interface PaletteCardProps {
   palette: Palette;
@@ -122,6 +131,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     updatePalette(palette.id, { name });
     setNaming({ type: "idle" });
   };
+
+  const mood = getPaletteMood(palette.colors);
+  const moodStyle = MOOD_STYLES[mood];
 
   // Closest swatch to the active color search query
   const bestMatchIndex = colorMatchHex
@@ -254,6 +266,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           <div className="text-sm font-medium truncate">{palette.name}</div>
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
             <span className="text-xs text-[var(--muted)]">{palette.colors.length} colors</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${moodStyle.bg} ${moodStyle.text}`}
+              title={`Dominant mood: ${moodStyle.label}`}
+            >
+              {moodStyle.label}
+            </span>
             {palette.collectionId && (
               <span className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)]">
                 in collection

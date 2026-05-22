@@ -281,6 +281,30 @@ export function simulateCmykPrint(hex: string): PrintSimResult {
   };
 }
 
+// ─── Palette Mood ─────────────────────────────────────────────────────────────
+
+export type PaletteMood = "vivid" | "muted" | "warm" | "earthy" | "cool" | "dreamy";
+
+export function getPaletteMood(colors: { hex: string }[]): PaletteMood {
+  if (colors.length === 0) return "muted";
+  const hsls = colors
+    .map((c) => { const rgb = hexToRgb(c.hex); return rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b) : null; })
+    .filter((v): v is { h: number; s: number; l: number } => v !== null);
+  if (hsls.length === 0) return "muted";
+
+  const sinSum = hsls.reduce((s, h) => s + Math.sin((h.h * Math.PI) / 180), 0);
+  const cosSum = hsls.reduce((s, h) => s + Math.cos((h.h * Math.PI) / 180), 0);
+  const meanHue = ((Math.atan2(sinSum / hsls.length, cosSum / hsls.length) * 180) / Math.PI + 360) % 360;
+  const meanS = hsls.reduce((s, h) => s + h.s, 0) / hsls.length;
+
+  if (meanS > 55) return "vivid";
+  if (meanS < 22) return "muted";
+  if (meanHue >= 330 || meanHue < 40) return "warm";
+  if (meanHue >= 40 && meanHue < 160) return "earthy";
+  if (meanHue >= 160 && meanHue < 265) return "cool";
+  return "dreamy";
+}
+
 // ─── Collection Cohesion Score ────────────────────────────────────────────────
 
 // Returns an overall cohesion score (0–100) for a set of palettes using the
