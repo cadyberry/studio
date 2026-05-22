@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag, ArrowUpDown, Trash2, CheckSquare } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag, ArrowUpDown, Trash2, CheckSquare, Pipette } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -14,7 +14,7 @@ import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
-import { computeCohesionScore } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex } from "@/lib/utils";
 import type { Palette, Collection } from "@/types";
 
 export default function Home() {
@@ -33,6 +33,8 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors">("newest");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [colorSearchActive, setColorSearchActive] = useState(false);
+  const [colorSearchHex, setColorSearchHex] = useState("");
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -54,8 +56,10 @@ export default function Home() {
   const allUniqueTags = Array.from(new Set(palettes.flatMap((p) => p.tags ?? [])));
   const untaggedCount = palettes.filter((p) => !p.tags?.length).length;
 
+  const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
+  const COLOR_MATCH_THRESHOLD = 25;
+
   const filtered = palettes.filter((p) => {
-    const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCollection =
       activeCollection === "all" || p.collectionId === activeCollection;
     const matchesTag =
@@ -64,18 +68,31 @@ export default function Home() {
         : activeTag === "__mine__"
         ? !p.tags?.length
         : p.tags?.includes(activeTag);
+
+    if (validColorSearch) {
+      const minDelta = Math.min(...p.colors.map((c) => deltaE(c.hex, validColorSearch)));
+      return matchesCollection && matchesTag && minDelta <= COLOR_MATCH_THRESHOLD;
+    }
+
+    const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     return matchesSearch && matchesCollection && matchesTag;
   });
 
-  const sorted = [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case "newest": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case "oldest": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case "name-asc": return a.name.localeCompare(b.name);
-      case "name-desc": return b.name.localeCompare(a.name);
-      case "most-colors": return b.colors.length - a.colors.length;
-    }
-  });
+  const sorted = validColorSearch
+    ? [...filtered].sort((a, b) => {
+        const aMin = Math.min(...a.colors.map((c) => deltaE(c.hex, validColorSearch)));
+        const bMin = Math.min(...b.colors.map((c) => deltaE(c.hex, validColorSearch)));
+        return aMin - bMin;
+      })
+    : [...filtered].sort((a, b) => {
+        switch (sortBy) {
+          case "newest": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          case "oldest": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          case "name-asc": return a.name.localeCompare(b.name);
+          case "name-desc": return b.name.localeCompare(a.name);
+          case "most-colors": return b.colors.length - a.colors.length;
+        }
+      });
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -254,31 +271,87 @@ export default function Home() {
               </h2>
               {palettes.length > 0 && (
                 <>
-                  <div className="flex-1 relative">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-                    <input
-                      type="text"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search palettes…"
-                      className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[var(--surface)] px-2 py-1.5 text-[var(--muted)] hover:border-[var(--accent)] transition-colors">
-                    <ArrowUpDown size={11} className="shrink-0" />
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                      className="bg-transparent outline-none text-xs text-[var(--foreground)] cursor-pointer appearance-none"
-                      aria-label="Sort palettes"
-                    >
-                      <option value="newest">Newest</option>
-                      <option value="oldest">Oldest</option>
-                      <option value="name-asc">Name A→Z</option>
-                      <option value="name-desc">Name Z→A</option>
-                      <option value="most-colors">Most colors</option>
-                    </select>
-                  </div>
+                  {!colorSearchActive && (
+                    <>
+                      <div className="flex-1 relative">
+                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                        <input
+                          type="text"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search palettes…"
+                          className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[var(--surface)] px-2 py-1.5 text-[var(--muted)] hover:border-[var(--accent)] transition-colors">
+                        <ArrowUpDown size={11} className="shrink-0" />
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                          className="bg-transparent outline-none text-xs text-[var(--foreground)] cursor-pointer appearance-none"
+                          aria-label="Sort palettes"
+                        >
+                          <option value="newest">Newest</option>
+                          <option value="oldest">Oldest</option>
+                          <option value="name-asc">Name A→Z</option>
+                          <option value="name-desc">Name Z→A</option>
+                          <option value="most-colors">Most colors</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                  {colorSearchActive && (
+                    <>
+                      {/* Color swatch + native picker */}
+                      <div
+                        className="relative w-8 h-8 rounded-[var(--radius-sm)] overflow-hidden flex-shrink-0 border-2 border-[var(--accent)] cursor-pointer"
+                        style={{ backgroundColor: validColorSearch || "#cccccc" }}
+                        title="Click to open color picker"
+                      >
+                        <input
+                          type="color"
+                          value={validColorSearch || "#cccccc"}
+                          onChange={(e) => setColorSearchHex(e.target.value)}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          aria-label="Pick a color"
+                        />
+                      </div>
+                      {/* Hex input */}
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={colorSearchHex}
+                          onChange={(e) => {
+                            let v = e.target.value.trim();
+                            if (v && !v.startsWith("#")) v = "#" + v;
+                            setColorSearchHex(v.slice(0, 7));
+                          }}
+                          placeholder="#rrggbb — find by color"
+                          autoFocus
+                          className="w-full text-sm bg-[var(--surface)] border border-[var(--accent)] rounded-[var(--radius-sm)] pl-3 pr-3 py-1.5 outline-none transition-colors placeholder:text-[var(--muted)] font-mono"
+                          spellCheck={false}
+                        />
+                      </div>
+                      {validColorSearch && (
+                        <span className="text-[10px] text-[var(--muted)] shrink-0 whitespace-nowrap">sorted by match</span>
+                      )}
+                    </>
+                  )}
+                  {/* Color search toggle */}
+                  <button
+                    onClick={() => {
+                      setColorSearchActive(!colorSearchActive);
+                      setColorSearchHex("");
+                    }}
+                    title={colorSearchActive ? "Exit color search" : "Search by color"}
+                    className={`p-1.5 rounded-[var(--radius-sm)] border transition-all shrink-0 ${
+                      colorSearchActive
+                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-fg)]"
+                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                    }`}
+                  >
+                    <Pipette size={13} />
+                  </button>
                 </>
               )}
             </div>
@@ -338,10 +411,19 @@ export default function Home() {
               </div>
             ) : sorted.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-sm text-[var(--muted)]">No palettes match your filters.</p>
-                {(search || activeTag !== "all") && (
+                <p className="text-sm text-[var(--muted)]">
+                  {validColorSearch
+                    ? `No palettes contain a similar color (ΔE ≤ ${COLOR_MATCH_THRESHOLD}).`
+                    : "No palettes match your filters."}
+                </p>
+                {(validColorSearch || search || activeTag !== "all") && (
                   <button
-                    onClick={() => { setSearch(""); setActiveTag("all"); }}
+                    onClick={() => {
+                      setSearch("");
+                      setActiveTag("all");
+                      setColorSearchActive(false);
+                      setColorSearchHex("");
+                    }}
                     className="mt-2 text-xs text-[var(--accent)] hover:underline"
                   >
                     Clear filters
@@ -364,6 +446,7 @@ export default function Home() {
                       isSelected={selectedIds.has(palette.id)}
                       selectionActive={selectedIds.size > 0}
                       onSelect={toggleSelect}
+                      colorMatchHex={validColorSearch ?? undefined}
                     />
                   ))}
                 </AnimatePresence>

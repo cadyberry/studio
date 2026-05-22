@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check } from "lucide-react";
-import { getContrastColor } from "@/lib/utils";
+import { getContrastColor, deltaE } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -21,6 +21,7 @@ interface PaletteCardProps {
   isSelected?: boolean;
   selectionActive?: boolean;
   onSelect?: (id: string) => void;
+  colorMatchHex?: string;
 }
 
 type NamingState =
@@ -29,7 +30,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -122,6 +123,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setNaming({ type: "idle" });
   };
 
+  // Closest swatch to the active color search query
+  const bestMatchIndex = colorMatchHex
+    ? orderedColors.reduce<{ idx: number; dE: number }>(
+        (best, color, i) => {
+          const d = deltaE(color.hex, colorMatchHex);
+          return d < best.dE ? { idx: i, dE: d } : best;
+        },
+        { idx: 0, dE: Infinity }
+      )
+    : null;
+
   const handleDuplicate = () => {
     onDuplicate(palette);
     setDuplicated(true);
@@ -173,49 +185,67 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         className="flex h-28"
         style={{ listStyle: "none", margin: 0, padding: 0 }}
       >
-        {orderedColors.map((color, i) => (
-          <Reorder.Item
-            key={color._key}
-            value={color}
-            as="div"
-            style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
-            className="group/swatch cursor-grab active:cursor-grabbing"
-            onDragEnd={handleDragEnd}
-            onClick={() => {
-              // Ignore click if it immediately followed a drag release
-              if (Date.now() - dragEndTimeRef.current > 250) {
-                navigator.clipboard.writeText(color.hex);
-              }
-            }}
-            title={`${color.hex} — drag to reorder · click to copy`}
-            whileDrag={{ scale: 1.04, zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
-          >
-            {/* Hex label on hover */}
-            <div
-              className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
-              style={{ color: getContrastColor(color.hex) }}
-            >
-              <span className="text-[9px] font-mono font-bold tracking-wider">
-                {color.hex.slice(1).toUpperCase()}
-              </span>
-            </div>
-            {/* Edit pencil */}
-            <button
-              className="absolute top-1 right-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
-              style={{
-                backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
-                color: getContrastColor(color.hex),
+        {orderedColors.map((color, i) => {
+          const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
+          return (
+            <Reorder.Item
+              key={color._key}
+              value={color}
+              as="div"
+              style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
+              className="group/swatch cursor-grab active:cursor-grabbing"
+              onDragEnd={handleDragEnd}
+              onClick={() => {
+                if (Date.now() - dragEndTimeRef.current > 250) {
+                  navigator.clipboard.writeText(color.hex);
+                }
               }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditSwatch(palette, i);
-              }}
-              title="Edit color"
+              title={`${color.hex} — drag to reorder · click to copy`}
+              whileDrag={{ scale: 1.04, zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
             >
-              <Pencil size={9} />
-            </button>
-          </Reorder.Item>
-        ))}
+              {/* Color match ring */}
+              {isMatch && (
+                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+              )}
+              {/* Hex label on hover */}
+              <div
+                className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                style={{ color: getContrastColor(color.hex) }}
+              >
+                <span className="text-[9px] font-mono font-bold tracking-wider">
+                  {color.hex.slice(1).toUpperCase()}
+                </span>
+              </div>
+              {/* Color match ΔE badge */}
+              {isMatch && bestMatchIndex && (
+                <div
+                  className="absolute top-1.5 left-1.5 pointer-events-none px-1 py-px rounded text-[8px] font-bold leading-tight"
+                  style={{
+                    backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.6)",
+                    color: getContrastColor(color.hex),
+                  }}
+                >
+                  ΔE {bestMatchIndex.dE.toFixed(1)}
+                </div>
+              )}
+              {/* Edit pencil */}
+              <button
+                className="absolute top-1 right-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
+                style={{
+                  backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                  color: getContrastColor(color.hex),
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditSwatch(palette, i);
+                }}
+                title="Edit color"
+              >
+                <Pencil size={9} />
+              </button>
+            </Reorder.Item>
+          );
+        })}
       </Reorder.Group>
 
       {/* Info row */}
