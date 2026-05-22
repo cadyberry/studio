@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-22 — Session 21: Palette Mood Badge
+
+### What was done
+- **Palette mood badge** — every palette card now shows a small semantic pill (warm / cool / earthy / vivid / muted / dreamy) in the info row, computed purely from the palette's average HSL values
+  - **Algorithm**: circular mean of hue (to avoid the 0/360 wraparound problem), plus mean saturation
+    - S > 55 → **vivid** (dominant: highly saturated regardless of hue)
+    - S < 22 → **muted** (dominant: desaturated / neutral palette)
+    - Hue 330–360 or 0–40 → **warm** (reds, oranges, warm yellows)
+    - Hue 40–160 → **earthy** (yellows, sage, olive, warm greens)
+    - Hue 160–265 → **cool** (teals, blues, cyans)
+    - Hue 265–330 → **dreamy** (purples, lavender, pinks)
+  - **Styling**: each mood has a distinct, themed pill color — amber for warm, sky for cool, lime for earthy, rose for vivid, zinc for muted, violet for dreamy
+  - **Placement**: appears immediately after "N colors" in the palette card info row — always visible, never hover-gated
+  - `getPaletteMood(colors)` added to `utils.ts` as a pure function; `MOOD_STYLES` record in `PaletteCard.tsx` maps moods to Tailwind classes
+- Production build: clean compile, zero TypeScript errors, all routes passing
+
+### Key decisions
+- **Circular mean for hue, not arithmetic mean** — hue wraps at 360; atan2-based circular mean handles red palettes (hue near 0/360) correctly without special-casing
+- **Saturation gates first** — vivid and muted are "meta" moods that override hue; a vivid blue is still "vivid", not "cool"
+- **Always visible, not hover** — the mood badge is information density, not clutter; it earns permanent real estate because it's the first quick-scan descriptor for a palette's feel
+- **Six moods, not five** — "dreamy" (purple/pink range) is distinct enough from warm and cool to warrant its own category; it maps directly to a common POD aesthetic
+
+### What's next (Session 22)
+- **Import palette from hex list** — text area in the extractor panel: paste comma/space-separated hex codes (e.g. `#ff6b6b, #4ecdc4, #ffe66d`) to create a palette instantly, no image needed
+- **Mood filter in library** — add mood pills to the filter row so users can filter by warm/cool/etc across their whole library
+- **Print-ready CMYK export badge** — extend reference card PNG to include a print risk indicator for high-ΔE swatches
+
 ## 2026-05-22 — Session 20: Tag Dot Colors, Collection Count & Clipboard Hex Paste
 
 ### What was done
