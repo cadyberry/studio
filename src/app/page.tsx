@@ -519,27 +519,112 @@ export default function Home() {
                 <p className="text-sm text-[var(--muted)]">Drop an image to extract your first palette</p>
               </div>
             ) : sorted.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-sm text-[var(--muted)]">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col items-center justify-center py-16 text-center"
+              >
+                {/* Faded palette strip with search icon overlay */}
+                <div className="relative mb-5 w-44 h-10">
+                  <div className="absolute inset-0 flex rounded-xl overflow-hidden opacity-[0.18] blur-[2px]">
+                    {["#f9a8d4", "#c4b5fd", "#93c5fd", "#6ee7b7", "#fcd34d", "#fb923c"].map((c, i) => (
+                      <div key={i} className="flex-1" style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-sm flex items-center justify-center">
+                      <Search size={15} className="text-[var(--muted)]" />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-sm font-semibold text-[var(--foreground)] mb-1.5">No matching palettes</p>
+                <p className="text-xs text-[var(--muted)] max-w-[260px] leading-relaxed mb-5">
                   {validColorSearch
-                    ? `No palettes contain a similar color (ΔE ≤ ${COLOR_MATCH_THRESHOLD}).`
-                    : "No palettes match your filters."}
+                    ? `No palettes contain a color within ΔE ≤ ${COLOR_MATCH_THRESHOLD} of ${validColorSearch}.`
+                    : "Try adjusting or clearing the active filters below."}
                 </p>
-                {(validColorSearch || search || activeTag !== "all" || activeMood !== "all") && (
-                  <button
-                    onClick={() => {
-                      setSearch("");
-                      setActiveTag("all");
-                      setActiveMood("all");
-                      setColorSearchActive(false);
-                      setColorSearchHex("");
-                    }}
-                    className="mt-2 text-xs text-[var(--accent)] hover:underline"
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
+
+                {/* Active filter chips — each dismissible individually */}
+                <div className="flex flex-wrap gap-1.5 justify-center mb-5 max-w-xs">
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <Search size={10} className="shrink-0" />
+                      &ldquo;{search}&rdquo;
+                      <X size={10} className="ml-0.5 shrink-0" />
+                    </button>
+                  )}
+                  {activeTag !== "all" && (
+                    <button
+                      onClick={() => setActiveTag("all")}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: activeTag === "__mine__" ? "#a1a1aa" : getTagDotColor(activeTag) }}
+                      />
+                      {activeTag === "__mine__" ? "Mine" : activeTag.charAt(0).toUpperCase() + activeTag.slice(1)}
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
+                  {activeMood !== "all" && (
+                    <button
+                      onClick={() => setActiveMood("all")}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: MOOD_PILL_STYLES[activeMood].dot }}
+                      />
+                      {activeMood.charAt(0).toUpperCase() + activeMood.slice(1)} mood
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
+                  {activeCollection !== "all" && (
+                    <button
+                      onClick={() => setActiveCollection("all")}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <FolderOpen size={10} className="shrink-0" />
+                      {activeCollectionInfo?.name ?? "Collection"}
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
+                  {validColorSearch && (
+                    <button
+                      onClick={() => { setColorSearchActive(false); setColorSearchHex(""); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0 border border-[var(--border-subtle)]"
+                        style={{ backgroundColor: validColorSearch }}
+                      />
+                      {validColorSearch}
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setActiveTag("all");
+                    setActiveMood("all");
+                    setColorSearchActive(false);
+                    setColorSearchHex("");
+                  }}
+                  className="gap-1.5"
+                >
+                  <X size={12} />
+                  Clear all filters
+                </Button>
+              </motion.div>
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence mode="popLayout">
