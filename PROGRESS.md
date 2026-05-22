@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-22 — Session 19: Palette Reference Card Export
+
+### What was done
+- **Upgraded PNG export to a proper palette reference card** — the basic 120×108px swatch strip is replaced with a beautiful 800×368px reference card
+  - **Header (64px)**: gradient logo mark (rose→violet→sky), palette name in bold, color count right-aligned, subtle bottom border
+  - **Swatch area (190px)**: full-color blocks distributed evenly across the 800px width; last swatch absorbs sub-pixel rounding remainder so the card always fills perfectly
+  - **Label area (84px)**: white background, per-column separators; each column shows:
+    - Hex code in bold Courier (e.g. `#E8A87C`)
+    - CMYK on two lines: `C14  M38` / `Y51  K0` — two-line layout keeps text readable even with 8 colors at 100px per swatch
+    - RGB in light gray: `232 168 124`
+  - **Footer (30px)**: cream background, "Made with Palette · color intelligence for creators"
+  - Font stack: `-apple-system, Helvetica Neue` for headings; `Courier New` for color data
+  - Filename: `[palette-name]-palette.png` (unchanged)
+- Updated ExportModal action label to "Download Palette Card" / "PNG reference card — hex, RGB & CMYK per swatch"
+- Production build: clean compile, zero TypeScript errors, all 6 pages/routes passing
+
+### Key decisions
+- **800px fixed width** — consistent output regardless of color count; with 8 colors each swatch is still 100px wide, enough for all label text
+- **Two-line CMYK format** — `C__  M__` / `Y__  K__` keeps the widest possible value ("C100  M100" = 10 chars × 6px ≈ 60px) comfortable at minimum swatch width
+- **Replace, not add** — one clean "Download Palette Card" action instead of two export options; the card is strictly better for Cady's workflow (self-contained print spec, not just a color strip)
+- **Reused `hexToRgb` and `rgbToCmyk` from utils.ts** — same conversion functions already used by CMYK copy and Harmony modal; no new math, just new presentation
+
+### What's next (Session 20)
+- **Paste-from-clipboard hex** — detect clipboard content on focus in color search and auto-populate if valid hex
+- **Tag dot decorations** — colored dot beside each tag name in the sidebar inventory row (rose for trend, sky for shared, neutral for custom)
+- **Collection palette count** — show "N palettes" in the library header when a collection filter is active
+
 ## 2026-05-22 — Session 18: Palette Search by Color
 
 ### What was done
