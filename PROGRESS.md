@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-22 — Session 26: Palette Aging Indicator
+
+### What was done
+- **Palette aging indicator** — each palette card now shows a slim hover-visible footer bar with relative timestamps
+  - **"Created X ago"** — always shown in the footer (left-aligned) when the card is hovered
+  - **"Edited X ago"** — appears right-aligned when `updatedAt` differs from `createdAt`; completely absent for unmodified palettes, so there's no noise for fresh palettes
+  - **`formatRelativeAge(dateStr)` utility** added to `utils.ts` — pure function, covers the full range: "just now", "N min ago", "N hours ago", "yesterday", "N days ago", "N weeks ago", "N months ago", "N years ago"
+  - **Footer styling**: `opacity-0 group-hover:opacity-100` — zero layout shift on hover, cards maintain consistent height; subtle `bg-[var(--surface-2)]/60` tint distinguishes it from the info row; `text-[10px]` keeps it secondary/informational
+  - **Consistent with existing hover pattern** — uses the same `group`/`group-hover` Tailwind pattern already used by the action buttons and hex label overlays; no new interaction model introduced
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Both created + edited in one row** — showing both gives a quick "how old is this work, and did I revisit it?" scan; the edited timestamp only appears when there's actually a difference (no noise for untouched palettes)
+- **Relative time, not absolute** — "3 days ago" is more useful at a glance than "May 19, 2026"; the existing `formatDate` utility in the codebase handles absolute dates when needed; this is a new layer
+- **`opacity-0 group-hover:opacity-100` over AnimatePresence** — no height animation needed; the footer strip always reserves its space, so cards stay uniform; the simpler approach is the right call here
+- **Pure function at module level** — `formatRelativeAge` is deterministic math over a date string with no React dependencies; lives in `utils.ts` alongside `formatDate` and `formatRelativeAge`
+
+### What's next (Session 27)
+- **Collection cover palette** — designate one palette in a collection as the "hero"; shown first and larger in the collection view; one-click button in the palette card action row when filtered to a collection
+- **Export collection as ZIP** — "Export as ZIP" shortcut directly from the collection sidebar row or the CohesionModal, equivalent to selecting all palettes in the collection and batch-exporting
+- **Library empty state** — when no palettes match the current filters (search + tag + mood + collection), show a helpful illustrated empty state with a clear-filters button
+
+---
+
 ## 2026-05-22 — Session 25: Batch Export ZIP
 
 ### What was done
