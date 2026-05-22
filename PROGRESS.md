@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-22 — Session 22: Hex Import Mode
+
+### What was done
+- **Hex import mode in Extractor** — a mode toggle at the top of the extractor panel now lets users switch between "Image" (the existing upload flow) and "Hex" (new)
+  - **Mode toggle**: two-button tab strip (Image | Hex), animated with accent highlight; switching clears any current extraction state
+  - **Hex textarea**: monospaced, 4-row input with instructional placeholder showing all accepted formats; no submit button needed — parsing is reactive
+  - **Free-form parsing** (`parseHexList`): accepts any delimiter (comma, space, newline, semicolon, pipe); handles `#rrggbb`, `rrggbb`, `#rgb`, `rgb`; expands 3-char shorthand; deduplicates; caps at 8 colors
+  - **Live preview strip**: appears instantly as valid hex codes are detected — 64px color bar with per-swatch click-to-copy; footer shows count + "(max)" label when all 8 slots are filled
+  - **Shared save bar**: the name input + Save/Reset row is now factored out of the image-result panel and rendered at the outer level, driven by `activeColors` (either extracted image colors or parsed hex colors) — both modes share the exact same save flow
+  - **Smooth transitions**: mode switch slides input panels with a 15px x-axis slide; hex preview strip height-animates in/out; save bar fades up from below
+  - Clean reset in hex mode: X button clears both the color preview and the textarea; Saved! flash also clears textarea after 1.8s
+- Production build: clean compile, zero TypeScript errors, all 4 routes passing
+
+### Key decisions
+- **Reactive parsing, no submit button** — hex codes are typically pasted in one shot; live feedback ("3 colors") is more useful than a two-step paste→submit flow
+- **8-color cap** — matches image extraction default; enough for a POD palette, prevents the preview strip from becoming illegible on narrow panels
+- **`activeColors` abstraction** — rather than duplicating the name+save UI for each mode, a single `const activeColors = inputMode === "hex" ? hexColors : colors` drives both; no prop drilling needed
+- **3-char hex expansion** — `#abc` → `#aabbcc`; common in CSS shorthand and design tool exports; costs nothing to support
+- **Shared save flow with image mode** — forked palettes from hex paste appear in the library identically to image-extracted palettes; same tags, same editing, same export — no second-class treatment
+
+### What's next (Session 23)
+- **Mood filter in library** — add mood pills (warm / cool / earthy / vivid / muted / dreamy) to the filter row above the palette grid so users can filter their entire library by vibe
+- **Import from clipboard on focus** — in hex mode, auto-read clipboard on textarea focus and pre-fill if it contains valid hex codes (same pattern as the color-search hex input)
+- **Print-ready CMYK risk indicator** — add a small "⚠ print risk" badge to the palette reference card PNG for colors where ΔE > 10
+
+---
+
 ## 2026-05-22 — Session 21: Palette Mood Badge
 
 ### What was done
