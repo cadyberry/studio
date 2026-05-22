@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-05-22 — Session 23: Mood Filter in Library
+
+### What was done
+- **Mood filter pills in library** — a labeled "Mood" pill row now appears above the palette grid whenever the current filtered set contains 2+ distinct moods
+  - **Six moods**: warm / cool / earthy / vivid / muted / dreamy — same algorithm as the mood badge on each card (`getPaletteMood` circular-mean hue + saturation gates)
+  - **Mood-native colors**: each pill uses its own identity color (amber for warm, sky for cool, lime for earthy, rose for vivid, zinc for muted, violet for dreamy) rather than the generic accent, making the mood instantly recognizable at a glance
+  - **"All" pill** resets to unfiltered; clicking an already-active mood pill also deselects (toggle); "Clear filters" now resets mood alongside tag/search/color-search
+  - **Composes with everything**: mood filter is applied as a second pass over the already collection+tag+search-filtered `baseFiltered` set; mood counts reflect only palettes visible under current other filters, so counts are always accurate and selecting a mood never yields surprise zero results
+  - **Appears and disappears gracefully**: AnimatePresence height animation — row fades/slides in when 2+ moods are present, disappears when the library narrows to a single-mood view or is empty
+  - **Module-level constants**: `MOOD_ORDER` and `MOOD_PILL_STYLES` defined outside the component to avoid recreation on every render
+- Production build: clean compile, zero TypeScript errors, all routes passing
+
+### Key decisions
+- **Two-pass filter: `baseFiltered` → mood counts → `filtered`** — precomputing mood counts from the pre-mood-filtered set ensures the pill counts always reflect what the user will actually see when they click; also prevents calling `getPaletteMood` twice per palette in the common "all moods" case
+- **Mood row only when 2+ moods** — showing mood filters when every palette in view shares the same mood would be noise, not signal; threshold is `moodCounts.size >= 2`
+- **Toggle on active pill instead of requiring "All"** — clicking the active mood deselects it; faster than having to click a separate "All" option, especially when mood is the only active filter
+- **Module-level MOOD_PILL_STYLES** — pure data object, stable reference, no runtime cost; co-located with `MOOD_ORDER` so adding a new mood requires one place to edit
+
+### What's next (Session 24)
+- **Import from clipboard on Extractor hex focus** — in hex mode, auto-read clipboard on textarea focus and pre-fill if it contains valid hex codes (same pattern as color-search hex input, already deferred from Session 22)
+- **Palette aging indicator** — subtle "created N days ago" relative timestamp on card hover, replacing or complementing the absolute date
+- **Print-ready CMYK risk badge on reference card PNG** — add a ⚠ badge to the exported palette card for any swatch where ΔE > 10
+
+---
+
 ## 2026-05-22 — Session 22: Hex Import Mode
 
 ### What was done
