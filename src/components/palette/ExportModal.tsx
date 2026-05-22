@@ -26,8 +26,8 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const actions = [
     {
       key: "png",
-      label: "PNG Swatch Strip",
-      desc: "Download as an image with hex labels",
+      label: "Download Palette Card",
+      desc: "PNG reference card — hex, RGB & CMYK per swatch",
       icon: Download,
       onClick: () => { exportAsPngStrip(palette); },
     },
