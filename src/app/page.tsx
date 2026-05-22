@@ -261,7 +261,7 @@ export default function Home() {
                       cohesionScore >= 40 ? "#f59e0b" : "#f43f5e";
                     const isActive = activeCollection === c.id;
                     return (
-                      <div key={c.id} className="group/col flex items-center gap-1">
+                      <div key={c.id} className="group/col relative flex items-center gap-1">
                         <button
                           onClick={() => setActiveCollection(c.id)}
                           className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
@@ -292,6 +292,40 @@ export default function Home() {
                         >
                           <BarChart2 size={12} />
                         </button>
+
+                        {/* Palette preview tooltip — appears on hover to the right */}
+                        {collectionPalettes.length > 0 && (
+                          <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 pointer-events-none opacity-0 group-hover/col:opacity-100 transition-opacity duration-200 delay-100">
+                            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-2xl p-3 w-56">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-2.5 truncate">{c.name}</p>
+                              <div className="space-y-1.5">
+                                {collectionPalettes.slice(0, 7).map((p) => (
+                                  <div key={p.id} className="flex items-center gap-2">
+                                    <div className="flex rounded-sm overflow-hidden h-[14px] flex-1 min-w-0">
+                                      {p.colors.slice(0, 8).map((color, i) => (
+                                        <div key={i} className="flex-1" style={{ backgroundColor: color.hex }} />
+                                      ))}
+                                    </div>
+                                    <span className="text-[9px] text-[var(--muted)] truncate shrink-0 max-w-[72px]">{p.name}</span>
+                                  </div>
+                                ))}
+                                {collectionPalettes.length > 7 && (
+                                  <p className="text-[9px] text-[var(--muted)] text-center pt-0.5">
+                                    +{collectionPalettes.length - 7} more
+                                  </p>
+                                )}
+                              </div>
+                              {cohesionScore !== null && (
+                                <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
+                                  <span className="text-[9px] text-[var(--muted)]">Cohesion</span>
+                                  <span className="text-[10px] font-bold tabular-nums" style={{ color: scoreColor ?? "var(--muted)" }}>
+                                    {cohesionScore}/100
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
