@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-05-22 — Session 18: Palette Search by Color
+
+### What was done
+- **Palette search by color** — enter a hex code and find palettes that contain perceptually similar colors
+  - **Pipette toggle button** in the Library header switches between text search mode and color search mode
+  - **Color input**: a hex text field (`#rrggbb` format, auto-prefixes `#`) paired with a native `<input type="color">` picker — click the color swatch to open the browser's full color picker
+  - **ΔE distance filtering**: uses the existing `deltaE()` (CIE76, LAB color space) function from utils.ts; includes palettes where any swatch has ΔE ≤ 25 from the target color
+  - **Sorted by best match**: when color search is active the sort control is replaced by "sorted by match"; palettes are ranked by their minimum ΔE across all swatches (closest first)
+  - **Closest swatch highlight**: the matching swatch on each card gets a white ring-inset (always visible, not just hover) so you instantly see which color in the palette is the one that matched
+  - **ΔE badge**: a small `ΔE X.X` pill on the matching swatch shows the exact perceptual distance — e.g. `ΔE 2.4` (nearly identical) vs `ΔE 18.3` (loose match)
+  - **Empty state**: when color search returns no results, the message is threshold-aware: "No palettes contain a similar color (ΔE ≤ 25)" vs the generic filter message
+  - **"Clear filters" resets everything**: the existing clear button now also exits color search mode and clears the hex input
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **CIE76 deltaE, same function already in utils.ts** — no new dependency; reuses the same perceptual color math that drives CMYK risk badges and cohesion analysis
+- **ΔE ≤ 25 threshold** — generous enough to catch "this is clearly a pink/rose family" matches across many palettes, strict enough to exclude completely unrelated colors; not configurable (fewer knobs = less friction)
+- **Min-ΔE across all swatches** — a palette with one matching swatch is still relevant; we don't require all colors to be close
+- **Pipette toggle, not a third input type** — keeps the header clean in the common case (text search + sort); color mode is clearly a distinct affordance, not a sub-feature of text search
+- **Native `<input type="color">` over a custom picker** — the browser picker is richer than anything we could build quickly; overlay the hidden input on the swatch div to preserve the custom visual
+
+### What's next (Session 19)
+- **Tag count pill decorations** — add colored dot beside each tag name in the sidebar inventory row (rose for "trend", sky for "shared", neutral for custom)
+- **Collection palette count annotation** — show "N palettes" label in the library grid header when a collection filter is active
+- **Paste-from-clipboard hex** — when color search is active, detect clipboard content on focus and auto-populate if it's a valid hex
+
+---
+
 ## 2026-05-22 — Session 17: Tag Inventory + Shift+Arrow Nudge
 
 ### What was done
