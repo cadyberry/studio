@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, Tag, ArrowUpDown, Trash2, CheckSquare, Pipette } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -16,6 +16,12 @@ import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
 import { computeCohesionScore, deltaE, isValidHex } from "@/lib/utils";
 import type { Palette, Collection } from "@/types";
+
+function getTagDotColor(tag: string): string {
+  if (tag === "trend") return "#fb7185";
+  if (tag === "shared") return "#38bdf8";
+  return "#a1a1aa";
+}
 
 export default function Home() {
   const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection } = usePaletteStore();
@@ -55,6 +61,8 @@ export default function Home() {
 
   const allUniqueTags = Array.from(new Set(palettes.flatMap((p) => p.tags ?? [])));
   const untaggedCount = palettes.filter((p) => !p.tags?.length).length;
+  const activeCollectionInfo = activeCollection !== "all" ? (collections.find((c) => c.id === activeCollection) ?? null) : null;
+  const activeCollectionCount = activeCollectionInfo ? palettes.filter((p) => p.collectionId === activeCollection).length : 0;
 
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
   const COLOR_MATCH_THRESHOLD = 25;
@@ -180,12 +188,16 @@ export default function Home() {
                       <button
                         key={tag}
                         onClick={() => setActiveTag(tag)}
-                        className={`text-[11px] transition-colors ${
+                        className={`flex items-center gap-1 text-[11px] transition-colors ${
                           activeTag === tag
                             ? "text-[var(--accent)] font-medium"
                             : "text-[var(--muted)] hover:text-[var(--foreground)]"
                         }`}
                       >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: getTagDotColor(tag) }}
+                        />
                         {label} <span className="tabular-nums font-semibold">{count}</span>
                       </button>
                     );
@@ -269,6 +281,11 @@ export default function Home() {
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0">
                 Library
               </h2>
+              {activeCollectionInfo && (
+                <span className="text-[11px] text-[var(--muted)] font-normal normal-case tracking-normal shrink-0 truncate max-w-[140px]">
+                  — {activeCollectionInfo.name} · {activeCollectionCount}
+                </span>
+              )}
               {palettes.length > 0 && (
                 <>
                   {!colorSearchActive && (
@@ -325,6 +342,15 @@ export default function Home() {
                             let v = e.target.value.trim();
                             if (v && !v.startsWith("#")) v = "#" + v;
                             setColorSearchHex(v.slice(0, 7));
+                          }}
+                          onFocus={async () => {
+                            if (colorSearchHex) return;
+                            try {
+                              const text = await navigator.clipboard.readText();
+                              const cleaned = text.trim();
+                              const hex = cleaned.startsWith("#") ? cleaned : "#" + cleaned;
+                              if (isValidHex(hex)) setColorSearchHex(hex);
+                            } catch { /* clipboard access denied */ }
                           }}
                           placeholder="#rrggbb — find by color"
                           autoFocus
@@ -387,7 +413,10 @@ export default function Home() {
                         }`}
                       >
                         {key !== "all" && key !== "__mine__" && (
-                          <Tag size={9} className="flex-shrink-0" />
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: getTagDotColor(key) }}
+                          />
                         )}
                         {label}
                         <span className={`text-[10px] ${activeTag === key ? "opacity-70" : "opacity-50"}`}>
