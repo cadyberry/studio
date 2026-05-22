@@ -141,6 +141,40 @@ export default function Home() {
                   <div className="text-[11px] text-[var(--muted)]">22 seasonal palettes to fork</div>
                 </div>
               </button>
+              {/* Tag inventory — compact count summary */}
+              {palettes.length > 0 && (allUniqueTags.length > 0 || untaggedCount > 0) && (
+                <div className="mt-2 flex flex-wrap gap-x-2.5 gap-y-0.5 pl-1">
+                  {untaggedCount > 0 && (
+                    <button
+                      onClick={() => setActiveTag("__mine__")}
+                      className={`text-[11px] transition-colors ${
+                        activeTag === "__mine__"
+                          ? "text-[var(--accent)] font-medium"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      Mine <span className="tabular-nums font-semibold">{untaggedCount}</span>
+                    </button>
+                  )}
+                  {allUniqueTags.map((tag) => {
+                    const count = palettes.filter((p) => p.tags?.includes(tag)).length;
+                    const label = tag.charAt(0).toUpperCase() + tag.slice(1);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => setActiveTag(tag)}
+                        className={`text-[11px] transition-colors ${
+                          activeTag === tag
+                            ? "text-[var(--accent)] font-medium"
+                            : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        {label} <span className="tabular-nums font-semibold">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Collections sidebar */}

@@ -61,8 +61,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
     setHexInput(newHex);
   }, []);
 
-  const nudge = useCallback((key: "h" | "s" | "l", dir: 1 | -1) => {
-    const step = 5;
+  const nudge = useCallback((key: "h" | "s" | "l", dir: 1 | -1, step = 5) => {
     setHsl((prev) => {
       let next: number;
       if (key === "h") {
@@ -180,6 +179,16 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                       onChange={(e) =>
                         updateFromHsl({ ...hsl, [key]: Number(e.target.value) })
                       }
+                      onKeyDown={(e) => {
+                        if (!e.shiftKey) return;
+                        if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          nudge(key, -1, 10);
+                        } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                          e.preventDefault();
+                          nudge(key, 1, 10);
+                        }
+                      }}
                       className="relative w-full h-3.5 appearance-none bg-transparent cursor-pointer
                         [&::-webkit-slider-thumb]:appearance-none
                         [&::-webkit-slider-thumb]:w-3.5
@@ -191,12 +200,12 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                         [&::-webkit-slider-thumb]:shadow"
                     />
                   </div>
-                  {/* Nudge controls ± 5 step */}
+                  {/* Nudge controls ± 5 step (Shift+Arrow = 10 step) */}
                   <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       onClick={() => nudge(key, -1)}
                       className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
-                      title={`−5${unit}`}
+                      title={`−5${unit} (Shift+← for −10${unit})`}
                     >
                       <Minus size={9} />
                     </button>
@@ -206,7 +215,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                     <button
                       onClick={() => nudge(key, 1)}
                       className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
-                      title={`+5${unit}`}
+                      title={`+5${unit} (Shift+→ for +10${unit})`}
                     >
                       <Plus size={9} />
                     </button>
