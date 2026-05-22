@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-05-22 — Session 20: Tag Dot Colors, Collection Count & Clipboard Hex Paste
+
+### What was done
+- **Tag dot decorations** — every tag now has a semantic color dot wherever tags appear in the UI
+  - Rose (#fb7185) for "trend" palettes forked from the library
+  - Sky (#38bdf8) for "shared" palettes forked from a URL
+  - Neutral zinc (#a1a1aa) for any custom user tags
+  - Dots appear in both the sidebar inventory count row and the library tag filter pills
+  - In the filter pills, the dots replace the old generic `<Tag>` icon — more informative, same footprint
+  - `getTagDotColor(tag)` helper defined as a pure module-level function so it can be called from both render sites cleanly
+- **Collection context in library header** — when a collection filter is active the Library heading now reads "Library — Collection Name · N" (e.g. "Library — Spring Drop · 4"), providing instant orientation without needing to look at the left sidebar
+  - Implemented with two pre-computed derived values (`activeCollectionInfo`, `activeCollectionCount`) so the JSX stays clean
+  - Name is `truncate max-w-[140px]` to protect the layout on long collection names
+- **Paste-from-clipboard hex** — when color search mode opens, focusing the hex input now auto-reads the clipboard and pre-fills it if the clipboard contains a valid hex code
+  - Silent `try/catch` for `navigator.clipboard.readText()` — degrades gracefully when clipboard access is denied (mobile, insecure context, or permission blocked)
+  - Only fires when the input is empty so it never clobbers a value the user already typed or selected via the picker
+- Production build: clean compile, zero TypeScript errors, all 6 routes passing
+
+### Key decisions
+- **Pure color map, not a lookup table** — `getTagDotColor` uses if/if/return rather than an object literal so it's trivially extensible without mutating a shared constant
+- **Module-level function, not a hook or constant** — pure function with no React state or closures; lives at module scope next to the component, not inside it
+- **Derived state for collection info, not IIFE in JSX** — two short `const` lines in the component body are easier to read than inline `collections.find(...)` repeated across the JSX
+- **`max-w-[140px] truncate`** — collection names can be long; capping at 140px keeps the library header single-line at all viewport widths in the 340px+ right column
+
+### What's next (Session 21)
+- **Palette mood badge** — small pill on each card showing the dominant mood word (warm / cool / earthy / muted / vivid) derived from the palette's average HSL values — fast, no API needed
+- **Import palette from URL or text** — paste a URL from a site and attempt to extract the top colors from it via the server; or paste a comma-separated list of hex codes to create a palette instantly
+- **Print-ready CMYK export** — extend the palette reference card PNG to include a "CMYK for print" warning badge if any swatch has high CMYK shift risk (ΔE > 10)
+
 ## 2026-05-22 — Session 19: Palette Reference Card Export
 
 ### What was done
