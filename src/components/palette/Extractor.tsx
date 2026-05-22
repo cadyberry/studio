@@ -245,6 +245,13 @@ export default function Extractor() {
             <textarea
               value={hexInput}
               onChange={(e) => { setHexInput(e.target.value); setSaved(false); }}
+              onFocus={async () => {
+                if (hexInput) return;
+                try {
+                  const clip = await navigator.clipboard.readText();
+                  if (parseHexList(clip).length > 0) setHexInput(clip.trim());
+                } catch { /* clipboard access denied */ }
+              }}
               placeholder={"Paste hex codes — any format works:\n#ff6b6b, #4ecdc4, #ffe66d\nff6b6b 4ecdc4 ffe66d\n#f6b (3-char shorthand OK)"}
               rows={4}
               spellCheck={false}

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Palette } from "@/types";
-import { hexToRgb, rgbToCmyk } from "./utils";
+import { hexToRgb, rgbToCmyk, simulateCmykPrint } from "./utils";
 
 export function getPaletteShareUrl(palette: Palette): string {
   const base = typeof window !== "undefined" ? window.location.origin : "";
@@ -69,10 +69,66 @@ export function exportAsPngStrip(palette: Palette): void {
 
   // Swatches
   let cx = 0;
+  const printSims = palette.colors.map((c) => simulateCmykPrint(c.hex));
+
   palette.colors.forEach((color, i) => {
     const w = i === n - 1 ? CARD_W - Math.round(cx) : Math.round(SW);
     ctx.fillStyle = color.hex;
     ctx.fillRect(Math.round(cx), HEADER_H, w, SWATCH_H);
+    cx += SW;
+  });
+
+  // CMYK risk badges overlaid on swatches
+  cx = 0;
+  palette.colors.forEach((color, i) => {
+    const w = i === n - 1 ? CARD_W - Math.round(cx) : Math.round(SW);
+    const sim = printSims[i];
+
+    if (sim.risk !== "safe") {
+      const badgeColor = sim.risk === "high" ? "rgba(225,29,72,0.92)" : "rgba(217,119,6,0.92)";
+      // Badge: right-aligned in top of swatch, 4px margin
+      const label = w >= 54 ? `ΔE ${sim.deltaE}` : "!";
+      ctx.font = `bold 8px ${SANS}`;
+      const textW = ctx.measureText(label).width;
+      const badgeW = textW + 8;
+      const badgeH = 15;
+      const bx = Math.round(cx) + w - badgeW - 4;
+      const by = HEADER_H + 5;
+      const br = 3;
+
+      ctx.fillStyle = badgeColor;
+      ctx.beginPath();
+      ctx.moveTo(bx + br, by);
+      ctx.lineTo(bx + badgeW - br, by);
+      ctx.quadraticCurveTo(bx + badgeW, by, bx + badgeW, by + br);
+      ctx.lineTo(bx + badgeW, by + badgeH - br);
+      ctx.quadraticCurveTo(bx + badgeW, by + badgeH, bx + badgeW - br, by + badgeH);
+      ctx.lineTo(bx + br, by + badgeH);
+      ctx.quadraticCurveTo(bx, by + badgeH, bx, by + badgeH - br);
+      ctx.lineTo(bx, by + br);
+      ctx.quadraticCurveTo(bx, by, bx + br, by);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `bold 8px ${SANS}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, bx + badgeW / 2, by + badgeH / 2);
+    }
+
+    // Subtle "print preview" swatch strip at bottom of swatch (6px sliver)
+    if (sim.risk !== "safe") {
+      ctx.fillStyle = sim.printHex;
+      ctx.fillRect(Math.round(cx), HEADER_H + SWATCH_H - 10, w, 10);
+      // "print" label over the sliver
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = `7px ${SANS}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("print", Math.round(cx) + w / 2, HEADER_H + SWATCH_H - 5);
+    }
+
     cx += SW;
   });
 
@@ -95,6 +151,8 @@ export function exportAsPngStrip(palette: Palette): void {
 
     const rgb = hexToRgb(color.hex);
     const cmyk = rgb ? rgbToCmyk(rgb.r, rgb.g, rgb.b) : { c: 0, m: 0, y: 0, k: 100 };
+    const sim = printSims[i];
+    const cmykColor = sim.risk === "high" ? "#c8192e" : sim.risk === "caution" ? "#b45309" : "#7c7c74";
 
     ctx.fillStyle = "#1c1c19";
     ctx.font = `bold 12px ${MONO}`;
@@ -102,7 +160,7 @@ export function exportAsPngStrip(palette: Palette): void {
     ctx.textBaseline = "top";
     ctx.fillText(color.hex.toUpperCase(), centerX, labelY + 11);
 
-    ctx.fillStyle = "#7c7c74";
+    ctx.fillStyle = cmykColor;
     ctx.font = `10px ${MONO}`;
     ctx.fillText(`C${cmyk.c}  M${cmyk.m}`, centerX, labelY + 29);
     ctx.fillText(`Y${cmyk.y}  K${cmyk.k}`, centerX, labelY + 44);
@@ -122,11 +180,33 @@ export function exportAsPngStrip(palette: Palette): void {
   ctx.fillRect(0, fy, CARD_W, FOOTER_H);
   ctx.fillStyle = "#e2e2da";
   ctx.fillRect(0, fy, CARD_W, 1);
-  ctx.fillStyle = "#aaaaa0";
-  ctx.font = `10px ${SANS}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("Made with Palette · color intelligence for creators", CARD_W / 2, fy + FOOTER_H / 2);
+
+  const hasRisk = printSims.some((s) => s.risk !== "safe");
+  if (hasRisk) {
+    // Left-aligned print risk legend
+    ctx.font = `9px ${SANS}`;
+    ctx.textBaseline = "middle";
+    const midY = fy + FOOTER_H / 2;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#aaaaa0";
+    ctx.fillText("CMYK:", 16, midY);
+    ctx.fillStyle = "#b45309";
+    ctx.fillText("amber = caution (ΔE 3–10)", 52, midY);
+    ctx.fillStyle = "#aaaaa0";
+    ctx.fillText("·", 196, midY);
+    ctx.fillStyle = "#c8192e";
+    ctx.fillText("red = high risk (ΔE > 10)", 204, midY);
+    // Right-aligned branding
+    ctx.fillStyle = "#aaaaa0";
+    ctx.textAlign = "right";
+    ctx.fillText("Made with Palette", CARD_W - 16, midY);
+  } else {
+    ctx.fillStyle = "#aaaaa0";
+    ctx.font = `10px ${SANS}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Made with Palette · color intelligence for creators", CARD_W / 2, fy + FOOTER_H / 2);
+  }
 
   const link = document.createElement("a");
   link.download = `${palette.name.replace(/\s+/g, "-").toLowerCase()}-palette.png`;
