@@ -2,6 +2,36 @@
 
 ---
 
+## 2026-05-22 — Session 16: Bulk Palette Actions
+
+### What was done
+- **Bulk palette actions** — select multiple palettes and operate on them all at once
+  - Hovering any palette card reveals a small checkbox in the top-left corner of the swatch strip (the "invite to select" pattern from Gmail/Google Photos)
+  - Once any card is selected, checkboxes become persistently visible on all cards so users can keep adding to the selection
+  - Selected cards get an accent-colored border for immediate visual feedback
+  - **Bulk action bar** slides up from the bottom of the screen (spring animation) as soon as any card is selected
+    - Shows count ("3 palettes selected") with "Select all N" shortcut when not everything in the current view is selected
+    - **Move to collection**: native `<select>` with all collections + "Remove from collection" option; applying immediately clears selection
+    - **Delete N**: two-step confirm (click once to arm, click again within 2.5s to execute); auto-disarms if no second click
+    - **✕**: clears selection without any action
+  - `deletePalettes(ids)` and `assignPalettesToCollection(ids, collectionId)` added to Zustand store — both update localStorage in a single `set` call using a `Set<string>` for O(1) membership checks
+  - `useCallback` on all selection handlers to avoid unnecessary PaletteCard re-renders when selection state changes
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Checkbox on hover, always-on when any selected** — balances discoverability (you can always start selecting) with visual cleanliness (no checkboxes cluttering an uncluttered library view)
+- **`Set<string>` for selection state** — O(1) has/add/delete; spread into array only at action time
+- **`useCallback` for toggleSelect/clearSelection/selectAllVisible** — since these are passed as props to every PaletteCard, stable references prevent an O(n) re-render cascade on every selection change
+- **Two-step confirm for bulk delete** — deleting 10 palettes at once is a significant action; the armed state times out at 2.5s so a mis-click can't trap users
+- **Applying collection assignment clears selection** — common pattern: after a bulk action is done, you want to see the result, not stay in selection mode
+
+### What's next (Session 17)
+- **Palette count by tag in sidebar** — show "Mine 4 · Trend 7" below the Discover button (this has been deferred since Session 10!)
+- **Keyboard nudge in SwatchEditor (Shift+Arrow)** — step H/S/L by 10 units when Shift is held on a focused range slider
+- **Palette search by color** — enter a hex value and find palettes that contain similar colors
+
+---
+
 ## 2026-05-21 — Session 15: Duplicate Palette Action
 
 ### What was done
