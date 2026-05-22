@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-05-22 — Session 17: Tag Inventory + Shift+Arrow Nudge
+
+### What was done
+- **Tag inventory in sidebar** — finally delivered after 7 sessions of deferral (planned since Session 10)
+  - Compact count row appears below the Discover / Trend Library button whenever any palettes exist
+  - Shows "Mine 4", "Trend 7", "Shared 2" etc. drawn live from the palette store — no stale data possible
+  - Each count is a clickable filter button: clicking activates that tag filter (same as the pill row in the library) and highlights in `var(--accent)` when active
+  - Renders only when `palettes.length > 0` and at least one tag or untagged palette exists; disappears cleanly when the library is empty
+  - Zero new state — reads the already-computed `allUniqueTags` and `untaggedCount` variables, so no extra calculation
+- **Shift+Arrow keyboard nudge in SwatchEditor** — 10-step jumps on focused H/S/L sliders
+  - `onKeyDown` on each range slider intercepts Shift+Arrow{Left/Right/Up/Down}; calls `nudge(key, dir, 10)` and `preventDefault` so the native 1-step doesn't also fire
+  - `nudge()` now accepts an optional `step` parameter (default 5) — existing ±5 click-buttons unchanged
+  - Tooltips on ± buttons updated to document the Shift+Arrow shortcut: "−5° (Shift+← for −10°)"
+  - Arrow↑ treated same as →, Arrow↓ same as ← (consistent with typical range slider keyboard conventions)
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Clickable inventory items, not just text** — making each count a filter button means the left panel serves as both inventory and navigation; one click takes you directly to that tag's palette view
+- **`activeTag` highlight on sidebar counts** — same state drives both the sidebar counts and the pill row, so both update in sync with no extra wiring
+- **`preventDefault` on Shift+Arrow** — without it the browser would fire the 10-step nudge AND the native 1-step, resulting in an 11-step jump on some browsers
+- **`nudge(key, dir, 10)` not a separate `bigNudge`** — a single function with an optional step param is cleaner than duplicating the wraparound/clamp logic
+
+### What's next (Session 18)
+- **Palette search by color** — enter a hex value and find palettes that contain perceptually similar colors (deltaE distance, not exact match)
+- **Tag count pill decorations** — add a small colored dot beside the tag name in the inventory row to match the palette card tag badge colors (rose for "trend", sky for "shared")
+- **Collection palette count annotation** — show a subtle "N in collection" count on the library grid header when a collection is active
+
+---
+
 ## 2026-05-22 — Session 16: Bulk Palette Actions
 
 ### What was done
