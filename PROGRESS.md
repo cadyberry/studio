@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-05-22 — Session 25: Batch Export ZIP
+
+### What was done
+- **Batch export to ZIP** — select any number of palettes in the library, then click "Export ZIP" in the bulk action bar to download a single ZIP file containing one PNG reference card per palette
+  - **New `batchExportZip(palettes)` function** in `exportPalette.ts` — async, streams each palette through the existing `buildPaletteCanvas` logic (the same full 800×368px reference card with hex/RGB/CMYK labels and CMYK risk badges), converts each canvas to a PNG Blob, and bundles them via JSZip
+  - **Filename deduplication** — if two palettes share the same slug (e.g. two palettes named "Sunset"), files are disambiguated as `sunset-1-palette.png` / `sunset-2-palette.png`; unique names remain `sunset-palette.png`
+  - **ZIP filename** includes today's date: `palette-export-2026-05-22.zip`
+  - **Canvas extracted to `buildPaletteCanvas`** — the drawing logic is now a pure helper used by both `exportAsPngStrip` (single) and `batchExportZip` (multi); no code duplication
+  - **Loading state in bulk bar** — the "Export ZIP" button shows a spinning `Loader2` icon and "Exporting…" label while the ZIP is being generated; `disabled` blocks double-clicks; reverts automatically when done
+  - **jszip added as a dependency** — lazy-imported inside `batchExportZip` to keep the initial bundle lean
+- Production build: clean compile, zero TypeScript errors, all routes passing
+
+### Key decisions
+- **Lazy `import("jszip")`** — dynamic import means JSZip is only loaded when the user actually triggers a batch export, not on initial page load; keeps the main bundle minimal
+- **`canvas.toBlob()` over `toDataURL()`** — Blob is a native binary representation; avoids the base64 encoding overhead that `toDataURL` introduces for each palette, which matters when exporting 20+ palettes
+- **Deduplicate filenames by slug, not by palette ID** — Zip file consumers (Finder, Windows Explorer, Dropbox) see the filename, not the ID; deduplication must work at the visible level
+- **`URL.revokeObjectURL` after 10s** — the ZIP blob is freed from memory after the browser has had time to start the download; avoids a memory leak without racing the download dialog
+
+### What's next (Session 26)
+- **Palette aging indicator** — relative "created N days ago" timestamp shown on card hover; helps Cady scan for recent vs. old work
+- **Collection cover palette** — designate one palette as the collection's "hero", shown first and larger in the collection view
+- **Export all palettes in collection** — "Export collection as ZIP" shortcut from the cohesion modal or collection sidebar row
+
+---
+
 ## 2026-05-22 — Session 24: CMYK Print Risk Badges on PNG Export + Clipboard Hex Import
 
 ### What was done

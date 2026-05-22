@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2 } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -15,6 +15,7 @@ import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, type PaletteMood } from "@/lib/utils";
+import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection } from "@/types";
 
 const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
@@ -50,6 +51,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors">("newest");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkExporting, setBulkExporting] = useState(false);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
@@ -642,6 +644,27 @@ export default function Home() {
                   </select>
                 </div>
               )}
+
+              {/* Batch export ZIP */}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkExporting}
+                onClick={async () => {
+                  setBulkExporting(true);
+                  const targets = palettes.filter((p) => selectedIds.has(p.id));
+                  try {
+                    await batchExportZip(targets);
+                  } finally {
+                    setBulkExporting(false);
+                  }
+                }}
+                className="shrink-0 gap-1.5"
+                title="Download selected palettes as a ZIP of PNG cards"
+              >
+                {bulkExporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                {bulkExporting ? "Exporting…" : `Export ZIP`}
+              </Button>
 
               {/* Bulk delete */}
               <Button

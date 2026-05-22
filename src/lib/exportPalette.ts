@@ -9,7 +9,7 @@ export function getPaletteShareUrl(palette: Palette): string {
   return `${base}/p?n=${encodeURIComponent(palette.name)}&c=${colors}`;
 }
 
-export function exportAsPngStrip(palette: Palette): void {
+function buildPaletteCanvas(palette: Palette): HTMLCanvasElement | null {
   const n = palette.colors.length;
   const CARD_W = 800;
   const SW = CARD_W / n;
@@ -23,7 +23,7 @@ export function exportAsPngStrip(palette: Palette): void {
   canvas.width = CARD_W;
   canvas.height = TOTAL_H;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) return null;
 
   // Background
   ctx.fillStyle = "#fafaf8";
@@ -86,7 +86,6 @@ export function exportAsPngStrip(palette: Palette): void {
 
     if (sim.risk !== "safe") {
       const badgeColor = sim.risk === "high" ? "rgba(225,29,72,0.92)" : "rgba(217,119,6,0.92)";
-      // Badge: right-aligned in top of swatch, 4px margin
       const label = w >= 54 ? `ΔE ${sim.deltaE}` : "!";
       ctx.font = `bold 8px ${SANS}`;
       const textW = ctx.measureText(label).width;
@@ -117,11 +116,9 @@ export function exportAsPngStrip(palette: Palette): void {
       ctx.fillText(label, bx + badgeW / 2, by + badgeH / 2);
     }
 
-    // Subtle "print preview" swatch strip at bottom of swatch (6px sliver)
     if (sim.risk !== "safe") {
       ctx.fillStyle = sim.printHex;
       ctx.fillRect(Math.round(cx), HEADER_H + SWATCH_H - 10, w, 10);
-      // "print" label over the sliver
       ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.font = `7px ${SANS}`;
       ctx.textAlign = "center";
@@ -183,7 +180,6 @@ export function exportAsPngStrip(palette: Palette): void {
 
   const hasRisk = printSims.some((s) => s.risk !== "safe");
   if (hasRisk) {
-    // Left-aligned print risk legend
     ctx.font = `9px ${SANS}`;
     ctx.textBaseline = "middle";
     const midY = fy + FOOTER_H / 2;
@@ -196,7 +192,6 @@ export function exportAsPngStrip(palette: Palette): void {
     ctx.fillText("·", 196, midY);
     ctx.fillStyle = "#c8192e";
     ctx.fillText("red = high risk (ΔE > 10)", 204, midY);
-    // Right-aligned branding
     ctx.fillStyle = "#aaaaa0";
     ctx.textAlign = "right";
     ctx.fillText("Made with Palette", CARD_W - 16, midY);
@@ -208,10 +203,60 @@ export function exportAsPngStrip(palette: Palette): void {
     ctx.fillText("Made with Palette · color intelligence for creators", CARD_W / 2, fy + FOOTER_H / 2);
   }
 
+  return canvas;
+}
+
+export function exportAsPngStrip(palette: Palette): void {
+  const canvas = buildPaletteCanvas(palette);
+  if (!canvas) return;
   const link = document.createElement("a");
   link.download = `${palette.name.replace(/\s+/g, "-").toLowerCase()}-palette.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
+}
+
+export async function batchExportZip(palettes: Palette[]): Promise<void> {
+  const { default: JSZip } = await import("jszip");
+  const zip = new JSZip();
+
+  const toBlob = (canvas: HTMLCanvasElement): Promise<Blob> =>
+    new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas.toBlob failed"))), "image/png")
+    );
+
+  // Track duplicate filenames and append index to disambiguate
+  const nameCounts = new Map<string, number>();
+  for (const palette of palettes) {
+    const slug = palette.name.replace(/\s+/g, "-").toLowerCase();
+    nameCounts.set(slug, (nameCounts.get(slug) ?? 0) + 1);
+  }
+  const nameUsed = new Map<string, number>();
+
+  for (const palette of palettes) {
+    const canvas = buildPaletteCanvas(palette);
+    if (!canvas) continue;
+    const blob = await toBlob(canvas);
+    const slug = palette.name.replace(/\s+/g, "-").toLowerCase();
+    const total = nameCounts.get(slug) ?? 1;
+    let filename: string;
+    if (total > 1) {
+      const idx = (nameUsed.get(slug) ?? 0) + 1;
+      nameUsed.set(slug, idx);
+      filename = `${slug}-${idx}-palette.png`;
+    } else {
+      filename = `${slug}-palette.png`;
+    }
+    zip.file(filename, blob);
+  }
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(zipBlob);
+  const link = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  link.download = `palette-export-${date}.zip`;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export function copyCssVariables(palette: Palette): void {
