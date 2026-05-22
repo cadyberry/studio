@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-22 — Session 28: Collection Palette Preview on Hover
+
+### What was done
+- **Palette preview tooltip on collection sidebar hover** — hovering any collection row in the sidebar reveals a floating panel to the right showing all that collection's palette strips at a glance
+  - **Zero state, pure CSS**: uses the existing `group/col` Tailwind group pattern (`opacity-0 group-hover/col:opacity-100 transition-opacity delay-100`) — no JS state, no re-renders, no Framer Motion needed; tooltip is always in the DOM, just invisible
+  - **Panel contents**: collection name as header, one row per palette showing a proportionally-sliced color strip (h-14px) + truncated palette name beside it; up to 7 palettes shown, with "+N more" count if the collection is larger
+  - **Cohesion score footer**: when the collection has ≥ 2 palettes, the bottom of the panel shows the cohesion score in its color-coded format (green/blue/amber/red) with a divider — same data already visible on the sidebar row, but reinforced in context
+  - **Positioning**: `left-full ml-3 top-1/2 -translate-y-1/2` anchors the panel to the right of the row, vertically centered, floating into the grid gap between sidebar and library — only visible at `lg` breakpoints where the two-column layout exists (`hidden lg:block`)
+  - **100ms delay before appearing** — prevents flash on pass-through mouse movements; feels intentional rather than reactive
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Pure CSS over state/Framer Motion** — the tooltip doesn't need to exist in the React render cycle; it's always positioned, always sized, just opacity-hidden until hover; no re-render on every mouse-enter/leave
+- **`hidden lg:block`** — the preview only shows in the wide two-column layout; on mobile/tablet the collections stack above the library and there's no room to the right
+- **100ms delay** — `delay-100` on the transition class prevents the panel appearing on every rapid sidebar scan; feels calm rather than reactive
+- **7 palettes as the cap** — empirical: most collections have 3–8 palettes; 7 rows at 14px each fits a typical viewport sidebar height; "+N more" covers the rest honestly
+
+### What's next (Session 29)
+- **Collection cover palette** — designate one palette in a collection as the "hero"; shown first and visually larger in the library grid when filtering to that collection; a crown/star icon in the palette card action row (context-aware: only shows when viewing a collection)
+- **Palette rename from card header** — double-click the palette name on the card to rename inline (currently requires the action menu Rename option)
+- **Quick palette duplication from preview** — add a "Duplicate" shortcut in the hover tooltip panel so you can fork a palette from the collection preview without navigating to the card
+
+---
+
 ## 2026-05-22 — Session 27: Illustrated Library Empty State
 
 ### What was done
