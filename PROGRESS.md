@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-05-22 — Session 27: Illustrated Library Empty State
+
+### What was done
+- **Illustrated library empty state** — the bare "No palettes match your filters." text (Session 1 era) is replaced with a fully designed, context-aware empty state that renders whenever filtered results are zero
+  - **Illustration**: a faded, blurred 6-color palette strip (opacity 18%, 2px blur) with a centered white card bearing a `Search` icon — communicates "palettes exist but are hidden" without requiring any real art assets
+  - **Context-aware headline + body copy**: "No matching palettes" + tailored sub-text: color search mode says "No palettes contain a color within ΔE ≤ 25 of #xxxxxx" while filter mode says "Try adjusting or clearing the active filters below"
+  - **Individually dismissible filter chips** — each active filter gets its own chip with an × button so you can remove just the mood or just the search term without blowing away everything:
+    - Text search chip: shows the quoted search term + Search icon
+    - Tag chip: shows tag dot (with correct color) + tag name
+    - Mood chip: shows mood-colored dot + "Warm mood" / "Vivid mood" etc.
+    - Collection chip: shows FolderOpen icon + collection name (dismisses to "all palettes", distinct from bulk clear)
+    - Color search chip: shows a live 12px color swatch + hex code
+  - **"Clear all filters" button**: styled `Button` (outline/sm) with an X icon; resets search, tag, mood, and color search — does NOT clear collection because collection is also navigation context
+  - **Entrance animation**: `motion.div` with `opacity: 0 → 1, y: 8 → 0` on mount; 0.25s, no spring bounce — appropriate weight for an informational state
+- Production build: clean compile, zero TypeScript errors, all routes passing
+
+### Key decisions
+- **Faded palette strip as the illustration** — uses the same 6 brand colors already in the first-load empty state; zero new assets; conveys "your palettes are there, just filtered" rather than "nothing exists"
+- **Individual chip dismiss over filter-row toggle** — when in deep filter state (mood + collection + search all active), being able to peel back one filter at a time is faster than clearing all and re-applying; the existing clear-all button covers the "just reset everything" case
+- **Collection not cleared by clear-all** — collections are navigation (left sidebar); clearing them from inside the library would be disorienting; the collection chip's individual × gives the escape hatch
+- **No AnimatePresence for chips** — chips appear together as a static group; individual chip removal doesn't need exit animation since the whole empty state exits when results populate
+
+### What's next (Session 28)
+- **Collection cover palette** — designate one palette in a collection as the "hero"; shown first and larger in the collection view; one-click button in the palette card action row when filtered to a collection
+- **Export collection as ZIP** — "Export as ZIP" shortcut directly from the collection sidebar row or the CohesionModal (selecting all palettes in a collection without manual bulk-select)
+- **Palette preview on hover** — hovering a collection sidebar row shows a mini strip of its palette colors as a tooltip/popover
+
+---
+
+---
+
 ## 2026-05-22 — Session 26: Palette Aging Indicator
 
 ### What was done
