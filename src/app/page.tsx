@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2 } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -56,6 +56,13 @@ export default function Home() {
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
+  const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
+
+  useEffect(() => {
+    if (!exportToast) return;
+    const t = setTimeout(() => setExportToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [exportToast]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -313,6 +320,7 @@ export default function Home() {
                               setCollectionExporting(c.id);
                               try {
                                 await batchExportZip(collectionPalettes, c.name);
+                                setExportToast({ count: collectionPalettes.length, source: c.name });
                               } finally {
                                 setCollectionExporting(null);
                               }
@@ -821,6 +829,7 @@ export default function Home() {
                   const targets = palettes.filter((p) => selectedIds.has(p.id));
                   try {
                     await batchExportZip(targets);
+                    setExportToast({ count: targets.length });
                   } finally {
                     setBulkExporting(false);
                   }
@@ -862,6 +871,38 @@ export default function Home() {
                 <X size={14} />
               </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Export success toast */}
+      <AnimatePresence>
+        {exportToast && (
+          <motion.div
+            key="export-toast"
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+            className="fixed bottom-6 right-6 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] shadow-2xl px-4 py-3 flex items-center gap-3 max-w-xs"
+          >
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+              <CheckCircle2 size={15} className="text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-[var(--foreground)] leading-tight">
+                {exportToast.count === 1 ? "1 palette exported" : `${exportToast.count} palettes exported`}
+              </p>
+              <p className="text-xs text-[var(--muted)] leading-tight mt-0.5">
+                {exportToast.source ? `${exportToast.source} · ZIP downloaded` : "ZIP downloaded"}
+              </p>
+            </div>
+            <button
+              onClick={() => setExportToast(null)}
+              className="flex-shrink-0 p-1 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+            >
+              <X size={12} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
