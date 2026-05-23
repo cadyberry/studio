@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-23 — Session 30: Export Collection as ZIP
+
+### What was done
+- **Export collection as ZIP** — one-click batch export directly from the collection sidebar, no manual selection required
+  - **Archive icon button** appears on collection row hover, positioned left of the existing cohesion (BarChart2) button; only shown when the collection has ≥ 1 palette
+  - **Animated loading state**: while the ZIP is generating, the Archive icon is replaced by a spinning Loader2; the button is non-interactive during generation (early return if `collectionExporting === c.id`)
+  - **Named ZIP file**: exports as `{collection-slug}-{date}.zip` (e.g. `spring-drop-2026-05-23.zip`) so the download is immediately identifiable; previously all batch ZIPs used the generic `palette-export-{date}.zip` name
+  - **Updated `batchExportZip`** in `exportPalette.ts`: added optional `zipName?: string` second parameter; when provided, the ZIP is named `{slug}-{date}.zip`; without it, the existing `palette-export-{date}.zip` fallback is used — backward-compatible, bulk-select export unchanged
+  - **`collectionExporting: string | null` state** — tracks which collection (by ID) is currently generating; prevents double-clicks; per-collection so multiple collections could theoretically export concurrently (one at a time in practice since the buttons are hover-gated)
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Archive icon (not Download)** — `Download` is already used in the bulk-select bar; `Archive` reads as "package this collection" which is semantically closer to ZIP creation; avoids visual ambiguity in the sidebar
+- **`e.stopPropagation()` on click** — the archive button sits inside the same flex row as the collection-select button; without stopPropagation, clicking export would also switch the active collection view
+- **Only shown when count > 0** — an empty collection has nothing to export; hiding the button avoids a no-op interaction
+- **Backward-compatible `zipName` param** — existing callers (`batchExportZip(targets)` in the bulk-select bar) work unchanged; collection export just passes the name as a second arg
+
+### What's next (Session 31)
+- **Palette rename inline from card header** — double-click the palette name on the card to rename inline (currently requires the Edit2 action button in the hover row)
+- **Quick duplicate from collection hover tooltip** — add a Duplicate shortcut inside the palette preview tooltip that appears on collection hover
+- **Palette count on export card** — show total palette count and collection name in the ZIP export confirmation or a post-export toast
+
+---
+
 ## 2026-05-23 — Session 29: Collection Cover Palette
 
 ### What was done
