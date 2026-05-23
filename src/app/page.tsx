@@ -15,7 +15,7 @@ import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
-import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, type PaletteMood } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection } from "@/types";
 
@@ -131,6 +131,26 @@ export default function Home() {
   const untaggedCount = palettes.filter((p) => !p.tags?.length).length;
   const activeCollectionInfo = activeCollection !== "all" ? (collections.find((c) => c.id === activeCollection) ?? null) : null;
   const activeCollectionCount = activeCollectionInfo ? palettes.filter((p) => p.collectionId === activeCollection).length : 0;
+
+  // Library stats (sidebar widget)
+  const totalSwatches = palettes.reduce((sum, p) => sum + p.colors.length, 0);
+  const annotationPct = palettes.length > 0
+    ? Math.round((palettes.filter((p) => p.notes).length / palettes.length) * 100)
+    : 0;
+  const moodTally = new Map<PaletteMood, number>();
+  for (const p of palettes) {
+    const m = getPaletteMood(p.colors);
+    moodTally.set(m, (moodTally.get(m) ?? 0) + 1);
+  }
+  const topMood: PaletteMood | null = palettes.length > 0
+    ? [...moodTally.entries()].reduce((best, cur) => cur[1] > best[1] ? cur : best)[0]
+    : null;
+  const oldestCreatedAt = palettes.length > 0
+    ? palettes.reduce((oldest, p) => p.createdAt < oldest ? p.createdAt : oldest, palettes[0].createdAt)
+    : null;
+  const oldestSince = oldestCreatedAt
+    ? new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(new Date(oldestCreatedAt))
+    : null;
 
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
   const COLOR_MATCH_THRESHOLD = 25;
@@ -271,6 +291,63 @@ export default function Home() {
               </h2>
               <Extractor />
             </div>
+
+            {/* Library stats panel */}
+            {palettes.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-3">
+                  Stats
+                </h2>
+                <div className="border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden text-center">
+                  <div className="grid grid-cols-3 divide-x divide-[var(--border)]">
+                    <div className="px-2 py-2.5 bg-[var(--surface)]">
+                      <div className="text-sm font-bold tabular-nums leading-none">{palettes.length}</div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">palettes</div>
+                    </div>
+                    <div className="px-2 py-2.5 bg-[var(--surface)]">
+                      <div className="text-sm font-bold tabular-nums leading-none">{totalSwatches}</div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">swatches</div>
+                    </div>
+                    <div className="px-2 py-2.5 bg-[var(--surface)]">
+                      <div className="text-sm font-bold tabular-nums leading-none">{collections.length}</div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">collections</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 divide-x divide-[var(--border)] border-t border-[var(--border)]">
+                    <div className="px-2 py-2.5 bg-[var(--surface)]">
+                      <div className="text-sm font-bold tabular-nums leading-none">{annotationPct}%</div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">annotated</div>
+                    </div>
+                    <div className="px-2 py-2.5 bg-[var(--surface)] flex flex-col items-center justify-center">
+                      {topMood ? (
+                        <>
+                          <div className="flex items-center gap-1 leading-none">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: MOOD_PILL_STYLES[topMood].dot }}
+                            />
+                            <span className="text-[11px] font-semibold">{topMood}</span>
+                          </div>
+                          <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">top mood</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-sm font-bold leading-none">—</div>
+                          <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">top mood</div>
+                        </>
+                      )}
+                    </div>
+                    <div
+                      className="px-2 py-2.5 bg-[var(--surface)]"
+                      title={oldestCreatedAt ? `Oldest palette: ${formatDate(oldestCreatedAt)}` : undefined}
+                    >
+                      <div className="text-[11px] font-semibold leading-none truncate">{oldestSince ?? "—"}</div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">oldest</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Discover button */}
             <div>
