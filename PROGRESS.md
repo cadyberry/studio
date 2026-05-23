@@ -2,6 +2,38 @@
 
 ---
 
+## 2026-05-23 — Session 41: Inline Collection Rename + Jump-to-Collection Badge
+
+### What was done
+- **Inline collection rename** — double-click any collection name in the sidebar to rename it in-place, no modal needed
+  - Button swaps for an edit-mode `<div>` (avoids the invalid input-inside-button DOM nesting)
+  - Input auto-focuses, prefilled with current name and ready to overtype
+  - **Enter or blur commits**; **Escape cancels** — same conventions as palette inline rename
+  - Archive and cohesion hover buttons hide during rename to reduce visual noise
+  - Hover tooltip (`title="Double-click to rename"`) provides discoverability
+  - `commitCollectionRename` and `cancelCollectionRename` helpers manage state cleanly
+- **Jump-to-collection from palette card badge** — the "in collection" chip on each palette card is now interactive
+  - Shows the **actual collection name** instead of the generic "in collection" text (falls back gracefully if the collection isn't found)
+  - Clicking it sets `activeCollection` to that collection's ID, navigating the sidebar and filtering the library instantly
+  - Uses `e.stopPropagation()` so it doesn't accidentally trigger other card click handlers
+  - Hover accent treatment (`bg-[var(--accent)] text-[var(--accent-fg)]`) signals clickability
+  - `collectionName` and `onJumpToCollection` props added to PaletteCard; page.tsx resolves the name with a `collections.find()` lookup per card
+- **Keyboard help modal updated** — "DblClick — Start rename (palette name or collection)" added to the Inline Rename group
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Edit-mode div, not input-inside-button** — browsers disallow interactive elements nested inside buttons; swapping the entire row to a `<div>` when editing is the correct structural solution and avoids focus/click event ambiguity
+- **`commitCollectionRename` with `useCallback`** — stable reference needed because it's used as an `onBlur` handler on the input; without `useCallback`, a closure update mid-edit could fire with stale state
+- **Badge shows collection name, not generic text** — "Spring Drop" is more useful than "in collection" at a glance; having the name on the badge is also a navigational affordance, reinforcing what clicking does
+- **`collections.find()` in display loop, not in store** — PaletteCard doesn't need to know the full collections list; passing just the resolved name keeps component coupling minimal
+
+### What's next (Session 42)
+- **Palette stats panel** — a compact stats widget in the left sidebar: total swatches, most-used mood, collection count, annotation coverage %, oldest/newest palette dates
+- **"Clear collection" quick action on badge** — an × on the collection badge to remove the palette from its collection without opening the CollectionModal
+- **Collection description tooltip** — hover the collection name to see its description (if set) in a small tooltip
+
+---
+
 ## 2026-05-23 — Session 40: Sort by Most Annotated, Interactive Collection Tooltip, Age Badge Tooltip
 
 ### What was done
