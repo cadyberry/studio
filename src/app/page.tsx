@@ -36,7 +36,7 @@ function getTagDotColor(tag: string): string {
 }
 
 export default function Home() {
-  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection } = usePaletteStore();
+  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -126,6 +126,25 @@ export default function Home() {
           case "most-colors": return b.colors.length - a.colors.length;
         }
       });
+
+  const coverPaletteId = activeCollectionInfo?.coverPaletteId ?? null;
+
+  // Pin cover palette to front of grid when browsing a specific collection
+  const displayList = (() => {
+    if (activeCollection === "all" || !coverPaletteId) return sorted;
+    const coverIdx = sorted.findIndex((p) => p.id === coverPaletteId);
+    if (coverIdx <= 0) return sorted;
+    const reordered = [...sorted];
+    const [cover] = reordered.splice(coverIdx, 1);
+    reordered.unshift(cover);
+    return reordered;
+  })();
+
+  const handleSetCover = (palette: Palette) => {
+    if (activeCollection === "all") return;
+    const newCoverId = palette.id === coverPaletteId ? undefined : palette.id;
+    updateCollection(activeCollection, { coverPaletteId: newCoverId });
+  };
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -662,22 +681,28 @@ export default function Home() {
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence mode="popLayout">
-                  {sorted.map((palette) => (
-                    <PaletteCard
-                      key={palette.id}
-                      palette={palette}
-                      onExport={setExportTarget}
-                      onRename={setRenameTarget}
-                      onAssignCollection={setCollectionTarget}
-                      onHarmony={setHarmonyTarget}
-                      onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
-                      onDuplicate={(p) => duplicatePalette(p.id)}
-                      isSelected={selectedIds.has(palette.id)}
-                      selectionActive={selectedIds.size > 0}
-                      onSelect={toggleSelect}
-                      colorMatchHex={validColorSearch ?? undefined}
-                    />
-                  ))}
+                  {displayList.map((palette) => {
+                    const isCoverPalette = activeCollection !== "all" && palette.id === coverPaletteId;
+                    return (
+                      <PaletteCard
+                        key={palette.id}
+                        palette={palette}
+                        onExport={setExportTarget}
+                        onRename={setRenameTarget}
+                        onAssignCollection={setCollectionTarget}
+                        onHarmony={setHarmonyTarget}
+                        onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
+                        onDuplicate={(p) => duplicatePalette(p.id)}
+                        isSelected={selectedIds.has(palette.id)}
+                        selectionActive={selectedIds.size > 0}
+                        onSelect={toggleSelect}
+                        colorMatchHex={validColorSearch ?? undefined}
+                        isCover={isCoverPalette}
+                        onSetCover={activeCollection !== "all" ? handleSetCover : undefined}
+                        className={isCoverPalette ? "sm:col-span-2" : ""}
+                      />
+                    );
+                  })}
                 </AnimatePresence>
               </motion.div>
             )}

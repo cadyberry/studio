@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -31,6 +31,9 @@ interface PaletteCardProps {
   selectionActive?: boolean;
   onSelect?: (id: string) => void;
   colorMatchHex?: string;
+  isCover?: boolean;
+  onSetCover?: (palette: Palette) => void;
+  className?: string;
 }
 
 type NamingState =
@@ -39,7 +42,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -168,8 +171,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
+        isCover ? "border-amber-300 shadow-sm ring-1 ring-amber-200/60" :
         isSelected ? "border-[var(--accent)] shadow-sm" : "border-[var(--border)]"
-      }`}
+      } ${className ?? ""}`}
     >
       {/* Selection checkbox */}
       {onSelect && (
@@ -188,13 +192,21 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         </button>
       )}
 
+      {/* Cover crown badge */}
+      {isCover && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400 shadow-sm pointer-events-none">
+          <Crown size={9} className="text-white fill-white" />
+          <span className="text-[9px] font-bold text-white leading-none">cover</span>
+        </div>
+      )}
+
       {/* Swatch strip — drag to reorder */}
       <Reorder.Group
         as="div"
         axis="x"
         values={orderedColors}
         onReorder={handleReorder}
-        className="flex h-28"
+        className={`flex ${isCover ? "h-40" : "h-28"}`}
         style={{ listStyle: "none", margin: 0, padding: 0 }}
       >
         {orderedColors.map((color, i) => {
@@ -336,6 +348,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           >
             {duplicated ? <Check size={13} className="text-green-500" /> : <CopyPlus size={13} />}
           </Button>
+          {onSetCover && (
+            <Button
+              variant={isCover ? "outline" : "ghost"}
+              size="sm"
+              onClick={() => onSetCover(palette)}
+              title={isCover ? "Remove as collection cover" : "Set as collection cover"}
+              className={isCover ? "text-amber-500 border-amber-300" : ""}
+            >
+              <Crown size={13} className={isCover ? "fill-amber-400 text-amber-500" : ""} />
+            </Button>
+          )}
           <Button
             variant={confirming ? "danger" : "ghost"}
             size="sm"

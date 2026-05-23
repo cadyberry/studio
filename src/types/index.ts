@@ -18,6 +18,7 @@ export interface Collection {
   id: string;
   name: string;
   description?: string;
+  coverPaletteId?: string;
   createdAt: string;
   updatedAt: string;
 }
