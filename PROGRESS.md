@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-23 — Session 36: Notes Search Integration
+
+### What was done
+- **Notes search integration** — the search bar now matches against palette notes text in addition to palette names
+  - `matchesSearch` in `page.tsx` extended: checks both `p.name` and `p.notes` against the search query — palettes surface when their creative annotations contain the search term
+  - **Search placeholder updated** to "Search palettes & notes…" to signal the extended capability without documentation
+  - **Inline highlight** — matched search terms are highlighted in both the palette name and the note preview with a yellow `<mark>` tag (dark-mode aware: `bg-yellow-200 dark:bg-yellow-800/60`)
+  - `searchQuery?: string` prop added to `PaletteCard`; `highlightMatch()` pure helper handles substring wrapping in a single-pass split, correctly handles non-matches (returns plain string)
+  - Passing `searchQuery={search || undefined}` (falsy guard avoids highlight noise when search is empty)
+  - No-results "forest" flow: if Cady types "autumn forest" she surfaces all palettes with that phrase in either name or note, and sees the match highlighted in yellow in the note preview beneath each card
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **First-occurrence highlight only** — notes are max 280 chars, single match is sufficient; a multi-occurrence highlighter would add complexity with no meaningful UX gain at this scale
+- **`|| undefined` guard on searchQuery** — prevents PaletteCard from running highlight logic on every keystroke when search is empty; mark elements only render when there's an active query
+- **Plain `text` shortcircuit in `highlightMatch`** — when idx === -1 (no match), returns raw string (not a fragment) so React never renders an empty mark element
+
+### What's next (Session 37)
+- **Keyboard shortcut hints in card footer** — on hover, surface micro-hints ("⌘D duplicate · F2 rename · L lock") in the age/created footer strip to improve discoverability
+- **Quick duplicate from collection hover** — add a Duplicate button inside the sidebar collection palette-preview panel
+- **Sort by most-notes** — surface well-annotated palettes at the top as a sort option for annotation-heavy workflows
+
+---
+
 ## 2026-05-23 — Session 35: Palette Notes
 
 ### What was done
