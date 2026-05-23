@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-23 — Session 39: Keyboard Help Overlay
+
+### What was done
+- Built **KeyboardHelpModal** — press `?` anywhere to open a full shortcut reference sheet
+  - 5 groups: Global, Palette Card, Swatch Editor, Inline Rename, Tags
+  - Each row: label on left, styled `<kbd>` chips on right with `+` for chords and `/` for alternatives
+  - `sep` prop on `ShortcutRow` cleanly distinguishes chord (`+`) vs alternative (`/`) key separators
+  - Clicking the backdrop or pressing `?` / `Esc` closes the modal
+  - Spring-animated modal enter/exit (scale + fade, 500ms stiffness)
+  - Scrollable body for future shortcut additions
+- **`?` key handler** wired into the global keydown listener in `page.tsx` — toggles help overlay, suppressed when any input/textarea/select is focused; modifier-key-safe
+- **`?` button in the header** — small monospaced kbd-style button next to the palette count; provides discoverability for non-keyboard users; `title="Keyboard shortcuts (?)"` tooltip
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Toggle on `?`** — pressing `?` again closes it (same key opens and closes), matching the convention in Figma, Linear, GitHub
+- **`sep` prop not a separate `combo/alternatives` boolean** — a string separator is more flexible and keeps the data model minimal
+- **`KeyboardHelpModal` as standalone component** — not inlined in `page.tsx`; keeps modal self-contained with its own Escape handler so it doesn't interfere with the global `?` handler
+
+### What's next (Session 40)
+- **Sort by most-notes** — add "Most annotated" as a sort option to surface well-described palettes
+- **Quick duplicate from collection hover panel** — Duplicate button in the palette preview tooltip on collection sidebar rows
+- **Palette age badge** — show "Created X days ago" as a tooltip on the palette card creation timestamp
+
+---
+
 ## 2026-05-23 — Session 38: Search Shortcut
 
 ### What was done
