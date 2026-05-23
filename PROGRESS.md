@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-23 — Session 32: Post-Export Toast
+
+### What was done
+- **Post-export toast with palette count and source name** — a spring-animated success notification appears in the bottom-right corner after any ZIP export completes
+  - **Collection ZIP export**: toast reads "N palettes exported" + subtitle "Collection Name · ZIP downloaded" — so the user knows exactly what was packaged
+  - **Bulk-select ZIP export**: toast reads "N palettes exported" + subtitle "ZIP downloaded" — works for arbitrary selections with no collection context
+  - **3.5-second auto-dismiss** via `useEffect` + `clearTimeout` — the timer resets if a second export fires before the first toast clears (each `setExportToast` call restarts the effect)
+  - **Manual dismiss** via an X button — for users who want to clear the confirmation immediately
+  - **Emerald success icon** — `CheckCircle2` in a rounded emerald-tinted circle clearly signals success without being garish
+  - **Bottom-right positioning** — distinct from the center-positioned fork-from-share toast; both can exist simultaneously without visual collision (the fork toast is reserved for an interactive decision, the export toast is a passive confirmation)
+  - `CheckCircle2` added to the lucide-react import; no new dependencies
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **3.5s not 3s** — 3 seconds tests feel slightly rushed when the user is reading "5 palettes exported · Spring Drop · ZIP downloaded"; 3.5s gives comfortable reading time without lingering
+- **`clearTimeout` in useEffect cleanup** — prevents stale dismissal if the component unmounts between export and timer fire (rare but correct)
+- **Bottom-right, not bottom-center** — the fork-from-share toast occupies bottom-center because it requires a user decision (Fork / dismiss); the export toast is passive confirmation and belongs to the corner, the conventional position for non-blocking notifications
+- **No sound or vibration** — this is a desktop design tool; passive visual confirmation is sufficient and less disruptive
+
+### What's next (Session 33)
+- **Keyboard shortcut hints in the card footer** — on palette card hover, show micro-hints ("⌘D duplicate · F2 rename") in the age/tag footer row to surface discoverability
+- **Quick duplicate from collection hover tooltip** — add a Duplicate button inside the palette preview tooltip panel that appears when hovering a collection in the sidebar
+- **Palette freeze/archive** — mark a palette as "finalized" so it's protected from accidental edits or deletion; shows a lock badge on the card
+
+---
+
 ## 2026-05-23 — Session 31: Inline Palette Rename
 
 ### What was done
