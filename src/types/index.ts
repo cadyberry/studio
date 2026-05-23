@@ -11,6 +11,7 @@ export interface Palette {
   collectionId?: string;
   tags: string[];
   frozen?: boolean;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }

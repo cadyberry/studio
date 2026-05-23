@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -56,11 +56,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [inlineEditing, setInlineEditing] = useState(false);
   const [inlineNameValue, setInlineNameValue] = useState(palette.name);
   const inlineInputRef = useRef<HTMLInputElement>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesValue, setNotesValue] = useState(palette.notes ?? "");
+  const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync inline name value when palette.name changes externally
   useEffect(() => {
     if (!inlineEditing) setInlineNameValue(palette.name);
   }, [palette.name, inlineEditing]);
+
+  // Sync notes value when palette.notes changes externally
+  useEffect(() => {
+    if (!notesOpen) setNotesValue(palette.notes ?? "");
+  }, [palette.notes, notesOpen]);
 
   // Ordered colors with stable keys for drag-to-reorder
   const [orderedColors, setOrderedColors] = useState<KeyedColor[]>(() =>
@@ -95,8 +103,35 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     updatePalette(palette.id, { colors: plain });
   };
 
+  const openNotes = () => {
+    setTagging(false);
+    setTagInput("");
+    setNaming({ type: "idle" });
+    setNotesValue(palette.notes ?? "");
+    setNotesOpen(true);
+    setTimeout(() => {
+      notesTextareaRef.current?.focus();
+      const len = notesTextareaRef.current?.value.length ?? 0;
+      notesTextareaRef.current?.setSelectionRange(len, len);
+    }, 30);
+  };
+
+  const commitNotes = () => {
+    const trimmed = notesValue.trim();
+    if (trimmed !== (palette.notes ?? "")) {
+      updatePalette(palette.id, { notes: trimmed || undefined });
+    }
+    setNotesOpen(false);
+  };
+
+  const cancelNotes = () => {
+    setNotesValue(palette.notes ?? "");
+    setNotesOpen(false);
+  };
+
   const openTagging = () => {
     setNaming({ type: "idle" });
+    setNotesOpen(false);
     setTagging(true);
     setTimeout(() => tagInputRef.current?.focus(), 50);
   };
@@ -121,6 +156,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const handleNameWithAI = async () => {
     setTagging(false);
     setTagInput("");
+    setNotesOpen(false);
     setNaming({ type: "loading" });
     try {
       const res = await fetch("/api/name-palette", {
@@ -409,6 +445,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </span>
             ))}
           </div>
+          {palette.notes && (
+            <p
+              className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-default select-none"
+              title={palette.notes}
+            >
+              {palette.notes}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -441,6 +485,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             title="Manage tags"
           >
             <Tag size={13} />
+          </Button>
+          <Button
+            variant={notesOpen || palette.notes ? "outline" : "ghost"}
+            size="sm"
+            onClick={notesOpen ? commitNotes : openNotes}
+            title={palette.notes ? "Edit note" : "Add note"}
+          >
+            <StickyNote size={13} className={palette.notes ? "fill-yellow-200 dark:fill-yellow-900 text-yellow-600 dark:text-yellow-400" : ""} />
           </Button>
           <Button variant="ghost" size="sm" onClick={() => onExport(palette)} title="Export">
             <Download size={13} />
@@ -619,6 +671,49 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               spellCheck={false}
             />
             <p className="text-[9px] text-[var(--muted)] mt-1">Enter or comma to add · Backspace to remove last</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notes overlay */}
+      <AnimatePresence>
+        {notesOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                Note
+              </span>
+              <button
+                onClick={commitNotes}
+                className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+              >
+                <X size={11} />
+              </button>
+            </div>
+            <textarea
+              ref={notesTextareaRef}
+              value={notesValue}
+              onChange={(e) => setNotesValue(e.target.value)}
+              onBlur={commitNotes}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { e.preventDefault(); cancelNotes(); }
+              }}
+              placeholder="Add a creative note… e.g. autumn forest walk, brand refresh option 2"
+              className="w-full text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)] resize-none leading-relaxed"
+              rows={3}
+              maxLength={280}
+              spellCheck
+            />
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[9px] text-[var(--muted)]">Blur or ↵ to save · Esc to cancel</p>
+              <span className="text-[9px] text-[var(--muted)]">{notesValue.length}/280</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

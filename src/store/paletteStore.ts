@@ -76,6 +76,7 @@ export const usePaletteStore = create<PaletteStore>()(
           colors: [...palette.colors],
           tags: [...palette.tags],
           collectionId: palette.collectionId,
+          notes: palette.notes,
         });
       },
 
