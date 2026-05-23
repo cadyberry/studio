@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
@@ -58,12 +58,33 @@ export default function Home() {
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!exportToast) return;
     const t = setTimeout(() => setExportToast(null), 3500);
     return () => clearTimeout(t);
   }, [exportToast]);
+
+  // `/` focuses search bar from anywhere; Escape blurs it
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      e.preventDefault();
+      if (colorSearchActive) {
+        setColorSearchActive(false);
+        setColorSearchHex("");
+      }
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      });
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [colorSearchActive]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -417,12 +438,33 @@ export default function Home() {
                       <div className="flex-1 relative">
                         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
                         <input
+                          ref={searchInputRef}
                           type="text"
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              e.currentTarget.blur();
+                              setSearch("");
+                            }
+                          }}
                           placeholder="Search palettes & notes…"
-                          className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
+                          className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-8 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
                         />
+                        {!search && (
+                          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--muted)] font-mono bg-[var(--surface-2)] border border-[var(--border)] rounded px-1 py-0.5 pointer-events-none select-none leading-none">
+                            /
+                          </kbd>
+                        )}
+                        {search && (
+                          <button
+                            onClick={() => { setSearch(""); searchInputRef.current?.focus(); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                            aria-label="Clear search"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[var(--surface)] px-2 py-1.5 text-[var(--muted)] hover:border-[var(--accent)] transition-colors">
                         <ArrowUpDown size={11} className="shrink-0" />
