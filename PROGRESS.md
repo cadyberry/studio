@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-23 — Session 42: Palette Stats Panel
+
+### What was done
+- **Library stats panel** — compact 2×3 grid widget added to the left sidebar (between Extractor and Discover), visible whenever the library has at least one palette
+  - Row 1: **palettes** count · **swatches** count (total across all palettes) · **collections** count
+  - Row 2: **annotated %** (palettes with notes / total) · **top mood** (mode of all palette moods, with coloured dot from the existing MOOD_PILL_STYLES palette) · **oldest** (month+year of the earliest palette, tooltip shows full date)
+  - Grid styled with `divide-x` / `border-t` on the inner cells so it feels like a single cohesive tile rather than separate cards
+  - `topMood` computed via `moodTally` map + `reduce` — same `getPaletteMood` function used everywhere else
+  - `oldestSince` formatted with `Intl.DateTimeFormat` (short month + year) so it fits the narrow column without truncation
+  - `formatDate` added to the `@/lib/utils` import in `page.tsx` for the full-date tooltip on the "oldest" cell
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **2×3 grid, not a list** — six stats in a horizontal grid reads faster than a stacked list; each cell is self-contained with its value and label
+- **Stats live in page.tsx derivations, not a separate component** — all inputs are already in scope (palettes, collections, getPaletteMood); a new component would add indirection with no benefit
+- **Top mood shows coloured dot, not a badge** — the mood dot from MOOD_PILL_STYLES gives instant visual identification without importing the full pill component; the small "top mood" label provides context
+
+### What's next (Session 43)
+- **"Clear collection" quick action on badge** — an × on the collection badge in PaletteCard to remove the palette from its collection without opening the CollectionModal
+- **Collection description tooltip** — hover the collection name in the sidebar to see its description in a small tooltip (if set)
+- **Stats panel sparkle** — animate the numbers on first mount with a count-up effect using Framer Motion
+
+---
+
 ## 2026-05-23 — Session 41: Inline Collection Rename + Jump-to-Collection Badge
 
 ### What was done
