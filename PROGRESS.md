@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-23 — Session 34: Freeze Filter Pill
+
+### What was done
+- **Locked filter pill** — added an indigo "Locked N" pill to the mood filter row so Cady can instantly see and filter to all finalized palettes
+  - **Pill appears** in the mood row whenever any palette in the library is frozen; positioned after mood pills with a `·` separator, or alone if there are fewer than 2 moods
+  - **Toggle behavior** — clicking "Locked N" filters the grid to only show frozen palettes; clicking again shows all; indigo active state matches the existing frozen visual language (indigo border, ring, badge on cards)
+  - **Count is context-aware** — the N shown in the pill reflects how many palettes matching the current search + tag + collection + mood filters are frozen, so it updates dynamically as other filters change
+  - **Row condition expanded** — mood filter row now appears whenever `moodCounts.size >= 2 || anyFrozen` (was `>= 2` only), so the Locked pill is accessible even if there's only one mood in the library
+  - **"No results" chip** — if the Locked filter + other filters produce no results, a dismissible "Locked only ×" chip appears in the no-match state with individual-dismiss support
+  - **"Clear all filters"** now also resets `activeFreezeFilter` to `"all"`
+  - **Pipeline refactor**: `moodFiltered` extracted as an intermediate variable so the freeze filter applies cleanly on top of mood filter (search → tag → collection → mood → freeze)
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Toggle (on/off) not tri-state (all/locked/unlocked)** — "show only locked" covers 95% of Cady's use case (reviewing what's finalized); adding "unlocked" would clutter the pill row without commensurate value
+- **Indigo for locked pill** — consistent with the frozen visual system (indigo border on card, indigo lock badge, indigo icon in name row); makes the filter feel like a native extension of that feature
+- **Pill in mood row, not a new row** — avoids vertical clutter; the mood row already carries "property of a palette" semantics (mood is intrinsic, not user-assigned); frozen is similarly intrinsic
+- **`·` separator** — lightweight but clear visual break between "mood" and "status" filters in the same row; avoids needing a second label
+
+### What's next (Session 35)
+- **Keyboard shortcut hints in card footer** — on hover, show micro-hints ("⌘D duplicate · F2 rename · L lock") in the age/created footer strip to surface discoverability
+- **Quick duplicate from collection hover tooltip** — add a Duplicate button inside the palette preview panel that appears when hovering a collection in the sidebar
+- **Palette notes / caption field** — a short freeform text field on each palette card for creative context ("autumn forest walk", "brand refresh option 2")
+
+---
+
 ## 2026-05-23 — Session 33: Palette Freeze
 
 ### What was done
