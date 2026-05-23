@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-23 — Session 38: Search Shortcut
+
+### What was done
+- **`/` key focuses the search bar** — press `/` from anywhere in the app (when not in an input/textarea/select) to jump directly to the search field
+  - `requestAnimationFrame` defers focus so if color-search mode is active it deactivates first before the text input renders
+  - Modifier-key guard: `Cmd/Ctrl/Alt + /` passes through untouched (browser dev tools, etc.)
+  - Input-field guard: suppressed when the focused element is already an `INPUT`, `TEXTAREA`, or `SELECT`
+  - If color search mode is active when `/` is pressed, it deactivates color search and activates text search seamlessly
+- **`Escape` clears and blurs search** — pressing Escape while the search input is focused clears the query and blurs; consistent with standard UX conventions (Figma, Linear, GitHub)
+- **`/` kbd hint in the search box** — a monospace `/ ` key badge sits in the right side of the search input when no query is active; standard convention (GitHub, Figma); pointer-events-none so it never interferes with clicks
+- **Inline clear button** — when a query is active, an `×` button replaces the `/` hint in the right slot of the input; clicking it clears and refocuses; avoids requiring keyboard-only clear
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **`requestAnimationFrame` not `setTimeout(0)`** — RAF is semantically "before the next paint," which is exactly when we need the text input to be in the DOM after color-search deactivation; more precise than a 0ms timer
+- **Inline clear button replaces kbd hint** — dual-use of the right slot keeps the input width consistent; no layout shift between empty and filled states
+- **`Escape` clears (not just blurs)** — search is a transient filter; clearing on Escape matches the mental model of "dismiss"; the no-results chips still dismiss individual query tokens for fine-grained control
+- **`ref` on the search input directly** — no additional state; `searchInputRef.current?.focus()` is the simplest path from the global handler to the DOM node
+
+### What's next (Session 39)
+- **Sort by most-notes** — add "Most annotated" as a sort option to surface well-described palettes
+- **Quick duplicate from collection hover panel** — add a Duplicate button inside the palette preview tooltip on collection sidebar rows
+- **`?` help overlay** — press `?` to open a keyboard shortcut reference sheet covering all card and global shortcuts
+
+---
+
 ## 2026-05-23 — Session 37: Keyboard Shortcuts
 
 ### What was done
