@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, type PaletteMood } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -626,7 +626,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
 
       {/* Footer — visible on hover: age on left, keyboard hints on right */}
       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-3 py-1 border-t border-[var(--border)] bg-[var(--surface-2)]/60 flex items-center justify-between gap-2">
-        <span className="text-[10px] text-[var(--muted)] shrink-0">
+        <span
+          className="text-[10px] text-[var(--muted)] shrink-0 cursor-default"
+          title={
+            palette.updatedAt !== palette.createdAt
+              ? `Edited ${formatDate(palette.updatedAt)} · Created ${formatDate(palette.createdAt)}`
+              : `Created ${formatDate(palette.createdAt)}`
+          }
+        >
           {palette.updatedAt !== palette.createdAt
             ? `Edited ${formatRelativeAge(palette.updatedAt)}`
             : `Created ${formatRelativeAge(palette.createdAt)}`}

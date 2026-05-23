@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -49,7 +49,8 @@ export default function Home() {
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes">("newest");
+  const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkExporting, setBulkExporting] = useState(false);
@@ -172,6 +173,7 @@ export default function Home() {
           case "name-asc": return a.name.localeCompare(b.name);
           case "name-desc": return b.name.localeCompare(a.name);
           case "most-colors": return b.colors.length - a.colors.length;
+          case "most-notes": return (b.notes?.length ?? 0) - (a.notes?.length ?? 0);
         }
       });
 
@@ -344,7 +346,12 @@ export default function Home() {
                       cohesionScore >= 40 ? "#f59e0b" : "#f43f5e";
                     const isActive = activeCollection === c.id;
                     return (
-                      <div key={c.id} className="group/col relative flex items-center gap-1">
+                      <div
+                        key={c.id}
+                        className="group/col relative flex items-center gap-1"
+                        onMouseEnter={() => setHoveredCollectionId(c.id)}
+                        onMouseLeave={() => setHoveredCollectionId(null)}
+                      >
                         <button
                           onClick={() => setActiveCollection(c.id)}
                           className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
@@ -400,18 +407,31 @@ export default function Home() {
 
                         {/* Palette preview tooltip — appears on hover to the right */}
                         {collectionPalettes.length > 0 && (
-                          <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 pointer-events-none opacity-0 group-hover/col:opacity-100 transition-opacity duration-200 delay-100">
-                            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-2xl p-3 w-56">
+                          <div
+                            className={`hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 transition-opacity duration-200 ${
+                              hoveredCollectionId === c.id ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                            }`}
+                            onMouseEnter={() => setHoveredCollectionId(c.id)}
+                            onMouseLeave={() => setHoveredCollectionId(null)}
+                          >
+                            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-2xl p-3 w-60">
                               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-2.5 truncate">{c.name}</p>
-                              <div className="space-y-1.5">
+                              <div className="space-y-1">
                                 {collectionPalettes.slice(0, 7).map((p) => (
-                                  <div key={p.id} className="flex items-center gap-2">
+                                  <div key={p.id} className="group/row flex items-center gap-2">
                                     <div className="flex rounded-sm overflow-hidden h-[14px] flex-1 min-w-0">
                                       {p.colors.slice(0, 8).map((color, i) => (
                                         <div key={i} className="flex-1" style={{ backgroundColor: color.hex }} />
                                       ))}
                                     </div>
-                                    <span className="text-[9px] text-[var(--muted)] truncate shrink-0 max-w-[72px]">{p.name}</span>
+                                    <span className="text-[9px] text-[var(--muted)] truncate shrink-0 max-w-[64px]">{p.name}</span>
+                                    <button
+                                      onClick={() => duplicatePalette(p.id)}
+                                      title={`Duplicate "${p.name}"`}
+                                      className="shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                                    >
+                                      <CopyPlus size={10} />
+                                    </button>
                                   </div>
                                 ))}
                                 {collectionPalettes.length > 7 && (
@@ -498,6 +518,7 @@ export default function Home() {
                           <option value="name-asc">Name A→Z</option>
                           <option value="name-desc">Name Z→A</option>
                           <option value="most-colors">Most colors</option>
+                          <option value="most-notes">Most annotated</option>
                         </select>
                       </div>
                     </>
