@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-05-23 — Session 33: Palette Freeze
+
+### What was done
+- **Palette Freeze** — mark any palette as "finalized/locked" to protect it from accidental edits and deletion
+  - **Lock/Unlock toggle** in the card action row (LockOpen → Lock icon, indigo outline style when active)
+  - **Frozen visual treatment** — card gets an indigo border + subtle ring so frozen palettes are instantly recognizable in the grid
+  - **Lock badge on swatch strip** — a small "locked" pill with lock icon in the bottom-left corner of the swatch area, always visible when frozen
+  - **Lock icon in name row** — tiny indigo lock prefix next to the palette name when frozen, provides a second at-a-glance signal
+  - **Swatch editing disabled** — when frozen, the swatch strip renders as a plain static div (no Reorder.Group), so drag-to-reorder and the per-swatch pencil edit button are both blocked at the render level, not just disabled
+  - **Inline rename disabled** — double-click on name does nothing when frozen; tooltip reads "Unlock to rename"
+  - **Delete blocked** — delete button is `disabled` with `opacity-30 cursor-not-allowed` style and tooltip "Unlock to delete"
+  - **Bulk delete respects freeze** — in the bulk action bar, frozen palettes are filtered from the deletion set; if all selected are frozen, the delete button is disabled; confirmation label reads "Delete N (M locked)" when mixed
+  - `frozen?: boolean` added to `Palette` type in `types/index.ts` — optional, so all existing palettes are unfrozen by default (backward compatible)
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Static div not disabled Reorder.Group** — conditionally switching to a plain flex div when frozen avoids Framer Motion's drag detection entirely; disabling inside Reorder.Item would still show cursor-grab on hover, which would be confusing
+- **Inline rename blocked (not just warned)** — for finalized palettes, the name is part of the record; blocking it with a tooltip nudges the user to explicitly unlock, reducing accidental overwrites
+- **`frozen` is optional in the type** — backward compatible; existing localStorage entries without the field are treated as unfrozen (`undefined` is falsy)
+- **Indigo not amber** — amber is taken by the cover/crown palette badge; indigo clearly differentiates "protective lock" from "featured cover"
+
+### What's next (Session 34)
+- **Keyboard shortcut hints in card footer** — on hover, show micro-hints ("⌘D duplicate · F2 rename · L lock") in the age/created footer strip
+- **Quick duplicate from collection tooltip** — add a Duplicate button inside the collection hover preview panel
+- **Freeze filter pill** — add a "Locked" filter pill to the tag/mood filter row so Cady can view all finalized palettes at once
+
+---
+
 ## 2026-05-23 — Session 32: Post-Export Toast
 
 ### What was done
