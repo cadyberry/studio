@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-23 — Session 31: Inline Palette Rename
+
+### What was done
+- **Inline palette rename on double-click** — the palette card name is now directly editable without opening a modal
+  - **Double-click the name** in the card info row to activate an inline `<input>` pre-filled with the current name and auto-selected for immediate overtyping
+  - **Enter or blur commits** the new name via `updatePalette`; **Escape cancels** and restores the previous name without saving
+  - **No regression on the modal path** — the `Edit2` hover-action button still opens the `RenameModal` for explicit rename flows or keyboard-only access
+  - **External sync via `useEffect`** — if the name changes externally while the input is not open (e.g. AI name applied, modal rename), `inlineNameValue` stays in sync; if the inline editor is active, the external update is held until it closes
+  - **Cursor affordance**: `cursor-text` on the name text, `title="Double-click to rename"` tooltip, preventing selection with `select-none` so double-click doesn't awkwardly highlight the text before the input opens
+  - **Focus + select on mount**: 30ms setTimeout lets React paint the input before calling `focus()` + `select()` so the full name is selected and ready to type over
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Double-click, not single-click** — single-click on the name is a non-interactive display; double-click is the universal convention for "edit this label" (Finder, Figma, Notion all use it); avoids accidental edits during normal browsing
+- **`useEffect` sync with `!inlineEditing` guard** — without the guard, an AI name being applied mid-edit would silently reset the input value; guard lets the user finish their edit first
+- **30ms focus delay** — synchronous focus before the input is in the DOM is a no-op; 30ms is imperceptibly short but reliably after paint; avoids using refs + `useLayoutEffect` complexity
+
+### What's next (Session 32)
+- **Quick duplicate from collection hover tooltip** — add a Duplicate button inside the palette preview tooltip panel that appears when hovering a collection in the sidebar
+- **Post-export toast with palette count** — show a brief toast after ZIP export confirming how many palettes were exported and the collection/batch name
+- **Keyboard shortcut hint in age bar** — on card hover, show "⌘D to duplicate · F2 to rename" or similar micro-hints in the footer age bar
+
+---
+
 ## 2026-05-23 — Session 30: Export Collection as ZIP
 
 ### What was done
