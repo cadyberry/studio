@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2 } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -52,6 +52,7 @@ export default function Home() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkExporting, setBulkExporting] = useState(false);
+  const [collectionExporting, setCollectionExporting] = useState<string | null>(null);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
@@ -304,6 +305,27 @@ export default function Home() {
                             <span className="text-xs opacity-60">{count}</span>
                           </div>
                         </button>
+                        {count > 0 && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (collectionExporting === c.id) return;
+                              setCollectionExporting(c.id);
+                              try {
+                                await batchExportZip(collectionPalettes, c.name);
+                              } finally {
+                                setCollectionExporting(null);
+                              }
+                            }}
+                            className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"
+                            title={`Export all ${count} palette${count !== 1 ? "s" : ""} in "${c.name}" as ZIP`}
+                          >
+                            {collectionExporting === c.id
+                              ? <Loader2 size={12} className="animate-spin" />
+                              : <Archive size={12} />
+                            }
+                          </button>
+                        )}
                         <button
                           onClick={() => setCohesionTarget(c)}
                           className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"

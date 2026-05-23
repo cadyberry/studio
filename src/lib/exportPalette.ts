@@ -215,7 +215,7 @@ export function exportAsPngStrip(palette: Palette): void {
   link.click();
 }
 
-export async function batchExportZip(palettes: Palette[]): Promise<void> {
+export async function batchExportZip(palettes: Palette[], zipName?: string): Promise<void> {
   const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
 
@@ -253,7 +253,10 @@ export async function batchExportZip(palettes: Palette[]): Promise<void> {
   const url = URL.createObjectURL(zipBlob);
   const link = document.createElement("a");
   const date = new Date().toISOString().slice(0, 10);
-  link.download = `palette-export-${date}.zip`;
+  const baseName = zipName
+    ? `${zipName.replace(/\s+/g, "-").toLowerCase()}-${date}`
+    : `palette-export-${date}`;
+  link.download = `${baseName}.zip`;
   link.href = url;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
