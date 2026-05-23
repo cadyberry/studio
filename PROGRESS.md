@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-23 — Session 29: Collection Cover Palette
+
+### What was done
+- **Collection cover palette** — any palette in a collection can now be designated as the "hero"
+  - **Crown icon in action row** — a `Crown` icon button appears in the PaletteCard hover actions, but *only* when viewing a specific collection (`onSetCover` prop is only passed when `activeCollection !== "all"`); clicking toggles cover on/off
+  - **Visual treatment on cover card**: amber `border-amber-300 ring-1 ring-amber-200/60` border replaces the normal border; a gold crown pill badge (`cover`) appears at top-right; swatch strip grows from `h-28` → `h-40` for a visually dominant hero card
+  - **Full-width hero layout**: the cover card receives `sm:col-span-2` via the new `className` prop, spanning both grid columns so it reads as a hero at the top of the collection
+  - **Pinned to front**: `displayList` (an IIFE-derived value from `sorted`) lifts the cover palette to index 0 whenever a collection is active — sort order is still respected for everything else
+  - **Toggle semantics**: clicking Crown on a non-cover palette sets it as cover; clicking Crown on the current cover removes it (sets `coverPaletteId: undefined`); handled by `handleSetCover` in page.tsx
+  - **Data model**: added `coverPaletteId?: string` to the `Collection` type; stored via `updateCollection` with no new store action needed — existing `Partial<Collection>` update covers it; persists to localStorage automatically
+  - **`className` prop on PaletteCard**: the outer `motion.div` now accepts a passthrough `className`, enabling the parent to apply grid-span overrides while keeping AnimatePresence exit animations intact
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Context-aware Crown button** — the crown action is invisible when browsing "All palettes"; it only materializes when filtering to a collection; prevents confusion about what "cover" means outside a collection context
+- **`className` passthrough vs wrapper div** — wrapping PaletteCard in a `<div sm:col-span-2>` would break AnimatePresence (it tracks direct motion children); the className prop approach keeps the motion.div as the AnimatePresence child while letting the parent inject grid classes
+- **Amber border + ring, not a separate overlay** — the cover treatment uses border color and a faint ring rather than an overlay badge strip, so the swatch colors remain the visual focus; the crown pill is small and positioned at top-right, out of the color story
+- **`sm:col-span-2` only (not `col-span-2`)** — on mobile the grid is single-column; `sm:col-span-2` only activates at the two-column breakpoint where it has meaning; on mobile, cover looks like any other card (still taller swatch, still amber border)
+
+### What's next (Session 30)
+- **Palette rename from card header** — double-click the palette name on the card to rename inline (currently requires the Edit2 action button)
+- **Export collection as ZIP** — "Export collection" shortcut on the collection sidebar row (selects all palettes in collection and triggers batch ZIP export without manual multi-select)
+- **Quick duplicate from hover tooltip** — add a Duplicate shortcut inside the collection preview tooltip panel
+
+---
+
 ## 2026-05-22 — Session 28: Collection Palette Preview on Hover
 
 ### What was done
