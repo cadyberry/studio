@@ -105,7 +105,10 @@ export default function Home() {
       return matchesCollection && matchesTag && minDelta <= COLOR_MATCH_THRESHOLD;
     }
 
-    const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchesSearch = !search ||
+      p.name.toLowerCase().includes(q) ||
+      (!!p.notes && p.notes.toLowerCase().includes(q));
     return matchesSearch && matchesCollection && matchesTag;
   });
 
@@ -417,7 +420,7 @@ export default function Home() {
                           type="text"
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Search palettes…"
+                          placeholder="Search palettes & notes…"
                           className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
                         />
                       </div>
@@ -780,6 +783,7 @@ export default function Home() {
                         isCover={isCoverPalette}
                         onSetCover={activeCollection !== "all" ? handleSetCover : undefined}
                         className={isCoverPalette ? "sm:col-span-2" : ""}
+                        searchQuery={search || undefined}
                       />
                     );
                   })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, type PaletteMood } from "@/lib/utils";
@@ -9,6 +9,23 @@ import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
 
 type KeyedColor = ColorSwatch & { _key: string };
+
+function highlightMatch(text: string, query: string | undefined): ReactNode {
+  if (!query || !text) return text;
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const idx = lowerText.indexOf(lowerQuery);
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-yellow-200 dark:bg-yellow-800/60 text-inherit rounded-[2px] not-italic px-[1px]">
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
 
 const MOOD_STYLES: Record<PaletteMood, { bg: string; text: string; label: string }> = {
   vivid:  { bg: "bg-rose-100 dark:bg-rose-900/30",   text: "text-rose-600 dark:text-rose-400",   label: "vivid"  },
@@ -34,6 +51,7 @@ interface PaletteCardProps {
   isCover?: boolean;
   onSetCover?: (palette: Palette) => void;
   className?: string;
+  searchQuery?: string;
 }
 
 type NamingState =
@@ -42,7 +60,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -413,7 +431,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 onDoubleClick={palette.frozen ? undefined : startInlineEdit}
                 title={palette.frozen ? "Unlock to rename" : "Double-click to rename"}
               >
-                {palette.name}
+                {highlightMatch(palette.name, searchQuery)}
               </div>
             </div>
           )}
@@ -450,7 +468,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-default select-none"
               title={palette.notes}
             >
-              {palette.notes}
+              {highlightMatch(palette.notes, searchQuery)}
             </p>
           )}
         </div>
