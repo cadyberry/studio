@@ -54,6 +54,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: "Inline Rename",
     shortcuts: [
+      { keys: ["F2"], label: "Start rename (palette card, hovered)" },
+      { keys: ["DblClick"], label: "Start rename (palette name or collection)" },
       { keys: ["Enter"], label: "Save name" },
       { keys: ["Esc"], label: "Cancel rename" },
     ],

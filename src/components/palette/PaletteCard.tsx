@@ -52,6 +52,8 @@ interface PaletteCardProps {
   onSetCover?: (palette: Palette) => void;
   className?: string;
   searchQuery?: string;
+  collectionName?: string;
+  onJumpToCollection?: (collectionId: string) => void;
 }
 
 type NamingState =
@@ -60,7 +62,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -512,9 +514,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               {moodStyle.label}
             </span>
             {palette.collectionId && (
-              <span className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)]">
-                in collection
-              </span>
+              onJumpToCollection ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onJumpToCollection(palette.collectionId!); }}
+                  title={`Jump to ${collectionName ?? "collection"}`}
+                  className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)] hover:bg-[var(--accent)] hover:text-[var(--accent-fg)] transition-colors max-w-[120px] truncate"
+                >
+                  {collectionName ?? "in collection"}
+                </button>
+              ) : (
+                <span className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)] max-w-[120px] truncate">
+                  {collectionName ?? "in collection"}
+                </span>
+              )
             )}
             {palette.tags?.map((tag) => (
               <span

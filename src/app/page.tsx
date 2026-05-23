@@ -62,6 +62,19 @@ export default function Home() {
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
+  const [inlineCollectionName, setInlineCollectionName] = useState("");
+
+  const commitCollectionRename = useCallback(() => {
+    if (!renamingCollectionId) return;
+    const trimmed = inlineCollectionName.trim();
+    if (trimmed) updateCollection(renamingCollectionId, { name: trimmed });
+    setRenamingCollectionId(null);
+  }, [renamingCollectionId, inlineCollectionName, updateCollection]);
+
+  const cancelCollectionRename = useCallback(() => {
+    setRenamingCollectionId(null);
+  }, []);
 
   useEffect(() => {
     if (!exportToast) return;
@@ -345,37 +358,76 @@ export default function Home() {
                       cohesionScore >= 60 ? "#0ea5e9" :
                       cohesionScore >= 40 ? "#f59e0b" : "#f43f5e";
                     const isActive = activeCollection === c.id;
+                    const isRenaming = renamingCollectionId === c.id;
+
+                    const scoreAndCount = (
+                      <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                        {cohesionScore !== null && (
+                          <span
+                            className="text-[9px] font-bold tabular-nums leading-none"
+                            style={{ color: isActive ? "currentColor" : scoreColor, opacity: isActive ? 0.75 : 1 }}
+                            title={`Cohesion score: ${cohesionScore}/100`}
+                          >
+                            {cohesionScore}
+                          </span>
+                        )}
+                        <span className="text-xs opacity-60">{count}</span>
+                      </div>
+                    );
+
                     return (
                       <div
                         key={c.id}
                         className="group/col relative flex items-center gap-1"
-                        onMouseEnter={() => setHoveredCollectionId(c.id)}
+                        onMouseEnter={() => !isRenaming && setHoveredCollectionId(c.id)}
                         onMouseLeave={() => setHoveredCollectionId(null)}
                       >
-                        <button
-                          onClick={() => setActiveCollection(c.id)}
-                          className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
-                            isActive
-                              ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                              : "hover:bg-[var(--surface-2)] text-[var(--foreground)]"
-                          }`}
-                        >
-                          <FolderOpen size={13} className="shrink-0" />
-                          <span className="truncate">{c.name}</span>
-                          <div className="ml-auto flex items-center gap-1.5 shrink-0">
-                            {cohesionScore !== null && (
-                              <span
-                                className="text-[9px] font-bold tabular-nums leading-none"
-                                style={{ color: isActive ? "currentColor" : scoreColor, opacity: isActive ? 0.75 : 1 }}
-                                title={`Cohesion score: ${cohesionScore}/100`}
-                              >
-                                {cohesionScore}
-                              </span>
-                            )}
-                            <span className="text-xs opacity-60">{count}</span>
+                        {isRenaming ? (
+                          <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm ${
+                            isActive ? "bg-[var(--accent)] text-[var(--accent-fg)]" : "bg-[var(--surface-2)]"
+                          }`}>
+                            <FolderOpen size={13} className="shrink-0" />
+                            <input
+                              autoFocus
+                              type="text"
+                              value={inlineCollectionName}
+                              onChange={(e) => setInlineCollectionName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") { e.preventDefault(); commitCollectionRename(); }
+                                if (e.key === "Escape") { e.preventDefault(); cancelCollectionRename(); }
+                              }}
+                              onBlur={commitCollectionRename}
+                              className="flex-1 min-w-0 bg-transparent outline-none text-sm"
+                              spellCheck={false}
+                            />
+                            {scoreAndCount}
                           </div>
-                        </button>
-                        {count > 0 && (
+                        ) : (
+                          <button
+                            onClick={() => setActiveCollection(c.id)}
+                            className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm transition-colors ${
+                              isActive
+                                ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                                : "hover:bg-[var(--surface-2)] text-[var(--foreground)]"
+                            }`}
+                          >
+                            <FolderOpen size={13} className="shrink-0" />
+                            <span
+                              className="truncate"
+                              title="Double-click to rename"
+                              onDoubleClick={(e) => {
+                                e.stopPropagation();
+                                setRenamingCollectionId(c.id);
+                                setInlineCollectionName(c.name);
+                                setHoveredCollectionId(null);
+                              }}
+                            >
+                              {c.name}
+                            </span>
+                            {scoreAndCount}
+                          </button>
+                        )}
+                        {!isRenaming && count > 0 && (
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -397,16 +449,18 @@ export default function Home() {
                             }
                           </button>
                         )}
-                        <button
-                          onClick={() => setCohesionTarget(c)}
-                          className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"
-                          title="Cohesion view"
-                        >
-                          <BarChart2 size={12} />
-                        </button>
+                        {!isRenaming && (
+                          <button
+                            onClick={() => setCohesionTarget(c)}
+                            className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"
+                            title="Cohesion view"
+                          >
+                            <BarChart2 size={12} />
+                          </button>
+                        )}
 
                         {/* Palette preview tooltip — appears on hover to the right */}
-                        {collectionPalettes.length > 0 && (
+                        {!isRenaming && collectionPalettes.length > 0 && (
                           <div
                             className={`hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 transition-opacity duration-200 ${
                               hoveredCollectionId === c.id ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -848,6 +902,9 @@ export default function Home() {
                 <AnimatePresence mode="popLayout">
                   {displayList.map((palette) => {
                     const isCoverPalette = activeCollection !== "all" && palette.id === coverPaletteId;
+                    const palCollectionName = palette.collectionId
+                      ? (collections.find((c) => c.id === palette.collectionId)?.name)
+                      : undefined;
                     return (
                       <PaletteCard
                         key={palette.id}
@@ -866,6 +923,8 @@ export default function Home() {
                         onSetCover={activeCollection !== "all" ? handleSetCover : undefined}
                         className={isCoverPalette ? "sm:col-span-2" : ""}
                         searchQuery={search || undefined}
+                        collectionName={palCollectionName}
+                        onJumpToCollection={setActiveCollection}
                       />
                     );
                   })}
