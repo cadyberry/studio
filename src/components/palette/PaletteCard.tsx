@@ -53,6 +53,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [tagging, setTagging] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const [inlineEditing, setInlineEditing] = useState(false);
+  const [inlineNameValue, setInlineNameValue] = useState(palette.name);
+  const inlineInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync inline name value when palette.name changes externally
+  useEffect(() => {
+    if (!inlineEditing) setInlineNameValue(palette.name);
+  }, [palette.name, inlineEditing]);
 
   // Ordered colors with stable keys for drag-to-reorder
   const [orderedColors, setOrderedColors] = useState<KeyedColor[]>(() =>
@@ -133,6 +141,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const applyName = (name: string) => {
     updatePalette(palette.id, { name });
     setNaming({ type: "idle" });
+  };
+
+  const startInlineEdit = () => {
+    setInlineNameValue(palette.name);
+    setInlineEditing(true);
+    // Focus after the input mounts
+    setTimeout(() => {
+      inlineInputRef.current?.focus();
+      inlineInputRef.current?.select();
+    }, 30);
+  };
+
+  const commitInlineEdit = () => {
+    const trimmed = inlineNameValue.trim();
+    if (trimmed && trimmed !== palette.name) updatePalette(palette.id, { name: trimmed });
+    setInlineEditing(false);
+  };
+
+  const cancelInlineEdit = () => {
+    setInlineEditing(false);
+    setInlineNameValue(palette.name);
   };
 
   const mood = getPaletteMood(palette.colors);
@@ -275,7 +304,30 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       {/* Info row */}
       <div className="px-3 py-2.5 flex items-center justify-between">
         <div className="min-w-0">
-          <div className="text-sm font-medium truncate">{palette.name}</div>
+          {inlineEditing ? (
+            <input
+              ref={inlineInputRef}
+              type="text"
+              value={inlineNameValue}
+              onChange={(e) => setInlineNameValue(e.target.value)}
+              onBlur={commitInlineEdit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); commitInlineEdit(); }
+                if (e.key === "Escape") { e.preventDefault(); cancelInlineEdit(); }
+              }}
+              className="w-full text-sm font-medium bg-[var(--surface-2)] border border-[var(--accent)] rounded-[var(--radius-sm)] px-1.5 py-0.5 outline-none transition-colors"
+              maxLength={80}
+              spellCheck={false}
+            />
+          ) : (
+            <div
+              className="text-sm font-medium truncate cursor-text select-none"
+              onDoubleClick={startInlineEdit}
+              title="Double-click to rename"
+            >
+              {palette.name}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
             <span className="text-xs text-[var(--muted)]">{palette.colors.length} colors</span>
             <span
