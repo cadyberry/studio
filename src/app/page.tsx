@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2 } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -56,6 +56,7 @@ export default function Home() {
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
+  const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
 
   useEffect(() => {
@@ -114,10 +115,15 @@ export default function Home() {
     moodCounts.set(mood, (moodCounts.get(mood) ?? 0) + 1);
   }
 
-  const filtered =
+  const moodFiltered =
     activeMood === "all"
       ? baseFiltered
       : baseFiltered.filter((p) => getPaletteMood(p.colors) === activeMood);
+
+  const anyFrozen = palettes.some((p) => p.frozen);
+  const frozenInView = moodFiltered.filter((p) => p.frozen).length;
+
+  const filtered = activeFreezeFilter === "locked" ? moodFiltered.filter((p) => p.frozen) : moodFiltered;
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -544,9 +550,9 @@ export default function Home() {
               )}
             </AnimatePresence>
 
-            {/* Mood filter pills */}
+            {/* Mood + Locked filter pills */}
             <AnimatePresence>
-              {moodCounts.size >= 2 && (
+              {(moodCounts.size >= 2 || anyFrozen) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -556,44 +562,70 @@ export default function Home() {
                   className="overflow-hidden"
                 >
                   <div className="flex flex-wrap items-center gap-1.5 pb-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5">
-                      Mood
-                    </span>
-                    <button
-                      onClick={() => setActiveMood("all")}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
-                        activeMood === "all"
-                          ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
-                          : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
-                      }`}
-                    >
-                      All
-                      <span className={`text-[10px] ${activeMood === "all" ? "opacity-70" : "opacity-50"}`}>
-                        {baseFiltered.length}
-                      </span>
-                    </button>
-                    {MOOD_ORDER.filter((m) => moodCounts.has(m)).map((mood) => {
-                      const count = moodCounts.get(mood)!;
-                      const style = MOOD_PILL_STYLES[mood];
-                      const isActive = activeMood === mood;
-                      const label = mood.charAt(0).toUpperCase() + mood.slice(1);
-                      return (
+                    {moodCounts.size >= 2 && (
+                      <>
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5">
+                          Mood
+                        </span>
                         <button
-                          key={mood}
-                          onClick={() => setActiveMood(isActive ? "all" : mood)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
-                            isActive ? style.activeClass : style.inactiveClass
+                          onClick={() => setActiveMood("all")}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            activeMood === "all"
+                              ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
+                              : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
                           }`}
                         >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: style.dot }}
-                          />
-                          {label}
-                          <span className="text-[10px] opacity-60">{count}</span>
+                          All
+                          <span className={`text-[10px] ${activeMood === "all" ? "opacity-70" : "opacity-50"}`}>
+                            {baseFiltered.length}
+                          </span>
                         </button>
-                      );
-                    })}
+                        {MOOD_ORDER.filter((m) => moodCounts.has(m)).map((mood) => {
+                          const count = moodCounts.get(mood)!;
+                          const style = MOOD_PILL_STYLES[mood];
+                          const isActive = activeMood === mood;
+                          const label = mood.charAt(0).toUpperCase() + mood.slice(1);
+                          return (
+                            <button
+                              key={mood}
+                              onClick={() => setActiveMood(isActive ? "all" : mood)}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                                isActive ? style.activeClass : style.inactiveClass
+                              }`}
+                            >
+                              <span
+                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: style.dot }}
+                              />
+                              {label}
+                              <span className="text-[10px] opacity-60">{count}</span>
+                            </button>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Locked filter pill — separated visually when mood pills also present */}
+                    {anyFrozen && (
+                      <>
+                        {moodCounts.size >= 2 && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                        <button
+                          onClick={() => setActiveFreezeFilter(activeFreezeFilter === "locked" ? "all" : "locked")}
+                          title={activeFreezeFilter === "locked" ? "Show all palettes" : "Show only locked palettes"}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            activeFreezeFilter === "locked"
+                              ? "bg-indigo-100 text-indigo-700 border-indigo-300 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700"
+                              : "bg-[var(--surface)] text-indigo-500 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:text-indigo-400 dark:border-indigo-800/60 dark:hover:bg-indigo-950/20"
+                          }`}
+                        >
+                          <Lock size={9} className="flex-shrink-0" />
+                          Locked
+                          <span className="text-[10px] opacity-60">{frozenInView}</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -697,6 +729,16 @@ export default function Home() {
                       <X size={10} className="shrink-0" />
                     </button>
                   )}
+                  {activeFreezeFilter === "locked" && (
+                    <button
+                      onClick={() => setActiveFreezeFilter("all")}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <Lock size={10} className="shrink-0 text-indigo-400" />
+                      Locked only
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
                 </div>
 
                 <Button
@@ -706,6 +748,7 @@ export default function Home() {
                     setSearch("");
                     setActiveTag("all");
                     setActiveMood("all");
+                    setActiveFreezeFilter("all");
                     setColorSearchActive(false);
                     setColorSearchHex("");
                   }}
