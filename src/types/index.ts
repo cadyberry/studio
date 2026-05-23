@@ -10,6 +10,7 @@ export interface Palette {
   sourceImage?: string; // base64 thumbnail
   collectionId?: string;
   tags: string[];
+  frozen?: boolean;
   createdAt: string;
   updatedAt: string;
 }

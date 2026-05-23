@@ -137,6 +137,13 @@ export default function Home() {
 
   const coverPaletteId = activeCollectionInfo?.coverPaletteId ?? null;
 
+  const frozenSelectedCount = selectedIds.size > 0
+    ? [...selectedIds].filter(id => palettes.find(p => p.id === id)?.frozen).length
+    : 0;
+  const deletableSelectedIds = selectedIds.size > 0
+    ? [...selectedIds].filter(id => !palettes.find(p => p.id === id)?.frozen)
+    : [];
+
   // Pin cover palette to front of grid when browsing a specific collection
   const displayList = (() => {
     if (activeCollection === "all" || !coverPaletteId) return sorted;
@@ -845,9 +852,10 @@ export default function Home() {
               <Button
                 variant={bulkDeleteConfirm ? "danger" : "outline"}
                 size="sm"
+                disabled={deletableSelectedIds.length === 0}
                 onClick={() => {
                   if (bulkDeleteConfirm) {
-                    deletePalettes([...selectedIds]);
+                    deletePalettes(deletableSelectedIds);
                     clearSelection();
                   } else {
                     setBulkDeleteConfirm(true);
@@ -855,10 +863,13 @@ export default function Home() {
                   }
                 }}
                 className="shrink-0 gap-1.5"
+                title={deletableSelectedIds.length === 0 ? "All selected palettes are locked" : undefined}
               >
                 <Trash2 size={13} />
                 {bulkDeleteConfirm
-                  ? `Delete ${selectedIds.size}?`
+                  ? frozenSelectedCount > 0
+                    ? `Delete ${deletableSelectedIds.length} (${frozenSelectedCount} locked)`
+                    : `Delete ${selectedIds.size}?`
                   : `Delete ${selectedIds.size}`}
               </Button>
 

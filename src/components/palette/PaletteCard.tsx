@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -201,6 +201,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       exit={{ opacity: 0, scale: 0.96 }}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
         isCover ? "border-amber-300 shadow-sm ring-1 ring-amber-200/60" :
+        palette.frozen ? "border-indigo-200 dark:border-indigo-800/60 ring-1 ring-indigo-100/60 dark:ring-indigo-900/40" :
         isSelected ? "border-[var(--accent)] shadow-sm" : "border-[var(--border)]"
       } ${className ?? ""}`}
     >
@@ -229,77 +230,125 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         </div>
       )}
 
-      {/* Swatch strip — drag to reorder */}
-      <Reorder.Group
-        as="div"
-        axis="x"
-        values={orderedColors}
-        onReorder={handleReorder}
-        className={`flex ${isCover ? "h-40" : "h-28"}`}
-        style={{ listStyle: "none", margin: 0, padding: 0 }}
-      >
-        {orderedColors.map((color, i) => {
-          const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
-          return (
-            <Reorder.Item
-              key={color._key}
-              value={color}
-              as="div"
-              style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
-              className="group/swatch cursor-grab active:cursor-grabbing"
-              onDragEnd={handleDragEnd}
-              onClick={() => {
-                if (Date.now() - dragEndTimeRef.current > 250) {
-                  navigator.clipboard.writeText(color.hex);
-                }
-              }}
-              title={`${color.hex} — drag to reorder · click to copy`}
-              whileDrag={{ scale: 1.04, zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
-            >
-              {/* Color match ring */}
-              {isMatch && (
-                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
-              )}
-              {/* Hex label on hover */}
-              <div
-                className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
-                style={{ color: getContrastColor(color.hex) }}
-              >
-                <span className="text-[9px] font-mono font-bold tracking-wider">
-                  {color.hex.slice(1).toUpperCase()}
-                </span>
-              </div>
-              {/* Color match ΔE badge */}
-              {isMatch && bestMatchIndex && (
+      {/* Swatch strip */}
+      <div className="relative">
+        {palette.frozen ? (
+          /* Frozen: static swatches, no drag, no edit */
+          <div className={`flex ${isCover ? "h-40" : "h-28"}`}>
+            {orderedColors.map((color, i) => {
+              const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
+              return (
                 <div
-                  className="absolute top-1.5 left-1.5 pointer-events-none px-1 py-px rounded text-[8px] font-bold leading-tight"
-                  style={{
-                    backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.6)",
-                    color: getContrastColor(color.hex),
-                  }}
+                  key={color._key}
+                  style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
+                  className="group/swatch cursor-pointer"
+                  onClick={() => navigator.clipboard.writeText(color.hex)}
+                  title={`${color.hex} — click to copy`}
                 >
-                  ΔE {bestMatchIndex.dE.toFixed(1)}
+                  {isMatch && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+                  )}
+                  <div
+                    className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                    style={{ color: getContrastColor(color.hex) }}
+                  >
+                    <span className="text-[9px] font-mono font-bold tracking-wider">
+                      {color.hex.slice(1).toUpperCase()}
+                    </span>
+                  </div>
+                  {isMatch && bestMatchIndex && (
+                    <div
+                      className="absolute top-1.5 left-1.5 pointer-events-none px-1 py-px rounded text-[8px] font-bold leading-tight"
+                      style={{
+                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.6)",
+                        color: getContrastColor(color.hex),
+                      }}
+                    >
+                      ΔE {bestMatchIndex.dE.toFixed(1)}
+                    </div>
+                  )}
                 </div>
-              )}
-              {/* Edit pencil */}
-              <button
-                className="absolute top-1 right-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
-                style={{
-                  backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
-                  color: getContrastColor(color.hex),
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditSwatch(palette, i);
-                }}
-                title="Edit color"
-              >
-                <Pencil size={9} />
-              </button>
-            </Reorder.Item>
-          );
-        })}
-      </Reorder.Group>
+              );
+            })}
+          </div>
+        ) : (
+          /* Unfrozen: drag-to-reorder with swatch editing */
+          <Reorder.Group
+            as="div"
+            axis="x"
+            values={orderedColors}
+            onReorder={handleReorder}
+            className={`flex ${isCover ? "h-40" : "h-28"}`}
+            style={{ listStyle: "none", margin: 0, padding: 0 }}
+          >
+            {orderedColors.map((color, i) => {
+              const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
+              return (
+                <Reorder.Item
+                  key={color._key}
+                  value={color}
+                  as="div"
+                  style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
+                  className="group/swatch cursor-grab active:cursor-grabbing"
+                  onDragEnd={handleDragEnd}
+                  onClick={() => {
+                    if (Date.now() - dragEndTimeRef.current > 250) {
+                      navigator.clipboard.writeText(color.hex);
+                    }
+                  }}
+                  title={`${color.hex} — drag to reorder · click to copy`}
+                  whileDrag={{ scale: 1.04, zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
+                >
+                  {isMatch && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+                  )}
+                  <div
+                    className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                    style={{ color: getContrastColor(color.hex) }}
+                  >
+                    <span className="text-[9px] font-mono font-bold tracking-wider">
+                      {color.hex.slice(1).toUpperCase()}
+                    </span>
+                  </div>
+                  {isMatch && bestMatchIndex && (
+                    <div
+                      className="absolute top-1.5 left-1.5 pointer-events-none px-1 py-px rounded text-[8px] font-bold leading-tight"
+                      style={{
+                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.6)",
+                        color: getContrastColor(color.hex),
+                      }}
+                    >
+                      ΔE {bestMatchIndex.dE.toFixed(1)}
+                    </div>
+                  )}
+                  <button
+                    className="absolute top-1 right-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
+                    style={{
+                      backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                      color: getContrastColor(color.hex),
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditSwatch(palette, i);
+                    }}
+                    title="Edit color"
+                  >
+                    <Pencil size={9} />
+                  </button>
+                </Reorder.Item>
+              );
+            })}
+          </Reorder.Group>
+        )}
+
+        {/* Frozen lock badge */}
+        {palette.frozen && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/70 dark:bg-black/50 backdrop-blur-sm pointer-events-none">
+            <Lock size={8} className="text-indigo-500 dark:text-indigo-400" />
+            <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-300 leading-none uppercase tracking-wide">locked</span>
+          </div>
+        )}
+      </div>
 
       {/* Info row */}
       <div className="px-3 py-2.5 flex items-center justify-between">
@@ -320,12 +369,16 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               spellCheck={false}
             />
           ) : (
-            <div
-              className="text-sm font-medium truncate cursor-text select-none"
-              onDoubleClick={startInlineEdit}
-              title="Double-click to rename"
-            >
-              {palette.name}
+            <div className="flex items-center gap-1.5 min-w-0">
+              {palette.frozen && <Lock size={10} className="text-indigo-400 dark:text-indigo-500 flex-shrink-0" />}
+              <div
+                className="text-sm font-medium truncate select-none"
+                style={{ cursor: palette.frozen ? "default" : "text" }}
+                onDoubleClick={palette.frozen ? undefined : startInlineEdit}
+                title={palette.frozen ? "Unlock to rename" : "Double-click to rename"}
+              >
+                {palette.name}
+              </div>
             </div>
           )}
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
@@ -412,10 +465,21 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             </Button>
           )}
           <Button
+            variant={palette.frozen ? "outline" : "ghost"}
+            size="sm"
+            onClick={() => updatePalette(palette.id, { frozen: !palette.frozen })}
+            title={palette.frozen ? "Unlock palette" : "Lock palette (freeze)"}
+            className={palette.frozen ? "text-indigo-500 border-indigo-300 dark:border-indigo-700" : ""}
+          >
+            {palette.frozen ? <Lock size={13} className="text-indigo-500" /> : <LockOpen size={13} />}
+          </Button>
+          <Button
             variant={confirming ? "danger" : "ghost"}
             size="sm"
-            onClick={handleDelete}
-            title={confirming ? "Click again to delete" : "Delete"}
+            onClick={palette.frozen ? undefined : handleDelete}
+            disabled={palette.frozen}
+            title={palette.frozen ? "Unlock to delete" : confirming ? "Click again to delete" : "Delete"}
+            className={palette.frozen ? "opacity-30 cursor-not-allowed" : ""}
           >
             <Trash2 size={13} />
           </Button>
