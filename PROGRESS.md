@@ -2,6 +2,38 @@
 
 ---
 
+## 2026-05-23 — Session 37: Keyboard Shortcuts
+
+### What was done
+- **Keyboard shortcuts for hovered palette cards** — hover any card and fire actions without clicking into the action row
+  - `D` — duplicate the palette (with the same 1.5s "✓" flash feedback as the click action)
+  - `F2` — start inline rename (focuses and selects the name input, same as double-clicking the name)
+  - `H` — open Harmony View for the palette
+  - `E` — open Export modal
+  - `L` — toggle lock (freeze/unfreeze); when frozen, `L` unlocks
+  - `Delete` — delete with the existing two-press confirm flow (press once for warning, press again within 2s to confirm)
+  - Modifier-key guard: shortcuts are suppressed when Cmd/Ctrl/Alt is held, so browser shortcuts (⌘D bookmark, etc.) pass through unaffected
+  - Input-field guard: shortcuts are suppressed when any `INPUT`, `TEXTAREA`, or `SELECT` is focused — inline rename, tags, and notes overlays all disable shortcuts naturally
+- **Shortcut hint strip in card footer** — the age indicator row now shows keyboard hints on hover
+  - Right side of the footer shows `D dup · F2 name · H view · L lock · Del` in mono font
+  - When the palette is frozen, shows `L unlock` instead (all others are disabled for frozen palettes)
+  - Left side shows "Edited X ago" when edited, otherwise "Created X ago" (condensed from the previous two-element layout)
+- Implementation: one `useEffect` mounted once per card, using refs for all mutable values (palette, callbacks, store actions); `isHoveredRef` toggled by `onMouseEnter`/`onMouseLeave` on the card wrapper — zero re-registrations, zero stale closures
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Ref-based handler, mounted once** — a re-registering effect (many deps) would add/remove the document listener on every palette state change; with refs, the listener is stable for the card's lifetime
+- **`isHoveredRef` on `motion.div` wrapper** — Framer Motion's `onMouseEnter`/`onMouseLeave` work correctly with animated cards; no z-index edge cases from nested listeners
+- **Footer hints change state on freeze** — `L unlock` on frozen cards makes the shortcut map honest; other shortcuts are silently suppressed for frozen palettes (same as their click counterparts)
+- **`Delete` only, not `Backspace`** — `Backspace` can trigger browser back-navigation; `Delete` is unambiguous in this context
+
+### What's next (Session 38)
+- **Sort by most-notes** — add "Most annotated" as a sort option to surface well-described palettes
+- **Quick duplicate from collection hover panel** — add a Duplicate button inside the palette preview tooltip on collection sidebar rows
+- **Palette search by shortcut** — `/` key focuses the search bar from anywhere in the app (standard convention)
+
+---
+
 ## 2026-05-23 — Session 36: Notes Search Integration
 
 ### What was done
