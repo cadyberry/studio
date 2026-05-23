@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-05-23 — Session 40: Sort by Most Annotated, Interactive Collection Tooltip, Age Badge Tooltip
+
+### What was done
+- **Sort by most-annotated** — added "Most annotated" option to the sort dropdown; palettes with longer notes bubble to the top, surfacing well-described palettes instantly
+- **Interactive collection hover panel** — converted the collection sidebar tooltip from CSS-only group-hover (pointer-events-none) to state-driven (onMouseEnter/Leave on both row and tooltip), so the user can hover over the tooltip without it disappearing; each palette row in the panel now shows a **quick Duplicate button** (CopyPlus icon) that appears on row hover and immediately duplicates that palette
+- **Age badge full-date tooltip** — hovering the relative-age text in the palette card footer ("Edited 3 days ago") now reveals the precise date via native `title` attribute: "Edited May 20, 2026 · Created May 15, 2026"
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **State over CSS for interactive tooltip** — CSS `group-hover` works fine for read-only overlays, but once the tooltip needs interactive children (buttons), React state is the right mechanism; the mouseleave/enter bridge keeps the tooltip stable as the cursor moves from row to panel
+- **Native `title` for age tooltip** — a native tooltip is zero-code overhead and accessible; no custom Tooltip component needed for this use case
+
+### What's next (Session 41)
+- **Palette stats panel** — a slide-out or expandable section showing overall library stats: total swatches, most-used mood, collection count, oldest/newest palette, annotation coverage %
+- **Collection rename inline** — double-click a collection name in the sidebar to rename it in-place (currently requires a separate modal)
+- **"Jump to collection" from palette card** — clicking "in collection" badge on a palette card navigates to that collection in the sidebar
+
+---
+
 ## 2026-05-23 — Session 39: Keyboard Help Overlay
 
 ### What was done
