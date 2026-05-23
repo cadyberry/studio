@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-23 — Session 35: Palette Notes
+
+### What was done
+- **Palette notes/caption field** — each palette card can now hold a short freeform note for creative context
+  - **StickyNote button** in the action row (after Tag, before Download); uses outline style + yellow fill when a note exists, ghost style when empty — immediately communicates whether a note is present without requiring hover
+  - **Notes overlay** — clicking opens a bottom-anchored overlay (same design pattern as tag editor): 3-row textarea, 280-char limit, live character counter
+  - **Auto-save on blur** — leaving the textarea (blur) commits the note; Escape cancels and reverts to the previous value; matches the mental model of inline rename
+  - **Note preview** — when a note exists, it appears as a small italic muted line below the tags/mood row (2-line clamp); full text on `title` tooltip on hover; a lightweight always-visible signal without cluttering the card
+  - **Duplicate carries notes** — `duplicatePalette` now copies the `notes` field so copied palettes inherit their creative context
+  - **Mutually exclusive overlays** — opening notes closes any open tag or AI-naming panel; opening tags or AI naming closes notes; prevents stacked overlays
+  - `notes?: string` added to `Palette` type — optional, backward compatible; existing palettes have no note by default
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Auto-save on blur, not explicit Save button** — lower friction for annotations; consistent with inline rename (blur commits, Esc cancels); notes are low-stakes creative context, not structured data requiring confirmation
+- **280-char limit** — long enough for a meaningful annotation ("autumn forest walk, possible for Spring Drop collection, warm earthy variant"); short enough that notes stay as context clues rather than documentation essays
+- **Italic preview, not a labeled field** — "Note:" label adds visual noise when the italic style already signals "this is an annotation"; keeps the card compact
+- **Yellow fill on StickyNote icon when note exists** — immediately scannable at a glance across the library grid without needing to hover each card; uses yellow for "sticky note" semantics rather than adopting any existing color (amber=cover crown, indigo=frozen)
+- **Notes editable when frozen** — notes are annotations, not structural palette data; blocking notes on frozen palettes would be confusing (you can't add "approved for Spring Drop" after finalizing without unlocking)
+
+### What's next (Session 36)
+- **Keyboard shortcut hints in card footer** — on hover, show micro-hints ("⌘D duplicate · F2 rename · L lock") in the age/created footer strip to surface discoverability
+- **Quick duplicate from collection hover tooltip** — add a Duplicate button inside the palette preview panel that appears when hovering a collection in the sidebar
+- **Notes search integration** — extend the existing search bar to also match palette notes text, so Cady can type "forest" and surface all palettes annotated with forest-related context
+
+---
+
 ## 2026-05-23 — Session 34: Freeze Filter Pill
 
 ### What was done
