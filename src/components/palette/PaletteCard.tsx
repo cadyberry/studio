@@ -78,6 +78,72 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [notesValue, setNotesValue] = useState(palette.notes ?? "");
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Refs so keyboard handler always sees latest values without re-registering
+  const isHoveredRef = useRef(false);
+  const paletteRef = useRef(palette);
+  paletteRef.current = palette;
+  const onDuplicateRef = useRef(onDuplicate);
+  onDuplicateRef.current = onDuplicate;
+  const onHarmonyRef = useRef(onHarmony);
+  onHarmonyRef.current = onHarmony;
+  const onExportRef = useRef(onExport);
+  onExportRef.current = onExport;
+  const updatePaletteRef = useRef(updatePalette);
+  updatePaletteRef.current = updatePalette;
+  const deletePaletteRef = useRef(deletePalette);
+  deletePaletteRef.current = deletePalette;
+
+  // Keyboard shortcuts — active when this card is hovered, no text field is focused
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!isHoveredRef.current) return;
+      const target = e.target as HTMLElement;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const pal = paletteRef.current;
+      switch (e.key) {
+        case "d": case "D":
+          e.preventDefault();
+          onDuplicateRef.current(pal);
+          setDuplicated(true);
+          setTimeout(() => setDuplicated(false), 1500);
+          break;
+        case "F2":
+          if (!pal.frozen) {
+            e.preventDefault();
+            setInlineNameValue(pal.name);
+            setInlineEditing(true);
+            setTimeout(() => { inlineInputRef.current?.focus(); inlineInputRef.current?.select(); }, 30);
+          }
+          break;
+        case "l": case "L":
+          e.preventDefault();
+          updatePaletteRef.current(pal.id, { frozen: !pal.frozen });
+          break;
+        case "h": case "H":
+          e.preventDefault();
+          onHarmonyRef.current(pal);
+          break;
+        case "e": case "E":
+          e.preventDefault();
+          onExportRef.current(pal);
+          break;
+        case "Delete":
+          if (!pal.frozen) {
+            e.preventDefault();
+            setConfirming((prev) => {
+              if (prev) { deletePaletteRef.current(pal.id); return false; }
+              setTimeout(() => setConfirming(false), 2000);
+              return true;
+            });
+          }
+          break;
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []); // stable via refs
+
   // Sync inline name value when palette.name changes externally
   useEffect(() => {
     if (!inlineEditing) setInlineNameValue(palette.name);
@@ -253,6 +319,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
+      onMouseEnter={() => { isHoveredRef.current = true; }}
+      onMouseLeave={() => { isHoveredRef.current = false; }}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
         isCover ? "border-amber-300 shadow-sm ring-1 ring-amber-200/60" :
         palette.frozen ? "border-indigo-200 dark:border-indigo-800/60 ring-1 ring-indigo-100/60 dark:ring-indigo-900/40" :
@@ -556,16 +624,18 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         </div>
       </div>
 
-      {/* Age indicator — visible on hover */}
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-3 py-1 border-t border-[var(--border)] bg-[var(--surface-2)]/60 flex items-center justify-between">
-        <span className="text-[10px] text-[var(--muted)]">
-          Created {formatRelativeAge(palette.createdAt)}
+      {/* Footer — visible on hover: age on left, keyboard hints on right */}
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-3 py-1 border-t border-[var(--border)] bg-[var(--surface-2)]/60 flex items-center justify-between gap-2">
+        <span className="text-[10px] text-[var(--muted)] shrink-0">
+          {palette.updatedAt !== palette.createdAt
+            ? `Edited ${formatRelativeAge(palette.updatedAt)}`
+            : `Created ${formatRelativeAge(palette.createdAt)}`}
         </span>
-        {palette.updatedAt !== palette.createdAt && (
-          <span className="text-[10px] text-[var(--muted)]">
-            Edited {formatRelativeAge(palette.updatedAt)}
-          </span>
-        )}
+        <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
+          {palette.frozen
+            ? "L unlock"
+            : "D dup · F2 name · H view · L lock · Del"}
+        </span>
       </div>
 
       {/* AI naming overlay */}
