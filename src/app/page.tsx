@@ -14,6 +14,7 @@ import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
+import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection } from "@/types";
@@ -59,6 +60,7 @@ export default function Home() {
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (!exportToast) return;
@@ -66,12 +68,20 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [exportToast]);
 
-  // `/` focuses search bar from anywhere; Escape blurs it
+  // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const inInput = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
+      if (e.key === "?" && !inInput) {
+        e.preventDefault();
+        setShowHelp((v) => !v);
+        return;
+      }
+
+      if (e.key !== "/" || inInput) return;
       e.preventDefault();
       if (colorSearchActive) {
         setColorSearchActive(false);
@@ -220,9 +230,18 @@ export default function Home() {
             <span className="text-base font-semibold tracking-tight">Palette</span>
             <span className="text-xs text-[var(--muted)] hidden sm:block">— color intelligence for creators</span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-[var(--muted)]">
-            <Sparkles size={12} />
-            <span>{palettes.length} palette{palettes.length !== 1 ? "s" : ""}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-xs text-[var(--muted)]">
+              <Sparkles size={12} />
+              <span>{palettes.length} palette{palettes.length !== 1 ? "s" : ""}</span>
+            </div>
+            <button
+              onClick={() => setShowHelp(true)}
+              title="Keyboard shortcuts (?)"
+              className="flex items-center justify-center w-5 h-5 rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors text-[11px] font-semibold font-mono border border-[var(--border)] leading-none"
+            >
+              ?
+            </button>
           </div>
         </div>
       </header>
@@ -1006,6 +1025,9 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Keyboard help overlay */}
+      <KeyboardHelpModal open={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Fork-from-share toast */}
       <AnimatePresence>
