@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-05-24 — Session 43: Clear-Collection Badge × + Collection Description Tooltip
+
+### What was done
+- **"Clear collection" × on badge** — the "in collection" chip on each palette card now shows a small `×` button on hover that removes the palette from its collection in one click, no modal required
+  - Badge refactored from a single button/span into a `group/col-badge` wrapper containing the collection-name button plus the × button
+  - The × fades in on `group-hover/col-badge` (opacity-0 → opacity-100) so it's not cluttering the card at rest
+  - On hover the × turns red (`hover:bg-red-100 hover:text-red-500`) to signal a destructive action
+  - Calls `updatePalette(id, { collectionId: undefined })` — reuses the existing store action, no new logic needed
+  - `onClearCollection?: () => void` prop added to PaletteCard; wired in page.tsx per-card via an inline callback
+  - `updatePalette` added to the store destructure in page.tsx (was missing; previously only used inside PaletteCard itself)
+  - Collection name button shrinks from max-w-[120px] → max-w-[100px] to give the × a comfortable slot without layout shift
+- **Collection description tooltip** — hovering a collection name in the sidebar now shows the collection's description in the native browser tooltip
+  - Extends the existing `title="Double-click to rename"` on the collection name `<span>` to `title={c.description ? \`${c.description}\n\nDouble-click to rename\` : "Double-click to rename"}`
+  - Zero new code or components — native title attribute, consistent with age-badge and other tooltip patterns in the app
+  - Visible when the CollectionModal has been used to add a description; silently absent otherwise
+- Production build: clean compile, zero TypeScript errors
+
+### Key decisions
+- **Fade-in × not always-visible** — the badge is used for display and navigation; the × would be visual noise on every card in the library; group-hover reveal follows the same pattern as action buttons in the card row
+- **Red on hover, not always red** — the × is only destructive when clicked; visual red confirmation on hover (not at rest) keeps the badge calm in the normal non-hover state
+- **Native title for description tooltip** — consistent with how the app already surfaces secondary text (age badge full-date, cohesion score, etc.); the `\n\n` separator between description and the rename hint is legible in all browsers
+
+### What's next (Session 44)
+- **Stats panel count-up animation** — animate the six stats numbers on first mount using Framer Motion (count from 0 to N over 600ms), adding polish to the library sidebar
+- **Collection palette count badge on jump-to-collection button** — when clicking the in-collection chip navigates to a collection, briefly flash a highlight on the collection sidebar row to orient the user
+- **"Empty collection" indicator** — when a named collection has 0 palettes, show a soft placeholder state in the library grid ("This collection is empty — add palettes via the folder icon on any card")
+
+---
+
 ## 2026-05-23 — Session 42: Palette Stats Panel
 
 ### What was done
