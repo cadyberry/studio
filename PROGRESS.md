@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-24 — Session 50: Collection Archived State
+
+### What was done
+- **Collection archived state** — soft-archive any collection to remove it from the active sidebar without deleting it or its palettes
+  - **Archive button** on every active collection row (amber hover to distinguish it from the ZIP export/cohesion buttons) — appears on hover alongside the existing export and cohesion buttons
+  - Archiving the currently active collection automatically resets the view to "All palettes" — no orphaned active filter
+  - **Collapsible "Archived · N" section** at the bottom of the collections sidebar, collapsed by default; animated expand/collapse via Framer Motion height transition (18ms)
+  - Each archived collection row shows its palette count and a **RotateCcw restore button** (emerald hover) — positive semantic, easy one-click restoration
+  - Archived collections are excluded from the bulk-select "Move to collection" dropdown — you assign to active collections, not archived ones; but archived collections are still navigable by expanding the section
+  - **ZIP export button icon** changed from `Archive` → `Download` to free the `Archive` icon for its new collection-archiving semantic (no confusion between the two)
+  - `archived?: boolean` added to `Collection` type — optional, backward-compatible; all existing collections are active by default
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **`archived` flag, not deletion** — archiving is always reversible; palettes in archived collections are never hidden from the "All palettes" view
+- **Collapsed by default** — the whole point of archiving is to keep the workspace clean; expanding requires an intentional click, so archived collections stay out of the way
+- **Amber hover on archive button** — amber is the universal "caution/warning" color here; it signals "this is a de-emphasize action" without being destructive red; contrasts with the emerald restore button
+- **Auto-reset to "all" on archive** — if you're viewing "Spring Drop" and archive it, you shouldn't be left in a filtered state with no palettes showing; dropping to "all" is the safest exit
+- **Excluded from bulk assignment dropdown** — the dropdown is a forward-looking action ("move this palette to…"); archived collections are past work, not active destinations
+
+### What's next (Session 51)
+- **Palette card harmony mini-preview** — on hover, show 2–3 derived complementary/analogous colors on the card as a tiny swatch strip below the main swatches
+- **Tag filter from card** — clicking a tag pill on a palette card filters the library to that tag (currently tag pills on cards are display-only; making them clickable routes to `setActiveTag`)
+- **Collection palette count badge** — show total swatch count (not just palette count) as a secondary stat on each collection sidebar row
+
+---
+
 ## 2026-05-24 — Session 49: Tag Autocomplete
 
 ### What was done
