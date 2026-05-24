@@ -27,6 +27,16 @@ function highlightMatch(text: string, query: string | undefined): ReactNode {
   );
 }
 
+function getFreshness(createdAt: string): { label: string; bgClass: string; textClass: string; opacity: number } | null {
+  const days = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  if (days < 1)  return { label: "new", bgClass: "bg-emerald-100 dark:bg-emerald-900/30", textClass: "text-emerald-600 dark:text-emerald-400", opacity: 1 };
+  if (days < 2)  return { label: "1d",  bgClass: "bg-emerald-100 dark:bg-emerald-900/30", textClass: "text-emerald-600 dark:text-emerald-400", opacity: 0.85 };
+  if (days < 7)  return { label: `${Math.floor(days)}d`, bgClass: "bg-green-100 dark:bg-green-900/30", textClass: "text-green-600 dark:text-green-500", opacity: Math.max(0.65, 0.85 - (days - 2) * 0.05) };
+  if (days < 14) return { label: "1w",  bgClass: "bg-lime-100 dark:bg-lime-900/30",   textClass: "text-lime-700 dark:text-lime-500",   opacity: 0.55 };
+  if (days < 21) return { label: "2w",  bgClass: "bg-amber-100 dark:bg-amber-900/30", textClass: "text-amber-600 dark:text-amber-500", opacity: 0.40 };
+  return null;
+}
+
 const MOOD_STYLES: Record<PaletteMood, { bg: string; text: string; label: string }> = {
   vivid:  { bg: "bg-rose-100 dark:bg-rose-900/30",   text: "text-rose-600 dark:text-rose-400",   label: "vivid"  },
   muted:  { bg: "bg-zinc-100 dark:bg-zinc-800",       text: "text-zinc-500 dark:text-zinc-400",   label: "muted"  },
@@ -289,6 +299,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
 
   const mood = getPaletteMood(palette.colors);
   const moodStyle = MOOD_STYLES[mood];
+  const freshness = getFreshness(palette.createdAt);
 
   // Closest swatch to the active color search query
   const bestMatchIndex = colorMatchHex
@@ -514,6 +525,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             >
               {moodStyle.label}
             </span>
+            {freshness && (
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${freshness.bgClass} ${freshness.textClass}`}
+                style={{ opacity: freshness.opacity }}
+                title={`Created ${formatRelativeAge(palette.createdAt)}`}
+              >
+                {freshness.label}
+              </span>
+            )}
             {palette.collectionId && (
               <span className="group/col-badge inline-flex items-center rounded overflow-hidden bg-[var(--surface-2)] text-[10px] text-[var(--muted)]">
                 {onJumpToCollection ? (
