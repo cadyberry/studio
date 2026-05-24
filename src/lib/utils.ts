@@ -323,6 +323,53 @@ export function getPaletteMood(colors: { hex: string }[]): PaletteMood {
   return "dreamy";
 }
 
+// ─── Harmony Color Derivation ────────────────────────────────────────────────
+
+export interface HarmonyColor {
+  hex: string;
+  label: string;
+  role: "analogous" | "complement" | "split" | "triadic";
+}
+
+// Derives harmony colors from the most saturated color in a palette.
+// Preserves saturation and lightness; shifts hue to standard harmony positions.
+// Filters out hues already present in the palette (within ±8°).
+export function getHarmonyColors(colors: { hex: string }[]): HarmonyColor[] {
+  if (colors.length === 0) return [];
+
+  const analyzed = colors.map((c) => {
+    const rgb = hexToRgb(c.hex) ?? { r: 128, g: 128, b: 128 };
+    return { hex: c.hex, hsl: rgbToHsl(rgb.r, rgb.g, rgb.b) };
+  });
+
+  // Use the most saturated color as the harmony anchor
+  const anchor = analyzed.reduce((best, c) => (c.hsl.s > best.hsl.s ? c : best));
+  const { h, s, l } = anchor.hsl;
+
+  const existingHues = analyzed.map((c) => c.hsl.h);
+  const hueConflicts = (targetH: number) =>
+    existingHues.some((eh) => {
+      const diff = Math.abs(((targetH - eh + 540) % 360) - 180);
+      return diff < 8;
+    });
+
+  const derive = (shift: number, label: string, role: HarmonyColor["role"]): HarmonyColor | null => {
+    const targetH = (h + shift + 360) % 360;
+    if (hueConflicts(targetH)) return null;
+    return { hex: hslToHex(targetH, Math.max(s, 30), l), label, role };
+  };
+
+  return [
+    derive(-30, "analog −30°", "analogous"),
+    derive(30, "analog +30°", "analogous"),
+    derive(150, "split −", "split"),
+    derive(180, "complement", "complement"),
+    derive(210, "split +", "split"),
+    derive(120, "triadic", "triadic"),
+    derive(240, "triadic", "triadic"),
+  ].filter((c): c is HarmonyColor => c !== null).slice(0, 5);
+}
+
 // ─── Collection Cohesion Score ────────────────────────────────────────────────
 
 // Returns an overall cohesion score (0–100) for a set of palettes using the

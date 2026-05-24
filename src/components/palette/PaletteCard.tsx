@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, type PaletteMood } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -311,6 +311,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const mood = getPaletteMood(palette.colors);
   const moodStyle = MOOD_STYLES[mood];
   const freshness = getFreshness(palette.createdAt);
+  const harmonyColors = getHarmonyColors(palette.colors);
 
   // Tag autocomplete: existing library tags that match current input, not already on this palette
   const currentTags = palette.tags ?? [];
@@ -505,6 +506,39 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           </div>
         )}
       </div>
+
+      {/* Harmony mini-preview — slides in on hover */}
+      {harmonyColors.length > 0 && (
+        <div className="overflow-hidden max-h-0 group-hover:max-h-9 transition-[max-height] duration-200 ease-out">
+          <div className="flex h-9 border-t border-[var(--border)]">
+            {/* Label */}
+            <div className="flex-shrink-0 flex items-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
+              <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 uppercase select-none whitespace-nowrap">
+                harmony
+              </span>
+            </div>
+            {/* Derived color swatches */}
+            {harmonyColors.map((hc) => (
+              <div
+                key={hc.hex}
+                className="group/hc flex-1 relative cursor-pointer"
+                style={{ backgroundColor: hc.hex }}
+                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(hc.hex); }}
+                title={`${hc.label} · ${hc.hex}`}
+              >
+                <div
+                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/hc:opacity-100 transition-opacity pointer-events-none"
+                  style={{ color: getContrastColor(hc.hex) }}
+                >
+                  <span className="text-[8px] font-mono font-bold tracking-tight leading-none">
+                    {hc.hex.slice(1).toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Info row */}
       <div className="px-3 py-2.5 flex items-center justify-between">
