@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-05-24 — Session 53: Harmony Mini-Preview Strip on Palette Cards
+
+### What was done
+- **Harmony mini-preview strip** — a 36px strip slides in below the swatch section on card hover, revealing up to 5 derived harmony colors so creators get an instant sense of what hues complement their palette without opening the full HarmonyModal
+  - Computed from the palette's most **saturated color** as the anchor — this is almost always the most visually dominant/interesting swatch, so derivations feel intentional
+  - Five harmony positions: **analogous −30°**, **analogous +30°**, **split-complement −150°**, **complement 180°**, **split-complement +150°** — only positions not already in the palette (within ±8° hue tolerance) are shown, so the strip always shows genuinely new options
+  - Each chip copies its hex on click (with `e.stopPropagation()` so it doesn't bubble to the card)
+  - Hover over any chip shows its full label ("analog +30°", "complement", etc.) and hex in the title attribute; the hex appears as a tiny mono overlay on swatch hover
+  - A small `HARMONY` label on the left (same visual language as the keyboard hints footer) identifies the section
+  - Animation: `max-h-0 → max-h-9` with `transition-[max-height] ease-out 200ms` — smooth, no layout shift, hidden completely when not hovered
+  - Strip is completely absent from the DOM if no harmony colors pass the conflict filter (pathological edge case — nearly impossible in practice)
+- **`getHarmonyColors(colors)`** added to `utils.ts` — returns `HarmonyColor[]` with `{ hex, label, role }` fields; saturation is clamped to `Math.max(s, 30)` so even near-achromatic anchors produce visible, usable derivations
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **Most saturated as anchor** — not the first color or the background; the most saturated swatch is the one a creator consciously chose as a focal point, so its harmonics are the most creatively relevant
+- **Hue conflict filter (±8°)** — without this, analogous derivations would often duplicate near-hue swatches already in the palette; filtering gives the strip honest "what's missing" signal
+- **`Math.max(s, 30)` floor on saturation** — prevents achromatic anchors (grays) from producing a strip of gray swatches that all look the same; ensures minimum visual interest
+- **max-h transition not opacity** — using `max-h` collapses the strip completely (zero height, no gap) when not hovered, whereas `opacity-0` would leave a blank gap above the info row
+
+### What's next (Session 54)
+- **Collection swatch count** — secondary stat on each collection sidebar row showing total swatch count (not just palette count), giving a fuller sense of collection density at a glance
+- **Harmony strip "fork to palette" button** — a small "+" button at the right end of the harmony strip that creates a new palette from the 5 derived harmony colors in one click, turning the preview into an actionable starting point
+- **Palette card animated sparkline** — a tiny waveform/histogram showing the hue distribution of the palette swatches
+
 ## 2026-05-24 — Session 52: Active Tag Filter Indicator on Cards
 
 ### What was done
