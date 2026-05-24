@@ -37,7 +37,7 @@ function getTagDotColor(tag: string): string {
 }
 
 export default function Home() {
-  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection } = usePaletteStore();
+  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection, updatePalette } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -491,7 +491,7 @@ export default function Home() {
                             <FolderOpen size={13} className="shrink-0" />
                             <span
                               className="truncate"
-                              title="Double-click to rename"
+                              title={c.description ? `${c.description}\n\nDouble-click to rename` : "Double-click to rename"}
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
                                 setRenamingCollectionId(c.id);
@@ -1002,6 +1002,7 @@ export default function Home() {
                         searchQuery={search || undefined}
                         collectionName={palCollectionName}
                         onJumpToCollection={setActiveCollection}
+                        onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
                       />
                     );
                   })}

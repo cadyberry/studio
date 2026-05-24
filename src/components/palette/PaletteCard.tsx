@@ -54,6 +54,7 @@ interface PaletteCardProps {
   searchQuery?: string;
   collectionName?: string;
   onJumpToCollection?: (collectionId: string) => void;
+  onClearCollection?: () => void;
 }
 
 type NamingState =
@@ -62,7 +63,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -514,19 +515,30 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               {moodStyle.label}
             </span>
             {palette.collectionId && (
-              onJumpToCollection ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onJumpToCollection(palette.collectionId!); }}
-                  title={`Jump to ${collectionName ?? "collection"}`}
-                  className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)] hover:bg-[var(--accent)] hover:text-[var(--accent-fg)] transition-colors max-w-[120px] truncate"
-                >
-                  {collectionName ?? "in collection"}
-                </button>
-              ) : (
-                <span className="bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[10px] text-[var(--muted)] max-w-[120px] truncate">
-                  {collectionName ?? "in collection"}
-                </span>
-              )
+              <span className="group/col-badge inline-flex items-center rounded overflow-hidden bg-[var(--surface-2)] text-[10px] text-[var(--muted)]">
+                {onJumpToCollection ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onJumpToCollection(palette.collectionId!); }}
+                    title={`Jump to ${collectionName ?? "collection"}`}
+                    className="px-1.5 py-0.5 hover:bg-[var(--accent)] hover:text-[var(--accent-fg)] transition-colors max-w-[100px] truncate"
+                  >
+                    {collectionName ?? "in collection"}
+                  </button>
+                ) : (
+                  <span className="px-1.5 py-0.5 max-w-[120px] truncate">
+                    {collectionName ?? "in collection"}
+                  </span>
+                )}
+                {onClearCollection && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onClearCollection(); }}
+                    title="Remove from collection"
+                    className="px-1 py-0.5 opacity-0 group-hover/col-badge:opacity-100 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-all leading-none"
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
             )}
             {palette.tags?.map((tag) => (
               <span
