@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -94,6 +94,7 @@ export default function Home() {
   const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
   const [inlineCollectionName, setInlineCollectionName] = useState("");
   const [flashedCollectionId, setFlashedCollectionId] = useState<string | null>(null);
+  const [showArchivedCollections, setShowArchivedCollections] = useState(false);
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -166,6 +167,8 @@ export default function Home() {
   const allUniqueTags = Array.from(new Set(palettes.flatMap((p) => p.tags ?? [])));
   const untaggedCount = palettes.filter((p) => !p.tags?.length).length;
   const activeCollectionInfo = activeCollection !== "all" ? (collections.find((c) => c.id === activeCollection) ?? null) : null;
+  const activeCollections = collections.filter((c) => !c.archived);
+  const archivedCollections = collections.filter((c) => c.archived);
   const activeCollectionCount = activeCollectionInfo ? palettes.filter((p) => p.collectionId === activeCollection).length : 0;
 
   // Library stats (sidebar widget)
@@ -501,7 +504,7 @@ export default function Home() {
                     All palettes
                     <span className="ml-auto text-xs opacity-60">{palettes.length}</span>
                   </button>
-                  {collections.map((c) => {
+                  {activeCollections.map((c) => {
                     const collectionPalettes = palettes.filter((p) => p.collectionId === c.id);
                     const count = collectionPalettes.length;
                     const cohesionScore = count >= 2 ? computeCohesionScore(collectionPalettes) : null;
@@ -608,8 +611,20 @@ export default function Home() {
                           >
                             {collectionExporting === c.id
                               ? <Loader2 size={12} className="animate-spin" />
-                              : <Archive size={12} />
+                              : <Download size={12} />
                             }
+                          </button>
+                        )}
+                        {!isRenaming && (
+                          <button
+                            onClick={() => {
+                              if (activeCollection === c.id) setActiveCollection("all");
+                              updateCollection(c.id, { archived: true });
+                            }}
+                            className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-amber-500 shrink-0"
+                            title={`Archive "${c.name}"`}
+                          >
+                            <Archive size={12} />
                           </button>
                         )}
                         {!isRenaming && (
@@ -672,6 +687,61 @@ export default function Home() {
                     );
                   })}
                 </div>
+
+                {/* Archived collections — collapsible section */}
+                {archivedCollections.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-[var(--border-subtle)]">
+                    <button
+                      onClick={() => setShowArchivedCollections((v) => !v)}
+                      className="w-full flex items-center gap-1.5 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      {showArchivedCollections ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                      Archived · {archivedCollections.length}
+                    </button>
+                    <AnimatePresence>
+                      {showArchivedCollections && (
+                        <motion.div
+                          key="archived-list"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.18 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-0.5 mt-1.5">
+                            {archivedCollections.map((c) => {
+                              const count = palettes.filter((p) => p.collectionId === c.id).length;
+                              const isActive = activeCollection === c.id;
+                              return (
+                                <div key={c.id} className="group/col-arch flex items-center gap-1">
+                                  <button
+                                    onClick={() => setActiveCollection(c.id)}
+                                    className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors ${
+                                      isActive
+                                        ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                                        : "text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
+                                    }`}
+                                  >
+                                    <FolderOpen size={11} className="shrink-0 opacity-60" />
+                                    <span className="truncate">{c.name}</span>
+                                    <span className="ml-auto opacity-50">{count}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => updateCollection(c.id, { archived: false })}
+                                    className="p-1.5 rounded opacity-0 group-hover/col-arch:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-emerald-600 shrink-0"
+                                    title={`Restore "${c.name}" to active collections`}
+                                  >
+                                    <RotateCcw size={11} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1178,7 +1248,7 @@ export default function Home() {
               <div className="flex-1" />
 
               {/* Assign to collection */}
-              {collections.length > 0 && (
+              {activeCollections.length > 0 && (
                 <div className="flex items-center gap-1.5 shrink-0">
                   <FolderOpen size={13} className="text-[var(--muted)]" />
                   <select
@@ -1195,7 +1265,7 @@ export default function Home() {
                   >
                     <option value="" disabled>Move to collection…</option>
                     <option value="__none__">Remove from collection</option>
-                    {collections.map((c) => (
+                    {activeCollections.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>

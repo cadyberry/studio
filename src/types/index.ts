@@ -21,6 +21,7 @@ export interface Collection {
   name: string;
   description?: string;
   coverPaletteId?: string;
+  archived?: boolean;
   createdAt: string;
   updatedAt: string;
 }
