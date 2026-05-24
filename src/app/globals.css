@@ -65,3 +65,10 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
 }
+
+/* Sidebar collection row flash — triggered when jumping from a palette card chip */
+@keyframes col-flash {
+  0%   { opacity: 0.6; }
+  60%  { opacity: 0.3; }
+  100% { opacity: 0;   }
+}

@@ -93,6 +93,13 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
   const [inlineCollectionName, setInlineCollectionName] = useState("");
+  const [flashedCollectionId, setFlashedCollectionId] = useState<string | null>(null);
+
+  const jumpToCollection = useCallback((id: string) => {
+    setActiveCollection(id);
+    setFlashedCollectionId(id);
+    setTimeout(() => setFlashedCollectionId(null), 820);
+  }, []);
 
   const commitCollectionRename = useCallback(() => {
     if (!renamingCollectionId) return;
@@ -505,6 +512,7 @@ export default function Home() {
                       cohesionScore >= 40 ? "#f59e0b" : "#f43f5e";
                     const isActive = activeCollection === c.id;
                     const isRenaming = renamingCollectionId === c.id;
+                    const isFlashing = flashedCollectionId === c.id;
 
                     const scoreAndCount = (
                       <div className="ml-auto flex items-center gap-1.5 shrink-0">
@@ -528,6 +536,15 @@ export default function Home() {
                         onMouseEnter={() => !isRenaming && setHoveredCollectionId(c.id)}
                         onMouseLeave={() => setHoveredCollectionId(null)}
                       >
+                        {isFlashing && (
+                          <div
+                            className="absolute inset-0 rounded-[var(--radius-sm)] pointer-events-none"
+                            style={{
+                              background: "rgba(139,92,246,1)",
+                              animation: "col-flash 750ms ease-out forwards",
+                            }}
+                          />
+                        )}
                         {isRenaming ? (
                           <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm ${
                             isActive ? "bg-[var(--accent)] text-[var(--accent-fg)]" : "bg-[var(--surface-2)]"
@@ -1094,7 +1111,7 @@ export default function Home() {
                         className={isCoverPalette ? "sm:col-span-2" : ""}
                         searchQuery={search || undefined}
                         collectionName={palCollectionName}
-                        onJumpToCollection={setActiveCollection}
+                        onJumpToCollection={jumpToCollection}
                         onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
                       />
                     );
