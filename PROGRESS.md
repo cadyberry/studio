@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-05-24 — Session 47: Sidebar Flash on Jump-to-Collection
+
+### What was done
+- **Sidebar collection flash** — when the user clicks the in-collection chip on any palette card, the matching sidebar collection row briefly flashes violet to orient their eye
+  - `jumpToCollection(id)` handler wraps `setActiveCollection` with a `flashedCollectionId` state, auto-cleared after 820ms
+  - An absolutely-positioned overlay `<div>` renders inside the `div.group/col.relative` container only while `flashedCollectionId === c.id`; a `@keyframes col-flash` CSS animation runs opacity 0.6→0 over 750ms with `ease-out forwards` — fully settled before the state clears at 820ms
+  - `pointer-events: none` on the overlay ensures hover and click targets underneath are never blocked
+  - Violet (`rgba(139,92,246,1)`) was chosen to match Palette's accent palette and contrast clearly against both active (dark) and inactive (light) row backgrounds
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **CSS keyframe over Framer Motion** — the flash is a one-shot "fire and forget" animation; a CSS `forwards` fill is simpler than an exit animation and doesn't need `AnimatePresence`
+- **820ms clear / 750ms animation** — the 70ms gap guarantees the animation has visually settled to opacity 0 before React unmounts the overlay div, preventing a flicker
+- **Overlay inside `div.group/col.relative`** — the containing div already has `position: relative`, so no wrapper needed; `absolute inset-0` + `rounded-[var(--radius-sm)]` follows the row's border radius naturally
+
+### What's next (Session 48)
+- **Palette age badge / "freshness" indicator** — a subtle label on palette cards showing relative age (e.g. "3 days ago", "2 weeks ago") that fades gracefully as palettes age, giving the library a sense of time and recency
+
+---
+
 ## 2026-05-24 — Session 46: Swatch Count Sparkline
 
 ### What was done
