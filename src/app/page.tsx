@@ -1183,7 +1183,8 @@ export default function Home() {
                         collectionName={palCollectionName}
                         onJumpToCollection={jumpToCollection}
                         onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
-                        onFilterByTag={(tag) => setActiveTag(tag)}
+                        onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}
+                        activeTag={activeTag !== "all" ? activeTag : undefined}
                       />
                     );
                   })}

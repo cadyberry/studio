@@ -66,6 +66,7 @@ interface PaletteCardProps {
   onJumpToCollection?: (collectionId: string) => void;
   onClearCollection?: () => void;
   onFilterByTag?: (tag: string) => void;
+  activeTag?: string;
 }
 
 type NamingState =
@@ -74,7 +75,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -579,23 +580,33 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 )}
               </span>
             )}
-            {palette.tags?.map((tag) => (
-              onFilterByTag ? (
-                <button
-                  key={tag}
-                  onClick={(e) => { e.stopPropagation(); onFilterByTag(tag); }}
-                  title={`Filter library by "${tag}"`}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-opacity hover:opacity-75 cursor-pointer ${
-                    tag === "trend"
-                      ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
-                      : tag === "shared"
-                      ? "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
-                      : "bg-[var(--surface-2)] text-[var(--muted)]"
-                  }`}
-                >
-                  {tag}
-                </button>
-              ) : (
+            {palette.tags?.map((tag) => {
+              const isActiveFilter = !!activeTag && tag === activeTag;
+              if (onFilterByTag) {
+                const baseClass =
+                  tag === "trend"
+                    ? isActiveFilter
+                      ? "bg-rose-200 text-rose-700 ring-1 ring-rose-400 dark:bg-rose-900/60 dark:text-rose-300 dark:ring-rose-600"
+                      : "bg-rose-100 text-rose-600 hover:opacity-75 dark:bg-rose-900/30 dark:text-rose-400"
+                    : tag === "shared"
+                    ? isActiveFilter
+                      ? "bg-sky-200 text-sky-700 ring-1 ring-sky-400 dark:bg-sky-900/60 dark:text-sky-300 dark:ring-sky-600"
+                      : "bg-sky-100 text-sky-600 hover:opacity-75 dark:bg-sky-900/30 dark:text-sky-400"
+                    : isActiveFilter
+                    ? "bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-[var(--accent)]/60 font-semibold"
+                    : "bg-[var(--surface-2)] text-[var(--muted)] hover:opacity-75";
+                return (
+                  <button
+                    key={tag}
+                    onClick={(e) => { e.stopPropagation(); onFilterByTag(tag); }}
+                    title={isActiveFilter ? `Clear "${tag}" filter` : `Filter library by "${tag}"`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${baseClass}`}
+                  >
+                    {tag}
+                  </button>
+                );
+              }
+              return (
                 <span
                   key={tag}
                   className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
@@ -608,8 +619,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 >
                   {tag}
                 </span>
-              )
-            ))}
+              );
+            })}
           </div>
           {palette.notes && (
             <p
