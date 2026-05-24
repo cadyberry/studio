@@ -180,6 +180,10 @@ export default function Home() {
   const oldestSince = oldestCreatedAt
     ? new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(new Date(oldestCreatedAt))
     : null;
+  const bucketSmall = palettes.filter((p) => p.colors.length <= 4).length;
+  const bucketMed   = palettes.filter((p) => p.colors.length >= 5 && p.colors.length <= 6).length;
+  const bucketLarge = palettes.filter((p) => p.colors.length >= 7).length;
+  const bucketMax   = Math.max(bucketSmall, bucketMed, bucketLarge, 1);
 
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
   const COLOR_MATCH_THRESHOLD = 25;
@@ -380,6 +384,34 @@ export default function Home() {
                     >
                       <div className="text-[11px] font-semibold leading-none truncate">{oldestSince ?? "—"}</div>
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">oldest</div>
+                    </div>
+                  </div>
+                  {/* Sparkline — palette size distribution */}
+                  <div className="border-t border-[var(--border)] px-3 py-2 bg-[var(--surface)]">
+                    <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mb-2">size distribution</div>
+                    <div className="flex gap-1.5">
+                      {[
+                        { label: "1–4", count: bucketSmall, color: "#a78bfa" },
+                        { label: "5–6", count: bucketMed,   color: "#818cf8" },
+                        { label: "7+",  count: bucketLarge,  color: "#60a5fa" },
+                      ].map(({ label, count, color }) => {
+                        const barH = count === 0 ? 2 : Math.max(3, Math.round((count / bucketMax) * 24));
+                        return (
+                          <div key={label} className="flex-1 flex flex-col items-center">
+                            <div className="w-full flex flex-col justify-end mb-1" style={{ height: 24 }}>
+                              <div
+                                className="w-full rounded-[2px] transition-all duration-500"
+                                style={{
+                                  height: barH,
+                                  backgroundColor: count > 0 ? color : "var(--border)",
+                                }}
+                                title={`${count} palette${count !== 1 ? "s" : ""}`}
+                              />
+                            </div>
+                            <div className="text-[8px] text-[var(--muted)] leading-none">{label}</div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
