@@ -856,6 +856,30 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-[var(--muted)]">Drop an image to extract your first palette</p>
               </div>
+            ) : activeCollection !== "all" && activeCollectionCount === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col items-center justify-center py-20 text-center"
+              >
+                <div className="mb-5 w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-50 to-sky-50 dark:from-violet-950/30 dark:to-sky-950/30 border border-[var(--border)] flex items-center justify-center">
+                  <FolderOpen size={26} className="text-[var(--muted)]" />
+                </div>
+                <p className="text-sm font-semibold text-[var(--foreground)] mb-2">
+                  &ldquo;{activeCollectionInfo?.name}&rdquo; is empty
+                </p>
+                <p className="text-xs text-[var(--muted)] max-w-[240px] leading-relaxed mb-6">
+                  Click the <FolderOpen size={11} className="inline-block align-middle -mt-0.5 mx-0.5" /> icon on any palette card, or select multiple palettes and use the bulk action bar to add them here.
+                </p>
+                <button
+                  onClick={() => setActiveCollection("all")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  <Layers size={12} />
+                  Browse all palettes
+                </button>
+              </motion.div>
             ) : sorted.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
