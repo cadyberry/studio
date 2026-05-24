@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-24 — Session 48: Palette Freshness Badge
+
+### What was done
+- **Palette freshness badge** — a color-coded age pill appears in each palette card's info row for palettes created within the last 21 days
+  - Badge fades in both color and opacity as the palette ages: emerald `"new"` for <1 day, emerald `"1d"` for 1–2 days, green `"Nd"` for 2–7 days (opacity decreasing from 0.85→0.65), lime `"1w"` at one week (0.55), amber `"2w"` at two weeks (0.40), invisible at 21+ days
+  - Module-level `getFreshness(createdAt)` pure function — returns `{ label, bgClass, textClass, opacity }` or `null`; zero React dependencies, easy to test
+  - Placed in the info row after the mood pill — consistent position, never hover-gated so freshness is scannable at a glance across the grid
+  - `title` attribute on the badge shows full relative age ("Created 3 days ago") on hover, complementing the existing age text in the card footer
+  - Uses `createdAt` (not `updatedAt`) — freshness means when the palette was *born*, not when it was last touched
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **`createdAt` not `updatedAt`** — freshness is about when a palette entered the library; editing a 3-month-old palette should not resurrect its freshness badge
+- **Opacity fade on top of color fade** — two independent axes of visual aging; color alone (emerald → amber) could read as a semantic shift rather than a fade; combining color + opacity makes the fading effect unmistakeable
+- **21-day cutoff, not 14 or 30** — 14 days is slightly short for Cady's drop/collection workflow (a "Spring Drop" might be assembled over 2–3 weeks); 30 days would show stale badges too long; 21 days (3 weeks) is a natural post-drop horizon
+- **Module-level pure function** — no hooks or closures; stable, testable, no component coupling
+
+### What's next (Session 49)
+- **Palette card color harmony mini-preview** — on hover, show a tiny complementary/analogous swatch strip directly on the card (2–3 derived colors from the existing palette) to quickly signal harmonic potential without opening the Harmony modal
+- **Collection archived state** — ability to soft-archive a collection so it moves to a collapsed "Archived" section at the bottom of the sidebar, keeping it out of the active workspace while preserving the palettes
+- **Tag autocomplete** — when typing in the tag editor, suggest existing tags from the library to prevent near-duplicate tags ("forest", "forests", "foresty")
+
+---
+
 ## 2026-05-24 — Session 47: Sidebar Flash on Jump-to-Collection
 
 ### What was done
