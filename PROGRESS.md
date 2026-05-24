@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-05-24 — Session 44: Empty Collection Indicator
+
+### What was done
+- **Empty collection indicator** — when a named collection has zero palettes, the library grid now shows a dedicated placeholder state instead of the generic "No matching palettes" UI
+  - Detected via `activeCollection !== "all" && activeCollectionCount === 0`; this branch sits between the "library empty" and "no filters match" cases so each state is mutually exclusive and clear
+  - Visual treatment: soft violet→sky gradient folder icon in a rounded square, collection name in quotes, a two-sentence hint that explains exactly how to add palettes (folder icon on card, or bulk bar)
+  - Inline `<FolderOpen>` icon in the hint text reinforces the affordance without requiring the user to hunt for it
+  - "Browse all palettes" button sets `activeCollection` to `"all"` so the user can immediately start selecting palettes to add
+  - Framer Motion fade+slide-up entrance (same as the filter-empty state) for visual consistency
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **Separate branch, not a flag on the existing empty state** — the filter-mismatch state shows dismissible filter chips and a "Clear all filters" CTA; an empty collection has none of those, so conflating them would add dead UI elements and confuse the user
+- **Inline icon in hint text** — small affordance to connect the word "icon" directly to the visual glyph; cheaper than a tooltip and immediately scannable
+- **No delete-collection button here** — the collection sidebar already has the cohesion view and export actions; adding collection management to the grid empty state would duplicate controls; keeping this state purely informational and navigational
+
+### What's next (Session 45)
+- **Stats panel count-up animation** — animate the six stats numbers on first mount using Framer Motion (count from 0 to N over 600ms)
+- **Sidebar flash on jump-to-collection** — when clicking the in-collection chip on a palette card, briefly highlight the matching collection row in the sidebar to orient the user
+- **Palette card archived badge** — if a palette belongs to an archived collection, show a subtle "archived" pill on the card
+
+---
+
 ## 2026-05-24 — Session 43: Clear-Collection Badge × + Collection Description Tooltip
 
 ### What was done
