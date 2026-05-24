@@ -65,6 +65,7 @@ interface PaletteCardProps {
   collectionName?: string;
   onJumpToCollection?: (collectionId: string) => void;
   onClearCollection?: () => void;
+  onFilterByTag?: (tag: string) => void;
 }
 
 type NamingState =
@@ -73,7 +74,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag }: PaletteCardProps) {
   const { deletePalette, updatePalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -579,18 +580,35 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </span>
             )}
             {palette.tags?.map((tag) => (
-              <span
-                key={tag}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                  tag === "trend"
-                    ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
-                    : tag === "shared"
-                    ? "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
-                    : "bg-[var(--surface-2)] text-[var(--muted)]"
-                }`}
-              >
-                {tag}
-              </span>
+              onFilterByTag ? (
+                <button
+                  key={tag}
+                  onClick={(e) => { e.stopPropagation(); onFilterByTag(tag); }}
+                  title={`Filter library by "${tag}"`}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-opacity hover:opacity-75 cursor-pointer ${
+                    tag === "trend"
+                      ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+                      : tag === "shared"
+                      ? "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
+                      : "bg-[var(--surface-2)] text-[var(--muted)]"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ) : (
+                <span
+                  key={tag}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    tag === "trend"
+                      ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+                      : tag === "shared"
+                      ? "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
+                      : "bg-[var(--surface-2)] text-[var(--muted)]"
+                  }`}
+                >
+                  {tag}
+                </span>
+              )
             ))}
           </div>
           {palette.notes && (
