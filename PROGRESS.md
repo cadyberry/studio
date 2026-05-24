@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-24 — Session 49: Tag Autocomplete
+
+### What was done
+- **Tag autocomplete** in the tag editor overlay — typing in the tag input now surfaces matching tags from across the entire library as a keyboard-navigable suggestion list
+  - Suggestions appear immediately as the user types (min 1 character), filtered to tags that contain the input substring and aren't already on the current palette
+  - Match text is **bolded** within each suggestion so the matching portion is visually obvious
+  - Full keyboard support: ↑↓ arrows move through the list (highlighted in accent color), Enter selects the highlighted suggestion, Escape dismisses the list without closing the editor
+  - Click support: `onMouseDown` + `e.preventDefault()` prevents the input from blurring before the click fires — the input stays focused after selecting a suggestion so the user can immediately add another tag
+  - After any selection (keyboard or click), `tagInput` clears and `suggestionIdx` resets to -1 so the next character starts fresh
+  - Hint text at the bottom of the tag editor updates to include "↑↓ to select ·" when suggestions are visible
+  - `allLibraryTags` computed via a separate `usePaletteStore` selector — iterates all palettes, collects unique tags, sorts alphabetically; cheap operation with no extra dependencies
+  - Max 6 suggestions shown — enough to scan quickly, not overwhelming
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **Substring match, not prefix** — "forest" matches "rainforest", "deep-forest", "forest-green"; prefix-only would miss common partial-word entries
+- **Library-wide tags** — autocomplete is most useful when it prevents near-duplicates across palettes; pulling from all palettes (not just the current one) is the right scope
+- **`onMouseDown` not `onClick`** — click fires after blur; `onMouseDown` + `e.preventDefault()` fires before blur so the input never loses focus during suggestion selection
+- **Max 6 suggestions** — enough to be useful without overflowing the overlay and obscuring the card's swatch strip
+
+### What's next (Session 50)
+- **Collection archived state** — soft-archive a collection so it moves to a collapsed "Archived" section at the bottom of the sidebar, keeping active workspace clean while preserving palettes
+- **Palette card harmony mini-preview** — on hover, show 2–3 derived complementary/analogous colors on the card as a tiny swatch strip
+- **Tag filter in library** — click any tag pill to filter the library to only palettes with that tag
+
+---
+
 ## 2026-05-24 — Session 48: Palette Freshness Badge
 
 ### What was done
