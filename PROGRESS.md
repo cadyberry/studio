@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-24 — Session 45: Stats Panel Count-Up Animation
+
+### What was done
+- **Stats panel count-up animation** — the four numeric stats (palettes, swatches, collections, annotated %) now count up from 0 to their actual values on first mount with a 600ms ease-out cubic animation
+  - Implemented as a reusable `AnimatedStat` component above `Home` — takes `value: number` and optional `suffix?: string`
+  - Uses `useEffect` + `requestAnimationFrame` with an ease-out cubic curve (`1 - (1 - t)³`) for a natural deceleration feel
+  - A `done` ref prevents re-triggering on subsequent renders; once animation completes, `value` prop is rendered directly so any palette additions update the count without re-animating
+  - Applied to: palettes count, total swatches, collections count, annotated percentage (with `%` suffix)
+  - Non-numeric stats (top mood, oldest date) are unaffected — they appear instantly as before
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **`requestAnimationFrame` over Framer Motion `animate()`** — both would work; `rAF` avoids importing the `animate` function (which has a different signature in Framer Motion 12) and keeps the component dependency-free, explicit, and debuggable
+- **`done` ref, not `done` state** — marking animation complete doesn't need to trigger a re-render; only `setDisplay` (inside the loop) triggers renders; switching to `value` prop at the end happens on the next parent-driven re-render
+- **Empty deps array for `useEffect`** — we want mount-only behavior; ESLint would warn but the eslint-disable comment documents the intentional choice
+- **`suffix` prop instead of wrapping `<AnimatedStat />%`** — cleaner call site; the animated number and its unit are always rendered together with no DOM gap for screen readers
+
+### What's next (Session 46)
+- **Sidebar flash on jump-to-collection** — when clicking the in-collection chip on a palette card, briefly highlight the matching collection row in the sidebar to orient the user
+- **Palette card archived badge** — if a palette belongs to an archived collection, show a subtle "archived" pill on the card
+- **Swatch count sparkline** — tiny bar chart in the stats panel showing palette size distribution (1–4, 5–6, 7–8 color buckets)
+
+---
+
 ## 2026-05-24 — Session 44: Empty Collection Indicator
 
 ### What was done
