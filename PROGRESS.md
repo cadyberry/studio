@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-05-24 — Session 51: Tag Filter from Card
+
+### What was done
+- **Tag pills on palette cards are now clickable filters** — clicking any tag pill on a palette card immediately filters the library to show only palettes with that tag, with no need to use the sidebar or filter row
+  - Tag pills render as `<button>` elements when `onFilterByTag` is provided — `cursor-pointer`, `hover:opacity-75`, and a `title` tooltip ("Filter library by 'tag'") make the affordance clear
+  - `e.stopPropagation()` on the click prevents the tag click from triggering card selection or bulk-select
+  - When `onFilterByTag` is absent (SharedPaletteView, or any future read-only context), pills fall back to static `<span>` — no behavior change in those contexts
+  - Wired in `page.tsx` via `onFilterByTag={(tag) => setActiveTag(tag)}` — uses the exact same state as the sidebar inventory and filter row, so all three filter paths are fully in sync; active tag chip, filter row pill highlight, and library result all update instantly
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **`<button>` not `<span>` when clickable** — semantic HTML; screen readers announce clickable tags correctly; native keyboard (Tab + Enter) support for free
+- **`e.stopPropagation()` not `e.preventDefault()`** — we want the click to register (so `onClick` fires), just not bubble to the card wrapper; `preventDefault` would block the button action entirely
+- **Falls back to `<span>` when prop absent** — `SharedPaletteView` and similar read-only contexts don't pass `onFilterByTag`, so no accidental interactive elements appear where filtering doesn't make sense
+- **No new state** — `setActiveTag` already exists; the card just becomes another entry point into the same state machine
+
+### What's next (Session 52)
+- **Palette card harmony mini-preview** — on hover, show 2–3 derived complementary/analogous colors on the card as a tiny swatch strip below the main swatches
+- **Collection palette count badge** — show total swatch count (not just palette count) as a secondary stat on each collection sidebar row
+- **Tag filter active indicator on card** — when a tag filter is active, highlight the matching tag pill on cards so the user can see which tag is currently filtering
+
+---
+
 ## 2026-05-24 — Session 50: Collection Archived State
 
 ### What was done
