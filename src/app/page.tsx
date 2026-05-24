@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
@@ -34,6 +34,35 @@ function getTagDotColor(tag: string): string {
   if (tag === "trend") return "#fb7185";
   if (tag === "shared") return "#38bdf8";
   return "#a1a1aa";
+}
+
+// Counts up from 0 to `value` on first mount, then tracks `value` statically.
+function AnimatedStat({ value, suffix }: { value: number; suffix?: string }): JSX.Element {
+  const [display, setDisplay] = useState(0);
+  const done = useRef(false);
+
+  useEffect(() => {
+    if (done.current) return;
+    const start = performance.now();
+    const duration = 600;
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplay(Math.round(eased * value));
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        done.current = true;
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const shown = done.current ? value : display;
+  return <>{shown}{suffix}</>
 }
 
 export default function Home() {
@@ -301,21 +330,29 @@ export default function Home() {
                 <div className="border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden text-center">
                   <div className="grid grid-cols-3 divide-x divide-[var(--border)]">
                     <div className="px-2 py-2.5 bg-[var(--surface)]">
-                      <div className="text-sm font-bold tabular-nums leading-none">{palettes.length}</div>
+                      <div className="text-sm font-bold tabular-nums leading-none">
+                        <AnimatedStat value={palettes.length} />
+                      </div>
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">palettes</div>
                     </div>
                     <div className="px-2 py-2.5 bg-[var(--surface)]">
-                      <div className="text-sm font-bold tabular-nums leading-none">{totalSwatches}</div>
+                      <div className="text-sm font-bold tabular-nums leading-none">
+                        <AnimatedStat value={totalSwatches} />
+                      </div>
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">swatches</div>
                     </div>
                     <div className="px-2 py-2.5 bg-[var(--surface)]">
-                      <div className="text-sm font-bold tabular-nums leading-none">{collections.length}</div>
+                      <div className="text-sm font-bold tabular-nums leading-none">
+                        <AnimatedStat value={collections.length} />
+                      </div>
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">collections</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 divide-x divide-[var(--border)] border-t border-[var(--border)]">
                     <div className="px-2 py-2.5 bg-[var(--surface)]">
-                      <div className="text-sm font-bold tabular-nums leading-none">{annotationPct}%</div>
+                      <div className="text-sm font-bold tabular-nums leading-none">
+                        <AnimatedStat value={annotationPct} suffix="%" />
+                      </div>
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">annotated</div>
                     </div>
                     <div className="px-2 py-2.5 bg-[var(--surface)] flex flex-col items-center justify-center">
