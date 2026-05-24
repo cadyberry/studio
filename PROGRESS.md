@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-05-24 — Session 52: Active Tag Filter Indicator on Cards
+
+### What was done
+- **Active tag filter indicator on palette card tag pills** — when a tag filter is active, the matching tag pill on every card renders in a visually distinct "selected" state so the user can immediately see which filter is active without looking at the sidebar or filter row
+  - Default tag pills (no active filter): same as before — muted background, hover opacity
+  - Active-filter tag pill: accent ring + tinted background + semibold text; `trend` pills go rose-200/ring-rose-400; `shared` go sky-200/ring-sky-400; generic tags go `bg-[var(--accent)]/15 ring-[var(--accent)]/60` — all consistent with the filter row's active pill language
+  - Tooltip changes to "Clear 'tag' filter" on the active pill to signal that clicking it will deactivate the filter
+  - **Toggle-to-clear behavior**: clicking an already-active tag pill now calls `setActiveTag("all")`, clearing the filter — before this session, re-clicking the active tag was a no-op; now it cleanly dismisses the filter from the card itself
+  - New `activeTag?: string` prop added to `PaletteCardProps` — optional; defaults to no highlight when absent (SharedPaletteView, etc. unchanged)
+  - `page.tsx` passes `activeTag={activeTag !== "all" ? activeTag : undefined}` and uses the toggle: `onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}`
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **Ring not fill** — an outline ring signals "selected state" without overriding the tag's semantic color (rose for trend, sky for shared); a solid accent fill would lose the tag identity
+- **Accent tint for generic tags** — `bg-[var(--accent)]/15` is pale enough to not overpower the card's primary swatch strip, but distinct from the muted default; matches the filter row's active pill vocabulary
+- **Toggle-to-clear on re-click** — the natural user expectation when clicking a "pressed" button is that it releases; pre-session the re-click was a dead interaction; now it's a shortcut to "I'm done with this filter"
+- **`activeTag !== "all"` guard** — avoids passing the string "all" down into the card as an active tag (no tag is named "all", but the guard is explicit and defensive)
+
+### What's next (Session 53)
+- **Palette card harmony mini-preview** — on hover, show 2–3 derived complementary/analogous colors as a tiny swatch strip below the main swatches, giving a quick harmony hint without opening the full modal
+- **Collection swatch count** — secondary stat on each collection sidebar row showing total swatch count (not just palette count)
+- **Harmony color math in utils** — add `getComplementary`, `getAnalogous` helpers to `utils.ts` so card and modal can share the same derivation logic
+
+---
+
 ## 2026-05-24 — Session 51: Tag Filter from Card
 
 ### What was done
