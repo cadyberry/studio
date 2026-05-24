@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-24 — Session 46: Swatch Count Sparkline
+
+### What was done
+- **Swatch count sparkline** — a tiny bar chart appended as a third row in the sidebar stats panel, showing the distribution of palette sizes across three buckets: 1–4 colors (small), 5–6 colors (medium), 7+ colors (large)
+  - Three side-by-side vertical bars grow from a 24px-tall container using `flex-col justify-end`, so bars naturally align to a common baseline
+  - Bar heights are proportional to the tallest bucket (`bucketMax`); a floor of 3px prevents zero-height bars from disappearing entirely; zero-count buckets render at 2px with `var(--border)` color to show the slot exists
+  - Violet → indigo → blue gradient across the three bars mirrors Palette's brand palette
+  - Each bar has a `title` attribute showing the exact count on hover
+  - Bucket labels (1–4, 5–6, 7+) sit below each bar at 8px text
+  - Three new computed values added to the stats block: `bucketSmall`, `bucketMed`, `bucketLarge`, `bucketMax`
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **CSS height + `flex-col justify-end` over SVG** — the chart is three bars; pure-CSS approach is simpler, avoids a viewBox coordinate system, and the bars already animate with `transition-all duration-500` when palette data changes
+- **3-bucket grouping (≤4, 5–6, ≥7)** — color-thief typically returns 5 or 6 colors; showing those as the middle bucket makes the common case the "center" visually; <5 are edits/manual entries, 7+ are expanded palettes
+- **Bar minimum 3px, not 0px** — a zero-height bar would make the label appear to float; 3px gives a visible stub that confirms the bucket exists
+
+### What's next (Session 47)
+- **Sidebar flash on jump-to-collection** — when clicking the in-collection chip on a palette card, briefly highlight the matching collection row in the sidebar to orient the user
+- **Palette card archived badge** — if a palette belongs to an archived collection, show a subtle "archived" pill on the card
+- **Keyword search in notes** — extend the main search box to also match against `palette.notes` content, so annotated palettes surface via their description
+
+---
+
 ## 2026-05-24 — Session 45: Stats Panel Count-Up Animation
 
 ### What was done
