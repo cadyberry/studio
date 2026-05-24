@@ -78,6 +78,13 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
   }));
+
+  // All unique tags in the library (for autocomplete)
+  const allLibraryTags = usePaletteStore((s) => {
+    const seen = new Set<string>();
+    s.palettes.forEach((p) => p.tags?.forEach((t) => seen.add(t)));
+    return Array.from(seen).sort();
+  });
   const [confirming, setConfirming] = useState(false);
   const [duplicated, setDuplicated] = useState(false);
   const [naming, setNaming] = useState<NamingState>({ type: "idle" });
@@ -90,6 +97,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesValue, setNotesValue] = useState(palette.notes ?? "");
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [suggestionIdx, setSuggestionIdx] = useState(-1);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -236,6 +244,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const closeTagging = () => {
     setTagging(false);
     setTagInput("");
+    setSuggestionIdx(-1);
   };
 
   const commitTag = (raw: string) => {
@@ -300,6 +309,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const mood = getPaletteMood(palette.colors);
   const moodStyle = MOOD_STYLES[mood];
   const freshness = getFreshness(palette.createdAt);
+
+  // Tag autocomplete: existing library tags that match current input, not already on this palette
+  const currentTags = palette.tags ?? [];
+  const suggestions =
+    tagging && tagInput.trim().length > 0
+      ? allLibraryTags
+          .filter((t) => !currentTags.includes(t) && t.includes(tagInput.toLowerCase().trim()))
+          .slice(0, 6)
+      : [];
 
   // Closest swatch to the active color search query
   const bestMatchIndex = colorMatchHex
@@ -754,9 +772,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             </div>
 
             {/* Current tags */}
-            {(palette.tags ?? []).length > 0 && (
+            {currentTags.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {(palette.tags ?? []).map((tag) => (
+                {currentTags.map((tag) => (
                   <span
                     key={tag}
                     className={`flex items-center gap-1 pl-1.5 pr-1 py-0.5 rounded text-[10px] font-medium ${
@@ -780,13 +798,73 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </div>
             )}
 
+            {/* Tag autocomplete suggestions */}
+            {suggestions.length > 0 && (
+              <div className="mb-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+                {suggestions.map((tag, i) => {
+                  const matchStart = tag.indexOf(tagInput.toLowerCase().trim());
+                  const before = tag.slice(0, matchStart);
+                  const match = tag.slice(matchStart, matchStart + tagInput.trim().length);
+                  const after = tag.slice(matchStart + tagInput.trim().length);
+                  return (
+                    <button
+                      key={tag}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        commitTag(tag);
+                        setTagInput("");
+                        setSuggestionIdx(-1);
+                        tagInputRef.current?.focus();
+                      }}
+                      className={`w-full text-left text-xs px-2.5 py-1.5 flex items-center gap-1.5 transition-colors ${
+                        i === suggestionIdx
+                          ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                          : "hover:bg-[var(--surface-2)] text-[var(--fg)]"
+                      }`}
+                    >
+                      <span className="opacity-50 font-mono text-[10px]">#</span>
+                      <span>
+                        {before}
+                        <span className="font-semibold">{match}</span>
+                        {after}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Tag input */}
             <input
               ref={tagInputRef}
               type="text"
               value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
+              onChange={(e) => { setTagInput(e.target.value); setSuggestionIdx(-1); }}
               onKeyDown={(e) => {
+                if (suggestions.length > 0) {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setSuggestionIdx((i) => Math.min(i + 1, suggestions.length - 1));
+                    return;
+                  }
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setSuggestionIdx((i) => Math.max(i - 1, -1));
+                    return;
+                  }
+                  if (e.key === "Enter" && suggestionIdx >= 0) {
+                    e.preventDefault();
+                    commitTag(suggestions[suggestionIdx]);
+                    setTagInput("");
+                    setSuggestionIdx(-1);
+                    return;
+                  }
+                  if (e.key === "Escape" && suggestionIdx >= 0) {
+                    e.preventDefault();
+                    setSuggestionIdx(-1);
+                    return;
+                  }
+                }
                 if (e.key === "Enter" || e.key === ",") {
                   e.preventDefault();
                   commitTag(tagInput);
@@ -803,13 +881,16 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   commitTag(tagInput);
                   setTagInput("");
                 }
+                setSuggestionIdx(-1);
               }}
               placeholder={(palette.tags ?? []).length === 0 ? "Add a tag…" : "Add another…"}
               className="w-full text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
               maxLength={24}
               spellCheck={false}
             />
-            <p className="text-[9px] text-[var(--muted)] mt-1">Enter or comma to add · Backspace to remove last</p>
+            <p className="text-[9px] text-[var(--muted)] mt-1">
+              Enter or comma to add · {suggestions.length > 0 ? "↑↓ to select · " : ""}Backspace to remove last
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
