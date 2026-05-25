@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-25 — Session 54: Harmony Strip Fork-to-Palette Button
+
+### What was done
+- **"+" button at the right end of the harmony mini-preview strip** — clicking it instantly creates a new palette from the 5 derived harmony colors, turning the passive preview into an actionable workflow
+  - New palette name defaults to `{original name} · Harmony` so it's clearly linked to its source
+  - Each swatch in the forked palette gets the harmony role as its name (`analog −30°`, `complement`, `split +`, etc.) — useful creative context that would otherwise be invisible
+  - Tagged `harmony` automatically so creators can filter their library by harmony-derived palettes later
+  - Button shows a **Check icon with emerald tint** for 1.5s after forking — same visual language as the Duplicate button's confirmation; immediate, low-noise feedback
+  - Button hover state uses `bg-[var(--accent)]` (consistent with other action buttons in the UI)
+  - `e.stopPropagation()` on click — does not interfere with card selection or other card actions
+  - New palette appears at the top of the library grid immediately (Zustand state prepends)
+- Added `MouseEvent` type to the React import; added `Plus` to lucide-react imports
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **Tag with "harmony"** — not "trend" or any existing special tag; "harmony" is semantically accurate and lets creators filter/find all derived palettes later; it's also visible in the tag inventory
+- **Role names as swatch names** — `analog −30°` etc. are more useful than empty swatch names; they remind the creator *why* each color is in the palette, which is the whole point of a harmony fork
+- **Fork not link** — the forked palette is fully independent (editable, deletable, renamable), just like the Trend Library fork behavior; palettes never reference each other to avoid stale state
+
+### What's next (Session 55)
+- **Collection swatch count** — secondary stat on each collection sidebar row showing total swatch count (not just palette count), giving a fuller sense of collection density at a glance
+- **Palette card hue sparkline** — a tiny bar chart/histogram of hue distribution in the card footer area, giving a quick visual fingerprint of each palette
+- **Harmony tag filter shortcut** — since "harmony" palettes are now a first-class concept, add a quick-filter pill for them in the filter row alongside "trend" and "shared"
+
 ## 2026-05-24 — Session 53: Harmony Mini-Preview Strip on Palette Cards
 
 ### What was done
