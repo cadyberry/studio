@@ -507,6 +507,7 @@ export default function Home() {
                   {activeCollections.map((c) => {
                     const collectionPalettes = palettes.filter((p) => p.collectionId === c.id);
                     const count = collectionPalettes.length;
+                    const swatchCount = collectionPalettes.reduce((acc, p) => acc + p.colors.length, 0);
                     const cohesionScore = count >= 2 ? computeCohesionScore(collectionPalettes) : null;
                     const scoreColor =
                       cohesionScore === null ? undefined :
@@ -528,7 +529,15 @@ export default function Home() {
                             {cohesionScore}
                           </span>
                         )}
-                        <span className="text-xs opacity-60">{count}</span>
+                        <div
+                          className="flex flex-col items-end leading-none gap-[2px]"
+                          title={`${count} palette${count !== 1 ? "s" : ""} · ${swatchCount} swatch${swatchCount !== 1 ? "es" : ""}`}
+                        >
+                          <span className="text-xs opacity-60 tabular-nums">{count}</span>
+                          {swatchCount > 0 && (
+                            <span className="text-[8px] opacity-35 tabular-nums">{swatchCount}</span>
+                          )}
+                        </div>
                       </div>
                     );
 
