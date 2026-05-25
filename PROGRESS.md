@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-05-25 — Session 55: Collection Swatch Count
+
+### What was done
+- **Collection swatch count as secondary sidebar stat** — each active collection row in the left sidebar now displays two stacked numbers: the existing palette count (top) plus the total swatch count across all palettes in that collection (bottom, smaller, more faded)
+  - Computed inline: `collectionPalettes.reduce((acc, p) => acc + p.colors.length, 0)` alongside the already-derived `collectionPalettes` array — no extra store calls, no performance cost
+  - Visual treatment: palette count stays unchanged as `text-xs opacity-60`; swatch count renders as `text-[8px] opacity-35` directly below it, right-aligned — clearly secondary, never competitive with the primary count
+  - Tooltip on the count area reads `"4 palettes · 22 swatches"` for the full picture on hover
+  - Empty/zero-swatch edge case: the swatch count line is conditionally omitted when `swatchCount === 0` — no visual noise for brand-new empty collections
+  - The two stacked numbers read as a compact density indicator: a collection showing `4 / 22` signals "4 palettes, 22 total colors" at a glance, helping Cady assess collection richness without opening the cohesion view
+- Production build: clean TypeScript compile, zero errors
+
+### Key decisions
+- **Stacked vertical layout not horizontal** — showing `4 · 22` in a single line would conflict with the cohesion score already sitting to the left; stacking the two counts into a `flex-col items-end` keeps each stat visually distinct without adding horizontal width
+- **opacity-35 for swatch count** — needs to be clearly subordinate to the palette count (opacity-60) while still readable; 35% lands in the right zone: visible on hover scan, not distracting at rest
+- **Tooltip for precision** — the stacked numbers answer "how dense is this collection"; the tooltip spells it out in plain English for users who want exact context without arithmetic
+- **`swatchCount > 0` guard** — a new empty collection shows only the `0` palette count; no phantom second line for a collection with no palettes yet
+
+### What's next (Session 56)
+- **Palette card hue sparkline** — a tiny bar chart/histogram of hue distribution in the card footer area, giving a quick visual fingerprint of each palette's color character
+- **Harmony tag filter shortcut** — a quick-filter pill for "harmony" palettes in the filter row alongside "trend" and "shared", since harmony-forked palettes are now a first-class concept (tagged in Session 54)
+- **Collection swatch count in hover tooltip** — surface the swatch count in the collection palette preview panel that appears on sidebar hover (currently shows cohesion score but not swatch density)
+
+---
+
 ## 2026-05-25 — Session 54: Harmony Strip Fork-to-Palette Button
 
 ### What was done
