@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -76,9 +76,10 @@ type NamingState =
   | { type: "error" };
 
 export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag }: PaletteCardProps) {
-  const { deletePalette, updatePalette } = usePaletteStore((s) => ({
+  const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
+    addPalette: s.addPalette,
   }));
 
   // All unique tags in the library (for autocomplete)
@@ -89,6 +90,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   });
   const [confirming, setConfirming] = useState(false);
   const [duplicated, setDuplicated] = useState(false);
+  const [forkedHarmony, setForkedHarmony] = useState(false);
   const [naming, setNaming] = useState<NamingState>({ type: "idle" });
   const [tagging, setTagging] = useState(false);
   const [tagInput, setTagInput] = useState("");
@@ -339,6 +341,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setTimeout(() => setDuplicated(false), 1500);
   };
 
+  const handleForkHarmony = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    addPalette({
+      name: `${palette.name} · Harmony`,
+      colors: harmonyColors.map((hc) => ({ hex: hc.hex, name: hc.label })),
+      tags: ["harmony"],
+    });
+    setForkedHarmony(true);
+    setTimeout(() => setForkedHarmony(false), 1500);
+  };
+
   const handleDelete = () => {
     if (confirming) {
       deletePalette(palette.id);
@@ -536,6 +549,21 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 </div>
               </div>
             ))}
+            {/* Fork to palette button */}
+            <button
+              onClick={handleForkHarmony}
+              title="Fork harmony colors to new palette"
+              className={`flex-shrink-0 flex items-center justify-center w-9 h-9 border-l border-[var(--border)] transition-colors ${
+                forkedHarmony
+                  ? "bg-emerald-50 dark:bg-emerald-900/20"
+                  : "bg-[var(--surface-2)]/80 hover:bg-[var(--accent)] hover:text-[var(--accent-fg)]"
+              }`}
+            >
+              {forkedHarmony
+                ? <Check size={11} className="text-emerald-500 dark:text-emerald-400" />
+                : <Plus size={11} className="text-[var(--muted)]" />
+              }
+            </button>
           </div>
         </div>
       )}
