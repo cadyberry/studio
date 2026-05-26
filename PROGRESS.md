@@ -1461,3 +1461,26 @@
 - Tag-based filtering: surface the "trend" tag and let users filter library by tag
 - Palette editing nudges: from the swatch editor, add arrow buttons to nudge hue/saturation by small amounts without dragging sliders
 - Share palette: generate a URL-encoded palette link that anyone can open to see the palette (no account needed)
+
+---
+
+## 2026-05-26 — Session 57: CMYK Print Risk Warning in Export Modal
+
+### What was done
+- Added **pre-export CMYK risk warning** to the Export Modal — creators now see print shift risk before they download, not only after opening the PNG
+  - **Per-swatch risk dots**: small colored circle in the top-right of each swatch in the palette preview strip — red for high ΔE (> 10), amber for caution (ΔE 3–10); no dot on safe colors
+  - **Hover ΔE tooltip**: hovering a risk swatch animates in a pill showing the exact ΔE value (e.g. "ΔE 14.3"), color-coded red/amber to match risk level
+  - **Warning banner**: when any swatch has non-safe risk, an amber alert box appears between the palette header and export action list — clearly states "Print shift detected — 2 high-risk · 1 caution color(s) may look different when printed" with instructions to hover swatches and a note that the PNG card has full CMYK details
+  - **Contextual Download action description**: "Download Palette Card" action subtitle updates from the generic description to show the risk counts (e.g. "PNG card with CMYK data · 2 high-risk, 1 caution flagged") when risks exist
+  - Hooks-safe: `useMemo` for `printSims` is called unconditionally before the early `null` return, using optional chaining on `palette?.colors`
+- Production build: clean compile, zero TypeScript errors, 7 pages/routes passing
+
+### Key decisions
+- **Warning in modal, not just PNG** — the PNG card already had CMYK risk badges (added session 5), but a creator had to download to see them; moving the signal into the modal UI closes the loop at decision time
+- **Dots not badges** — the preview strip is only 80px tall; a 2×2px colored dot is enough contrast to signal "this swatch has a story" without obscuring the color itself; ΔE tooltip on hover provides the precision
+- **AnimatePresence on tooltip and banner** — the banner animates height+opacity on mount/unmount so it doesn't feel jarring; tooltip uses a subtle y-4 slide
+
+### What's next (Session 58)
+- **CSS stylesheet color extraction for URL import** — follow `<link rel="stylesheet">` href references in the fetched HTML to also pull colors from external CSS files (currently only inline styles and HTML attribute colors are mined)
+- **Palette mood filter in color search** — when similarity search is active, allow filtering results by mood category simultaneously (e.g. "show me palettes similar to #ee4b2b that are also 'cool' or 'dreamy'")
+- **Harmony tag filter pill** — quick-filter pill for "harmony"-tagged palettes in the sidebar filter row alongside "trend" and "shared"
