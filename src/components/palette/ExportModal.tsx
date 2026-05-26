@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, Printer, Link2 } from "lucide-react";
+import { X, Download, Copy, Code2, FileJson, Printer, Link2, AlertTriangle } from "lucide-react";
 import { exportAsPngStrip, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
-import { getContrastColor } from "@/lib/utils";
+import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
 
 interface ExportModalProps {
   palette: Palette | null;
@@ -15,6 +15,15 @@ interface ExportModalProps {
 
 export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [hoveredSwatch, setHoveredSwatch] = useState<number | null>(null);
+
+  const printSims = useMemo(
+    () => (palette?.colors ?? []).map((c) => simulateCmykPrint(c.hex)),
+    [palette?.colors]
+  );
+  const highCount = printSims.filter((s) => s.risk === "high").length;
+  const cautionCount = printSims.filter((s) => s.risk === "caution").length;
+  const hasRisk = highCount + cautionCount > 0;
 
   if (!palette) return null;
 
@@ -23,11 +32,15 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
     setTimeout(() => setCopied(null), 1500);
   };
 
+  const riskDesc = hasRisk
+    ? `PNG card with CMYK data · ${[highCount > 0 && `${highCount} high-risk`, cautionCount > 0 && `${cautionCount} caution`].filter(Boolean).join(", ")} flagged`
+    : "PNG reference card — hex, RGB & CMYK per swatch";
+
   const actions = [
     {
       key: "png",
       label: "Download Palette Card",
-      desc: "PNG reference card — hex, RGB & CMYK per swatch",
+      desc: riskDesc,
       icon: Download,
       onClick: () => { exportAsPngStrip(palette); },
     },
@@ -85,11 +98,43 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
           className="bg-[var(--surface)] rounded-[var(--radius-lg)] w-full max-w-sm shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Palette preview */}
-          <div className="flex h-20">
-            {palette.colors.map((color, i) => (
-              <div key={i} className="flex-1" style={{ backgroundColor: color.hex }} />
-            ))}
+          {/* Palette preview with per-swatch risk indicators */}
+          <div className="flex h-20 relative">
+            {palette.colors.map((color, i) => {
+              const sim = printSims[i];
+              const isHigh = sim.risk === "high";
+              const isCaution = sim.risk === "caution";
+              return (
+                <div
+                  key={i}
+                  className="flex-1 relative group"
+                  style={{ backgroundColor: color.hex }}
+                  onMouseEnter={() => setHoveredSwatch(i)}
+                  onMouseLeave={() => setHoveredSwatch(null)}
+                >
+                  {(isHigh || isCaution) && (
+                    <div
+                      className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+                      style={{ backgroundColor: isHigh ? "#e11d48" : "#d97706" }}
+                    />
+                  )}
+                  <AnimatePresence>
+                    {hoveredSwatch === i && (isHigh || isCaution) && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 4 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[9px] font-bold px-1.5 py-0.5 rounded text-white"
+                        style={{ backgroundColor: isHigh ? "rgba(225,29,72,0.92)" : "rgba(217,119,6,0.92)" }}
+                      >
+                        ΔE {sim.deltaE}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </div>
 
           <div className="p-5">
@@ -102,6 +147,36 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                 <X size={14} />
               </Button>
             </div>
+
+            {/* CMYK print risk warning banner */}
+            <AnimatePresence>
+              {hasRisk && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] bg-amber-50 border border-amber-200 text-amber-900">
+                    <AlertTriangle size={14} className="flex-shrink-0 mt-0.5 text-amber-600" />
+                    <div className="text-xs leading-relaxed">
+                      <span className="font-semibold">Print shift detected — </span>
+                      {highCount > 0 && (
+                        <span>
+                          <span className="text-red-700 font-semibold">{highCount} high-risk</span>
+                          {cautionCount > 0 && <span className="text-[var(--muted)]"> · </span>}
+                        </span>
+                      )}
+                      {cautionCount > 0 && (
+                        <span className="text-amber-700 font-semibold">{cautionCount} caution</span>
+                      )}
+                      <span className="text-[var(--muted)]"> color{highCount + cautionCount !== 1 ? "s" : ""} may look different when printed. Hover the swatches above to see ΔE shift values. The palette card PNG includes full CMYK details.</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="space-y-2">
               {actions.map((action) => (
