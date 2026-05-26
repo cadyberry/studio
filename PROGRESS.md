@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-26 — Session 56: Import Palette from Hex Codes or URL
+
+### What was done
+- Built **ImportModal** — two-mode palette import dialog in the sidebar
+  - **Paste Hex Codes tab**: textarea accepting comma, space, or newline-separated hex codes (3- or 6-digit, with or without `#`); parses and deduplicates up to 12 colors; animated preview strip with per-swatch hex tooltip on hover; optional palette name field appears once ≥ 2 colors are detected
+  - **From URL tab**: URL input → calls new `/api/extract-url-colors` route → animated extraction feedback → same preview strip + name field
+- Built **`/api/extract-url-colors` POST route** — server-side color extraction from any website:
+  - Fetches HTML with an 8-second timeout and a browser-like User-Agent
+  - Parses all `#rrggbb`, `#rgb`, and `rgb(r,g,b)` color declarations from the raw HTML
+  - Filters out near-white (lightness > 93%), near-black (lightness < 7%), and low-chroma grays (chroma < 20)
+  - Deduplicates similar colors with RGB Euclidean distance < 40 (keeps dominant color from each cluster)
+  - Returns 2–8 visually distinctive colors, sorted by frequency of appearance in the page
+  - Graceful errors: timeout, non-HTML content, not enough distinctive colors
+- Added "Import Palette" button to the Discover section of the left sidebar (teal gradient icon, sits below Trend Library)
+- Production build: clean compile, zero TypeScript errors, 7 pages/routes passing (new `/api/extract-url-colors` registered)
+
+### Key decisions
+- **RGB distance 40 for dedup** — 40 out of 441 (max Euclidean) eliminates near-duplicates from CSS variable redundancy while preserving genuinely distinct palette colors
+- **Chroma threshold, not saturation** — `max - min < 20` (in 0–255 space) is more reliable than HSL saturation for filtering grays because it doesn't depend on intermediate hue computation
+- **8-second timeout** — generous enough for slow sites, short enough not to block the UI; AbortSignal.timeout() is native in Node 18+
+- **AnimatePresence on preview and name field** — preview strip and name input animate in when colors are detected, providing clear feedback that something happened without being loud
+
+### What's next (Session 57)
+- **Print-ready CMYK export warning** — extend the palette reference card PNG export to include a warning badge/banner when any swatch has high CMYK shift risk (ΔE > 10), so Cady knows at export time that a color may shift significantly in print
+- **CSS color extraction for URL import** — follow `<link rel="stylesheet">` references found in the fetched HTML to also mine external CSS files (currently only inline and attribute colors are captured)
+- **Palette mood filter in search** — when color search is active, allow filtering the similarity results by mood category simultaneously
+
 ## 2026-05-25 — Session 55: Collection Swatch Count
 
 ### What was done
