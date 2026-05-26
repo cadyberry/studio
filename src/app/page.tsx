@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -14,6 +14,7 @@ import HarmonyModal from "@/components/palette/HarmonyModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
+import ImportModal from "@/components/palette/ImportModal";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
@@ -76,6 +77,7 @@ export default function Home() {
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes">("newest");
@@ -443,6 +445,18 @@ export default function Home() {
                 <div className="text-left">
                   <div className="font-medium text-[var(--foreground)]">Trend Library</div>
                   <div className="text-[11px] text-[var(--muted)]">22 seasonal palettes to fork</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setShowImport(true)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-2)] transition-all text-sm group mt-1"
+              >
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-100 via-teal-100 to-cyan-100 flex items-center justify-center flex-shrink-0">
+                  <Import size={13} className="text-teal-600" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-[var(--foreground)]">Import Palette</div>
+                  <div className="text-[11px] text-[var(--muted)]">Hex codes or from a URL</div>
                 </div>
               </button>
               {/* Tag inventory — compact count summary */}
@@ -1228,6 +1242,16 @@ export default function Home() {
           }}
         />
       )}
+      <AnimatePresence>
+        {showImport && (
+          <ImportModal
+            onClose={() => setShowImport(false)}
+            onImport={(name, colors) => {
+              addPalette({ name, colors, tags: [] });
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Bulk action bar */}
       <AnimatePresence>
