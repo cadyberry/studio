@@ -31,9 +31,97 @@ function isInteresting(hex: string): boolean {
   const lightness = (max + min) / 510;
   if (lightness > 0.93 || lightness < 0.07) return false;
   const chroma = max - min;
-  // Skip grays: chroma < 20 out of 255
   if (chroma < 20) return false;
   return true;
+}
+
+function hslToHex(h: number, s: number, l: number): string | null {
+  const sn = s / 100;
+  const ln = l / 100;
+  const c = (1 - Math.abs(2 * ln - 1)) * sn;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = ln - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60)       { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else              { r = c; b = x; }
+  const ri = Math.round((r + m) * 255);
+  const gi = Math.round((g + m) * 255);
+  const bi = Math.round((b + m) * 255);
+  return normalizeHex(
+    "#" +
+      ri.toString(16).padStart(2, "0") +
+      gi.toString(16).padStart(2, "0") +
+      bi.toString(16).padStart(2, "0")
+  );
+}
+
+function mineColors(text: string, counts: Map<string, number>): void {
+  const bump = (raw: string) => {
+    const hex = normalizeHex(raw);
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  };
+
+  // 6-digit hex
+  for (const m of text.matchAll(/#([0-9a-fA-F]{6})\b/g)) bump("#" + m[1]);
+  // 3-digit hex (only when not followed by more hex digits)
+  for (const m of text.matchAll(/#([0-9a-fA-F]{3})\b(?![0-9a-fA-F])/g)) bump("#" + m[1]);
+
+  // rgb() — comma syntax
+  for (const m of text.matchAll(/\brgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/gi)) {
+    const r = parseInt(m[1], 10).toString(16).padStart(2, "0");
+    const g = parseInt(m[2], 10).toString(16).padStart(2, "0");
+    const b = parseInt(m[3], 10).toString(16).padStart(2, "0");
+    const hex = normalizeHex("#" + r + g + b);
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+
+  // hsl() — comma syntax: hsl(H, S%, L%)
+  for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)/gi)) {
+    const hex = hslToHex(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+
+  // hsl() — space syntax: hsl(H S% L%)
+  for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*\)/gi)) {
+    const hex = hslToHex(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+}
+
+function extractStylesheetHrefs(html: string, baseUrl: string): string[] {
+  const hrefs: string[] = [];
+  for (const m of html.matchAll(/<link\b([^>]+)>/gi)) {
+    const attrs = m[1];
+    if (!/\brel\s*=\s*["']stylesheet["']/i.test(attrs)) continue;
+    const hrefMatch = attrs.match(/\bhref\s*=\s*["']([^"']+)["']/i);
+    if (!hrefMatch) continue;
+    try {
+      hrefs.push(new URL(hrefMatch[1], baseUrl).href);
+    } catch { /* skip unparseable hrefs */ }
+  }
+  return hrefs;
+}
+
+async function fetchCssSafe(cssUrl: string): Promise<string> {
+  try {
+    const res = await fetch(cssUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; PaletteExtractor/1.0; +https://palette.tool)",
+      },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return "";
+    const ct = res.headers.get("content-type") ?? "";
+    if (!ct.includes("text/css") && !ct.includes("text/plain") && !ct.includes("application/x-www-form-urlencoded")) return "";
+    return await res.text();
+  } catch {
+    return "";
+  }
 }
 
 export async function POST(request: Request) {
@@ -48,17 +136,19 @@ export async function POST(request: Request) {
   }
 
   let html: string;
+  let isCssOnly = false;
   try {
     const res = await fetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; PaletteExtractor/1.0; +https://palette.tool)",
-        Accept: "text/html,*/*",
+        Accept: "text/html,text/css,*/*",
       },
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const ct = res.headers.get("content-type") ?? "";
+    if (ct.includes("text/css")) isCssOnly = true;
     if (!ct.includes("text/html") && !ct.includes("text/css") && !ct.includes("text/plain")) {
       return NextResponse.json({ error: "URL does not return HTML content" }, { status: 422 });
     }
@@ -71,24 +161,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not fetch that URL" }, { status: 422 });
   }
 
+  // Fetch linked CSS stylesheets in parallel (skip for direct CSS URLs)
+  let cssTexts: string[] = [];
+  let cssCount = 0;
+  if (!isCssOnly) {
+    const styleHrefs = extractStylesheetHrefs(html, url).slice(0, 5);
+    if (styleHrefs.length > 0) {
+      cssTexts = await Promise.all(styleHrefs.map(fetchCssSafe));
+      cssCount = cssTexts.filter((t) => t.length > 0).length;
+    }
+  }
+
   const counts = new Map<string, number>();
-
-  const bump = (raw: string) => {
-    const hex = normalizeHex(raw);
-    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
-  };
-
-  // 6-digit hex
-  for (const m of html.matchAll(/#([0-9a-fA-F]{6})\b/g)) bump("#" + m[1]);
-  // 3-digit hex
-  for (const m of html.matchAll(/#([0-9a-fA-F]{3})\b/g)) bump("#" + m[1]);
-  // rgb()
-  for (const m of html.matchAll(/rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/gi)) {
-    const r = parseInt(m[1], 10).toString(16).padStart(2, "0");
-    const g = parseInt(m[2], 10).toString(16).padStart(2, "0");
-    const b = parseInt(m[3], 10).toString(16).padStart(2, "0");
-    const hex = normalizeHex("#" + r + g + b);
-    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  mineColors(html, counts);
+  for (const css of cssTexts) {
+    if (css) mineColors(css, counts);
   }
 
   // Filter and sort by frequency
@@ -111,5 +198,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ colors: selected });
+  return NextResponse.json({ colors: selected, cssCount });
 }
