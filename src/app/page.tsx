@@ -139,6 +139,7 @@ export default function Home() {
       if (colorSearchActive) {
         setColorSearchActive(false);
         setColorSearchHex("");
+        setActiveMood("all");
       }
       requestAnimationFrame(() => {
         searchInputRef.current?.focus();
@@ -882,6 +883,7 @@ export default function Home() {
                   {/* Color search toggle */}
                   <button
                     onClick={() => {
+                      if (colorSearchActive) setActiveMood("all");
                       setColorSearchActive(!colorSearchActive);
                       setColorSearchHex("");
                     }}
@@ -897,6 +899,101 @@ export default function Home() {
                 </>
               )}
             </div>
+
+            {/* Inline mood filter — only shown when color search is active */}
+            <AnimatePresence>
+              {colorSearchActive && validColorSearch && baseFiltered.length > 0 && (
+                <motion.div
+                  key="color-search-mood"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5">
+                      Filter
+                    </span>
+                    {/* Mood pills sourced from color-search results */}
+                    {moodCounts.size >= 2 && (
+                      <>
+                        <button
+                          onClick={() => setActiveMood("all")}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            activeMood === "all"
+                              ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
+                              : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                          }`}
+                          title="Show all moods"
+                        >
+                          All moods
+                          <span className={`text-[10px] ${activeMood === "all" ? "opacity-70" : "opacity-50"}`}>
+                            {baseFiltered.length}
+                          </span>
+                        </button>
+                        {MOOD_ORDER.filter((m) => moodCounts.has(m)).map((mood) => {
+                          const count = moodCounts.get(mood)!;
+                          const style = MOOD_PILL_STYLES[mood];
+                          const isActive = activeMood === mood;
+                          return (
+                            <button
+                              key={mood}
+                              onClick={() => setActiveMood(isActive ? "all" : mood)}
+                              title={`${isActive ? "Clear" : "Show only"} ${mood} palettes`}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                                isActive ? style.activeClass : style.inactiveClass
+                              }`}
+                            >
+                              <span
+                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: style.dot }}
+                              />
+                              {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                              <span className="text-[10px] opacity-60">{count}</span>
+                            </button>
+                          );
+                        })}
+                        {anyFrozen && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                      </>
+                    )}
+                    {/* Locked pill — always shown in color search context when any frozen */}
+                    {anyFrozen && (
+                      <button
+                        onClick={() => setActiveFreezeFilter(activeFreezeFilter === "locked" ? "all" : "locked")}
+                        title={activeFreezeFilter === "locked" ? "Show all palettes" : "Show only locked palettes"}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                          activeFreezeFilter === "locked"
+                            ? "bg-indigo-100 text-indigo-700 border-indigo-300 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700"
+                            : "bg-[var(--surface)] text-indigo-500 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:text-indigo-400 dark:border-indigo-800/60 dark:hover:bg-indigo-950/20"
+                        }`}
+                      >
+                        <Lock size={9} className="flex-shrink-0" />
+                        Locked
+                        <span className="text-[10px] opacity-60">{frozenInView}</span>
+                      </button>
+                    )}
+                    {/* Single-mood label when only one mood in results */}
+                    {moodCounts.size === 1 && (() => {
+                      const [mood] = [...moodCounts.keys()];
+                      const style = MOOD_PILL_STYLES[mood];
+                      return (
+                        <span
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${style.inactiveClass}`}
+                          title={`All ${baseFiltered.length} matching palettes are ${mood} mood`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: style.dot }} />
+                          {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                          <span className="text-[10px] opacity-60">{baseFiltered.length}</span>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Tag filter pills */}
             <AnimatePresence>
@@ -945,9 +1042,9 @@ export default function Home() {
               )}
             </AnimatePresence>
 
-            {/* Mood + Locked filter pills */}
+            {/* Mood + Locked filter pills — hidden when color search is active (inline strip handles it) */}
             <AnimatePresence>
-              {(moodCounts.size >= 2 || anyFrozen) && (
+              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
