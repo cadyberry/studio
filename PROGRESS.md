@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-05-27 — Session 58: Inline Mood Filter in Color Search Mode
+
+### What was done
+- **Inline mood filter row in color search mode** — when color search is active and has a valid hex, a compact "Filter" row appears directly below the search bar showing clickable mood pills sourced from the color search results
+  - Mood pills show the distribution of the matching palettes: e.g., "All moods (8) · Cool (5) · Warm (3)" — counts always reflect only the palettes within ΔE ≤ 25 of the search color
+  - Clicking any mood pill activates the mood filter, narrowing the color search results further (e.g., "reds that are warm" vs "reds that are cool")
+  - Clicking an active mood pill clears it back to "All moods" — toggle behavior consistent with the rest of the app
+  - When only a single mood is present in the color search results, a non-interactive informational pill shows the mood label and count (so the "Filter" row is always informative, not empty)
+  - The **Locked filter pill** (if any palettes are frozen) is also included in the inline row, giving full filter access without leaving color search mode
+  - The standalone mood+locked filter row (previously below the tag pills) is **hidden while color search is active** — the inline row is the single source of mood filtering in this mode; no duplicate controls
+  - Exiting color search (via toggle button, Pipette click, or `/` key shortcut) **resets the mood filter** to "All" — a mood selection made in color search context doesn't bleed into text search mode
+  - The no-results state already had a dismissible "X mood" chip — that remains fully functional during color search
+- Production build: clean TypeScript compile, zero errors, 7 routes passing
+
+### Key decisions
+- **Inline row, not the existing mood row** — placing the mood chips immediately below the hex input makes the "filter your color results by mood" workflow discoverable without any instruction; the user naturally looks below the search input for refinement options
+- **Hide standalone mood row during color search** — showing mood pills in two places (inline + standalone) would be confusing; the inline row supersedes it cleanly
+- **Mood reset on exit** — a "cool" mood selected while looking for blues would inappropriately persist when the user switches to text search for "autumn"; resetting on exit keeps modes independent
+- **Single-mood informational pill** — even when all color-search results share one mood, the row still shows it (non-interactively); this gives useful signal ("all your matching reds are earthy") without offering a useless toggle
+
+### What's next (Session 59)
+- **ΔE match score badge on palette card in color search mode** — currently the best-match swatch gets a small highlighted ring but the per-card ΔE score isn't surfaced in a scannable way; a small "ΔE 4.2" badge on the card (near the swatch or in the info row) would let Cady scan match quality across the full grid at a glance
+- **Color search history** — save the last 5–8 searched hex colors in a small "recent searches" dropdown below the hex input so creators can quickly return to a color they were exploring
+- **Palette card note preview in search** — when search query matches a palette's notes (already surfaced via highlight), show the matching excerpt more prominently (e.g., as a dedicated line rather than only in the italic note preview)
+
+---
+
 ## 2026-05-26 — Session 56: Import Palette from Hex Codes or URL
 
 ### What was done
