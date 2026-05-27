@@ -1484,3 +1484,30 @@
 - **CSS stylesheet color extraction for URL import** — follow `<link rel="stylesheet">` href references in the fetched HTML to also pull colors from external CSS files (currently only inline styles and HTML attribute colors are mined)
 - **Palette mood filter in color search** — when similarity search is active, allow filtering results by mood category simultaneously (e.g. "show me palettes similar to #ee4b2b that are also 'cool' or 'dreamy'")
 - **Harmony tag filter pill** — quick-filter pill for "harmony"-tagged palettes in the sidebar filter row alongside "trend" and "shared"
+
+---
+
+## 2026-05-27 — Session 58: CSS Stylesheet Color Extraction for URL Import
+
+### What was done
+- Enhanced `/api/extract-url-colors` to follow `<link rel="stylesheet">` hrefs in the fetched HTML
+  - Extracts up to 5 linked CSS files in parallel, each with a 3-second timeout
+  - All CSS fetch errors are silently skipped — a bad stylesheet never blocks the whole extraction
+  - Resolves relative hrefs (`/styles.css`, `../theme.css`) to absolute URLs using the URL constructor
+- Added **hsl() color parsing** to the color mining function — covers comma syntax (`hsl(200, 80%, 50%)`) and modern space syntax (`hsl(200 80% 50%)`); full HSL→RGB→hex conversion using standard formulas
+- Fixed **3-digit hex regex**: added `(?![0-9a-fA-F])` negative lookahead so `#abc` inside `#abcdef` is no longer double-matched
+- Refactored color extraction into a shared `mineColors(text, counts)` function called identically for HTML and each CSS file
+- **ImportModal UI**: after successful URL extraction, shows a pill badge `HTML + N CSS` next to "N colors detected"; the footer description updates dynamically to confirm which sources were scanned
+- Response shape: `{ colors: string[], cssCount: number }` — backward compatible (existing callers ignore cssCount)
+- Production build: clean compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **5 CSS files max, 3s timeout per file** — balances completeness with latency; most brand sites put their design tokens in 1–2 stylesheets; beyond 5 it's diminishing returns and we'd blow the edge function budget
+- **Parallel not sequential** — `Promise.all` on all stylesheet fetches keeps total overhead under a single CSS file's timeout even for 5 files
+- **HSL space syntax only (no oklch/lch for now)** — oklch is growing but still rare in production; easy to add in a later session
+- **No recursive @import following** — following `@import url(...)` inside CSS files would require more fetches and cycle detection; left for a future session if needed
+
+### What's next (Session 59)
+- **Harmony tag filter pill** — quick-filter pill for "harmony"-tagged palettes in the sidebar filter row alongside "trend" and "shared"
+- **Palette mood filter in color search** — when similarity search is active, allow filtering results by mood category simultaneously
+- **@import CSS recursion** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
