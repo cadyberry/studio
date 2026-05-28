@@ -27,6 +27,13 @@ function highlightMatch(text: string, query: string | undefined): ReactNode {
   );
 }
 
+function getMatchTier(dE: number): { bg: string; text: string; label: string } {
+  if (dE < 5)  return { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400", label: "excellent" };
+  if (dE < 10) return { bg: "bg-sky-100 dark:bg-sky-900/30",     text: "text-sky-700 dark:text-sky-400",     label: "good"      };
+  if (dE < 15) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400", label: "fair"      };
+  return               { bg: "bg-rose-100 dark:bg-rose-900/30",  text: "text-rose-700 dark:text-rose-400",  label: "loose"     };
+}
+
 function getFreshness(createdAt: string): { label: string; bgClass: string; textClass: string; opacity: number } | null {
   const days = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
   if (days < 1)  return { label: "new", bgClass: "bg-emerald-100 dark:bg-emerald-900/30", textClass: "text-emerald-600 dark:text-emerald-400", opacity: 1 };
@@ -607,6 +614,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             >
               {moodStyle.label}
             </span>
+            {colorMatchHex && bestMatchIndex && (() => {
+              const tier = getMatchTier(bestMatchIndex.dE);
+              return (
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums ${tier.bg} ${tier.text}`}
+                  title={`Best color match: ΔE ${bestMatchIndex.dE.toFixed(1)} (${tier.label}) — lower is closer`}
+                >
+                  ΔE {bestMatchIndex.dE.toFixed(1)}
+                </span>
+              );
+            })()}
             {freshness && (
               <span
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${freshness.bgClass} ${freshness.textClass}`}
