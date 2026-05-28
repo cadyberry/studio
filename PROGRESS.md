@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-05-28 — Session 60: Color Search History Dropdown
+
+### What was done
+- **Color search history dropdown** — when the hex input is focused in color search mode, a floating dropdown appears below it listing the last 8 searched hex colors (most recent first), each with a color swatch preview
+  - Clicking a history item sets the search hex instantly (no re-typing) and closes the dropdown
+  - "Clear" button in the dropdown header wipes the entire history
+  - Dropdown uses `mousedown` + `e.preventDefault()` on items to prevent the input's `onBlur` from firing before the selection registers — so clicking an item works even when it pulls focus away
+  - `onBlur` on the hex input dismisses the dropdown after a 150ms delay (giving mousedown time to fire); Escape also dismisses it
+  - History is capped at 8 entries — duplicate hexes are deduped (latest occurrence wins the top position)
+  - Persisted to `localStorage` under `"palette-color-search-history"` — survives page refreshes and revisits
+  - Loaded from localStorage on mount; written back on every change
+  - The effect that adds to history fires on `validColorSearch` (only after a full valid 7-char hex, not on every keystroke)
+  - Animated with Framer Motion `AnimatePresence` (opacity + y-4 slide) so it feels light and responsive
+- Production build: clean TypeScript compile, zero errors, 5 routes passing
+
+### Key decisions
+- **localStorage, not session state** — the whole value of history is across-session recall; a single session would be nearly useless (the user just typed the hex moments ago); localStorage gives Cady a persistent "color vocabulary" that accumulates over time
+- **8 entries, not 5** — 5 felt sparse given that designers often cycle through a small palette of reference colors; 8 gives enough room without the list becoming unwieldy
+- **mousedown not click on history items** — `onBlur` fires before `onClick`, so using `onMouseDown` with `preventDefault()` is the standard pattern to intercept before the blur dismissal; this is not a hack, it's the idiomatic React pattern for this interaction
+- **Delay in onBlur** — 150ms is long enough for mousedown to execute the state update but short enough to feel invisible to the user; same pattern used in comboboxes everywhere
+
+### What's next (Session 61)
+- **Palette card note preview in search** — when a text search query matches a palette's notes, show the matching excerpt as a dedicated line in the card (not just the italic inline preview), more prominently surfaced
+- **Swatch-level ΔE tooltip refinement** — the existing swatch badge shows just the number; add the tier label on hover so it's consistent with the info row badge added in session 59
+- **Harmony "lock" indicator** — show a small lock icon on palettes in the library that have all swatches locked, surfacing the freeze state at a glance without opening the editor
+
+---
+
 ## 2026-05-28 — Session 59: ΔE Match Score Badge on Palette Cards
 
 ### What was done
