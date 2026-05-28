@@ -88,6 +88,8 @@ export default function Home() {
   const [collectionExporting, setCollectionExporting] = useState<string | null>(null);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
+  const [colorSearchHistory, setColorSearchHistory] = useState<string[]>([]);
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
@@ -120,6 +122,19 @@ export default function Home() {
     const t = setTimeout(() => setExportToast(null), 3500);
     return () => clearTimeout(t);
   }, [exportToast]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-color-search-history");
+      if (saved) setColorSearchHistory(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("palette-color-search-history", JSON.stringify(colorSearchHistory));
+    } catch {}
+  }, [colorSearchHistory]);
 
   // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay
   useEffect(() => {
@@ -200,6 +215,16 @@ export default function Home() {
 
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
   const COLOR_MATCH_THRESHOLD = 25;
+
+  // Record each valid search hex into history (most recent first, capped at 8)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!validColorSearch) return;
+    setColorSearchHistory((prev) => {
+      const filtered = prev.filter((h) => h.toLowerCase() !== validColorSearch.toLowerCase());
+      return [validColorSearch, ...filtered].slice(0, 8);
+    });
+  }, [validColorSearch]);
 
   const baseFiltered = palettes.filter((p) => {
     const matchesCollection =
@@ -861,6 +886,7 @@ export default function Home() {
                             setColorSearchHex(v.slice(0, 7));
                           }}
                           onFocus={async () => {
+                            setShowSearchHistory(true);
                             if (colorSearchHex) return;
                             try {
                               const text = await navigator.clipboard.readText();
@@ -869,11 +895,55 @@ export default function Home() {
                               if (isValidHex(hex)) setColorSearchHex(hex);
                             } catch { /* clipboard access denied */ }
                           }}
+                          onBlur={() => setTimeout(() => setShowSearchHistory(false), 150)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setShowSearchHistory(false);
+                          }}
                           placeholder="#rrggbb — find by color"
                           autoFocus
                           className="w-full text-sm bg-[var(--surface)] border border-[var(--accent)] rounded-[var(--radius-sm)] pl-3 pr-3 py-1.5 outline-none transition-colors placeholder:text-[var(--muted)] font-mono"
                           spellCheck={false}
                         />
+                        <AnimatePresence>
+                          {showSearchHistory && colorSearchHistory.length > 0 && (
+                            <motion.div
+                              key="color-search-history"
+                              initial={{ opacity: 0, y: -4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-xl z-50 overflow-hidden"
+                            >
+                              <div className="flex items-center justify-between px-2.5 pt-2 pb-1">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Recent</span>
+                                <button
+                                  onMouseDown={(e) => { e.preventDefault(); setColorSearchHistory([]); setShowSearchHistory(false); }}
+                                  className="text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                              {colorSearchHistory.map((hex) => (
+                                <button
+                                  key={hex}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setColorSearchHex(hex);
+                                    setShowSearchHistory(false);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 hover:bg-[var(--surface-2)] transition-colors text-left"
+                                >
+                                  <div
+                                    className="w-5 h-5 rounded-sm flex-shrink-0 border border-[var(--border)]"
+                                    style={{ backgroundColor: hex }}
+                                  />
+                                  <span className="text-sm font-mono text-[var(--foreground)]">{hex}</span>
+                                </button>
+                              ))}
+                              <div className="h-1.5" />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                       {validColorSearch && (
                         <span className="text-[10px] text-[var(--muted)] shrink-0 whitespace-nowrap">sorted by match</span>
