@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-28 — Session 59: ΔE Match Score Badge on Palette Cards
+
+### What was done
+- **ΔE match score badge in the palette card info row** — when color search is active, a color-coded "ΔE X.X" badge now appears in the info row of every card alongside the mood pill and tags
+  - Always-visible (not hover-gated) so match quality is scannable across the full grid at a glance without hovering each card
+  - Color-coded by tier: **emerald** (ΔE < 5, excellent) · **sky** (ΔE 5–10, good) · **amber** (ΔE 10–15, fair) · **rose** (ΔE 15–25, loose)
+  - Uses `tabular-nums` so scores align consistently as the eye moves across cards; `font-bold` makes it slightly heavier than the mood pill to draw the eye
+  - Tooltip on hover reads "Best color match: ΔE X.X (tier) — lower is closer" for users unfamiliar with the ΔE scale
+  - Badge is absent when color search is inactive — no noise in normal browsing mode
+  - Added `getMatchTier(dE)` pure module-level function that maps a ΔE score to `{ bg, text, label }` — shares the same color vocabulary as mood/freshness badges
+  - The existing swatch-strip badge (small pill on the matched swatch at `top-1.5 left-1.5`) is **retained** — it provides spatial context (which specific swatch matched); the info row badge adds grid-level scanning; both serve distinct purposes
+- Production build: clean TypeScript compile, zero errors, 7 routes passing
+
+### Key decisions
+- **Info row, not the swatch strip** — the swatch badge answers "which color matched and by how much"; the info row badge answers "how good a match is this palette overall" — different questions, different positions; placing the grid-scan badge at the info row level keeps it visually consistent with other palette metadata (mood, freshness)
+- **Four tiers, not a continuous color gradient** — four discrete tier names (excellent/good/fair/loose) are more scannable and actionable than infinite shades; the names in the tooltip give Cady a mental model without ΔE expertise
+- **`tabular-nums` + `font-bold`** — numeric values like "ΔE 14.3" need monospaced digit widths for visual alignment as you scan down/across the grid; bold weight distinguishes it from the lighter mood pill without being visually dominant
+- **IIFE `(() => { ... })()` pattern in JSX** — avoids extracting to a variable just to call `getMatchTier`; keeps the logic inline where it's readable
+
+### What's next (Session 60)
+- **Color search history** — save the last 5–8 searched hex colors in a small "recent searches" dropdown below the hex input so Cady can quickly return to a color she was exploring without re-entering the hex
+- **Palette card note preview in search** — when search query matches a palette's notes (already surfaced via highlight), show the matching excerpt more prominently (e.g., as a dedicated line rather than only in the italic note preview)
+- **Swatch-level ΔE tooltip refinement** — the existing swatch badge shows just the number; enhance it to also show the tier label on hover, consistent with the info row badge
+
+---
+
 ## 2026-05-27 — Session 58: Inline Mood Filter in Color Search Mode
 
 ### What was done
