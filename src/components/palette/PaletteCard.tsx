@@ -27,6 +27,27 @@ function highlightMatch(text: string, query: string | undefined): ReactNode {
   );
 }
 
+function getNoteExcerpt(
+  notes: string,
+  query: string,
+  context = 55
+): { prefix: string; match: string; suffix: string; truncStart: boolean; truncEnd: boolean } | null {
+  if (!query || !notes) return null;
+  const lowerNotes = notes.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const idx = lowerNotes.indexOf(lowerQuery);
+  if (idx === -1) return null;
+  const start = Math.max(0, idx - context);
+  const end = Math.min(notes.length, idx + query.length + context);
+  return {
+    prefix: notes.slice(start, idx),
+    match: notes.slice(idx, idx + query.length),
+    suffix: notes.slice(idx + query.length, end),
+    truncStart: start > 0,
+    truncEnd: end < notes.length,
+  };
+}
+
 function getMatchTier(dE: number): { bg: string; text: string; label: string } {
   if (dE < 5)  return { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400", label: "excellent" };
   if (dE < 10) return { bg: "bg-sky-100 dark:bg-sky-900/30",     text: "text-sky-700 dark:text-sky-400",     label: "good"      };
@@ -442,6 +463,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       }}
                     >
                       ΔE {bestMatchIndex.dE.toFixed(1)}
+                      <span className="hidden group-hover/swatch:inline"> · {getMatchTier(bestMatchIndex.dE).label}</span>
                     </div>
                   )}
                 </div>
@@ -496,6 +518,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       }}
                     >
                       ΔE {bestMatchIndex.dE.toFixed(1)}
+                      <span className="hidden group-hover/swatch:inline"> · {getMatchTier(bestMatchIndex.dE).label}</span>
                     </div>
                   )}
                   <button
@@ -702,14 +725,33 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               );
             })}
           </div>
-          {palette.notes && (
-            <p
-              className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-default select-none"
-              title={palette.notes}
-            >
-              {highlightMatch(palette.notes, searchQuery)}
-            </p>
-          )}
+          {palette.notes && (() => {
+            const excerpt = searchQuery ? getNoteExcerpt(palette.notes, searchQuery) : null;
+            if (excerpt) {
+              return (
+                <div className="flex items-start gap-1.5 mt-1.5 px-2 py-1.5 rounded-[var(--radius-sm)] bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/60 dark:border-yellow-700/40">
+                  <StickyNote size={9} className="text-yellow-500 dark:text-yellow-400 mt-0.5 flex-shrink-0 fill-yellow-100 dark:fill-yellow-900/40" />
+                  <p className="text-[10px] text-[var(--fg)] leading-snug min-w-0 break-words">
+                    {excerpt.truncStart && <span className="text-[var(--muted)]">…</span>}
+                    {excerpt.prefix}
+                    <mark className="bg-yellow-200 dark:bg-yellow-800/60 text-inherit rounded-[2px] not-italic px-[1px]">
+                      {excerpt.match}
+                    </mark>
+                    {excerpt.suffix}
+                    {excerpt.truncEnd && <span className="text-[var(--muted)]">…</span>}
+                  </p>
+                </div>
+              );
+            }
+            return (
+              <p
+                className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-default select-none"
+                title={palette.notes}
+              >
+                {highlightMatch(palette.notes, searchQuery)}
+              </p>
+            );
+          })()}
         </div>
 
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
