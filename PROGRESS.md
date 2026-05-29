@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-05-29 — Session 62: Harmony Tag Semantic Color
+
+### What was done
+- **Harmony tag gets emerald semantic color** — the "harmony" tag now has its own distinct visual identity across all tag surfaces, consistent with how "trend" uses rose and "shared" uses sky
+  - Previously "harmony" appeared with a generic gray dot everywhere — easy to miss in a busy tag list
+  - New color: emerald (`#10b981`) — chosen to match the "complementary color relationships" concept of harmony (growth, balance, nature); contrasts clearly with rose/trend and sky/shared
+  - **Tag filter pills** (main content area): harmony pill renders in emerald background + text when inactive, emerald-100/700/300 when active — no longer falls back to the generic accent purple like all other tags
+  - **Sidebar tag inventory**: the active harmony tag link uses `text-emerald-600` instead of `text-[var(--accent)]`
+  - **Palette card tag pills** (interactive button variant): harmony gets `bg-emerald-200 ring-emerald-400` when its filter is active, `bg-emerald-100 text-emerald-600` at rest
+  - **Palette card tag pills** (static span variant in read-only contexts): harmony → `bg-emerald-100 text-emerald-600`
+- Added `SPECIAL_TAG_STYLES` constant covering trend, shared, and harmony — single source of truth for dot color, activeClass, inactiveClass, and sidebarActiveText; `getTagDotColor()` now delegates to it rather than hardcoding
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Emerald for harmony, not teal or cyan** — emerald sits between yellow-green and true green on the spectrum, which is distinctively different from the cool blue-green of teal/cyan; it reads as "lush, organic, balanced" — fitting for the concept of color harmony; teal would be too close to sky/shared
+- **`SPECIAL_TAG_STYLES` over extending the existing if-chain** — with three special tags, a lookup table is more maintainable than `if trend elif shared elif harmony elif …`; future tags (e.g. "seasonal", "brand") can be added with one object entry
+- **Inactive style uses border (not just bg)** — harmony's inactive pill uses `border-emerald-200` to give it a subtle color presence even at rest, so Cady can visually distinguish harmony pills from untagged/generic pills without activating the filter; consistent with how the mood pills use colored borders in the mood filter row
+
+### What's next (Session 63)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched stylesheets so sites that split design tokens into imported CSS files (very common with modern tooling) get full color extraction
+- **Palette card "all swatches locked" indicator** — small lock badge in the info row (alongside mood, freshness) when palette is frozen, so frozen state is scannable across the grid without needing to read the subtle swatch-area badge
+- **Harmony filter pill in color-search mode** — include the harmony filter pill in the inline mood strip that appears during color search (currently shows mood + locked pills but not tag pills)
+
+---
+
 ## 2026-05-29 — Session 61: Note Excerpt Preview in Search + Swatch ΔE Tier Label
 
 ### What was done
