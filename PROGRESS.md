@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-05-29 — Session 61: Note Excerpt Preview in Search + Swatch ΔE Tier Label
+
+### What was done
+- **Note excerpt preview in search** — when a text search query matches a palette's notes field, the card now shows a dedicated excerpt block rather than the bare italic notes line
+  - Shows ~55 chars of context on each side of the match, with `…` when the excerpt is truncated
+  - Styled with a soft yellow background, `border-yellow-200` border, and a tiny filled `StickyNote` icon — visually distinct from the rest of the card, immediately communicating "this result surfaced because of a note match"
+  - The matched text is highlighted with the same `bg-yellow-200` mark used in name highlights for visual consistency
+  - Falls back to the existing italic plain-notes display when no search is active or when the search only matches the name (not the notes)
+  - Added `getNoteExcerpt(notes, query, context?)` pure helper function returning `{ prefix, match, suffix, truncStart, truncEnd }` — null when no match
+- **Swatch-level ΔE tier label on hover** — the small badge on the best-matching swatch (e.g. "ΔE 14.3") now reveals the tier word on swatch hover
+  - Default: `"ΔE 14.3"` (compact, always visible)
+  - Hover: `"ΔE 14.3 · fair"` — using `group-hover/swatch:inline` on a hidden span
+  - Applied to both the frozen-swatch and draggable-swatch code paths for full coverage
+  - Consistent with the info-row ΔE badge tooltip (also shows tier label) from session 59
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Excerpt over full notes** — when searching, the relevant context window matters more than seeing the full notes (which may be long); the excerpt pattern (borrowed from search engine snippets) surfaces the "why" of the result without requiring scroll or hover
+- **Yellow styling on the excerpt block** — yellow is already the StickyNote semantic color in this codebase; reusing it makes the excerpt block feel like a note origin marker, not a generic info box
+- **`getNoteExcerpt` returns structured { prefix, match, suffix }** — not a pre-rendered string, so the highlight mark can be applied as JSX without regex/innerHTML tricks
+- **55-char context window** — enough to read one complete phrase around the match on most card widths (~280px); 80+ would require line-clamping and lose the "excerpt" feel
+
+### What's next (Session 62)
+- **Harmony tag filter pill** — quick-filter pill for "harmony"-tagged palettes in the sidebar filter row (alongside existing "trend" and "shared" pills)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched stylesheets for sites that split design tokens across imported files
+- **Palette card "all swatches locked" indicator** — small lock badge on the card when palette is frozen, visible at grid level without opening the editor (the current lock icon is inside the swatch strip overlay, not always visible in scan mode)
+
+---
+
 ## 2026-05-28 — Session 60: Color Search History Dropdown
 
 ### What was done
