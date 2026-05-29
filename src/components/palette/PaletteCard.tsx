@@ -695,6 +695,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     ? isActiveFilter
                       ? "bg-sky-200 text-sky-700 ring-1 ring-sky-400 dark:bg-sky-900/60 dark:text-sky-300 dark:ring-sky-600"
                       : "bg-sky-100 text-sky-600 hover:opacity-75 dark:bg-sky-900/30 dark:text-sky-400"
+                    : tag === "harmony"
+                    ? isActiveFilter
+                      ? "bg-emerald-200 text-emerald-700 ring-1 ring-emerald-400 dark:bg-emerald-900/60 dark:text-emerald-300 dark:ring-emerald-600"
+                      : "bg-emerald-100 text-emerald-600 hover:opacity-75 dark:bg-emerald-900/30 dark:text-emerald-400"
                     : isActiveFilter
                     ? "bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-[var(--accent)]/60 font-semibold"
                     : "bg-[var(--surface-2)] text-[var(--muted)] hover:opacity-75";
@@ -717,6 +721,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
                       : tag === "shared"
                       ? "bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400"
+                      : tag === "harmony"
+                      ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
                       : "bg-[var(--surface-2)] text-[var(--muted)]"
                   }`}
                 >

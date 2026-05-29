@@ -31,10 +31,29 @@ const MOOD_PILL_STYLES: Record<PaletteMood, { dot: string; activeClass: string; 
   dreamy: { dot: "#8b5cf6", activeClass: "bg-violet-100 text-violet-700 border-violet-300",  inactiveClass: "text-violet-500 border-violet-200 hover:border-violet-400 hover:bg-violet-50" },
 };
 
+const SPECIAL_TAG_STYLES: Record<string, { dot: string; activeClass: string; inactiveClass: string; sidebarActiveText: string }> = {
+  trend: {
+    dot: "#fb7185",
+    activeClass: "bg-rose-100 text-rose-700 border-rose-300 shadow-sm dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800",
+    inactiveClass: "bg-[var(--surface)] text-rose-500 border-rose-200 hover:border-rose-400 hover:bg-rose-50/60 dark:text-rose-400 dark:border-rose-800/60 dark:hover:bg-rose-950/20",
+    sidebarActiveText: "text-rose-500",
+  },
+  shared: {
+    dot: "#38bdf8",
+    activeClass: "bg-sky-100 text-sky-700 border-sky-300 shadow-sm dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-800",
+    inactiveClass: "bg-[var(--surface)] text-sky-500 border-sky-200 hover:border-sky-400 hover:bg-sky-50/60 dark:text-sky-400 dark:border-sky-800/60 dark:hover:bg-sky-950/20",
+    sidebarActiveText: "text-sky-500",
+  },
+  harmony: {
+    dot: "#10b981",
+    activeClass: "bg-emerald-100 text-emerald-700 border-emerald-300 shadow-sm dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800",
+    inactiveClass: "bg-[var(--surface)] text-emerald-600 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/60 dark:text-emerald-400 dark:border-emerald-800/60 dark:hover:bg-emerald-950/20",
+    sidebarActiveText: "text-emerald-600",
+  },
+};
+
 function getTagDotColor(tag: string): string {
-  if (tag === "trend") return "#fb7185";
-  if (tag === "shared") return "#38bdf8";
-  return "#a1a1aa";
+  return SPECIAL_TAG_STYLES[tag]?.dot ?? "#a1a1aa";
 }
 
 // Counts up from 0 to `value` on first mount, then tracks `value` statically.
@@ -503,19 +522,20 @@ export default function Home() {
                   {allUniqueTags.map((tag) => {
                     const count = palettes.filter((p) => p.tags?.includes(tag)).length;
                     const label = tag.charAt(0).toUpperCase() + tag.slice(1);
+                    const specialStyle = SPECIAL_TAG_STYLES[tag];
                     return (
                       <button
                         key={tag}
                         onClick={() => setActiveTag(tag)}
                         className={`flex items-center gap-1 text-[11px] transition-colors ${
                           activeTag === tag
-                            ? "text-[var(--accent)] font-medium"
+                            ? `${specialStyle?.sidebarActiveText ?? "text-[var(--accent)]"} font-medium`
                             : "text-[var(--muted)] hover:text-[var(--foreground)]"
                         }`}
                       >
                         <span
                           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: getTagDotColor(tag) }}
+                          style={{ backgroundColor: specialStyle?.dot ?? getTagDotColor(tag) }}
                         />
                         {label} <span className="tabular-nums font-semibold">{count}</span>
                       </button>
@@ -1085,28 +1105,32 @@ export default function Home() {
                         label: tag.charAt(0).toUpperCase() + tag.slice(1),
                         count: palettes.filter((p) => p.tags?.includes(tag)).length,
                       })),
-                    ].map(({ key, label, count }) => (
-                      <button
-                        key={key}
-                        onClick={() => setActiveTag(key)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
-                          activeTag === key
-                            ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
-                            : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
-                        }`}
-                      >
-                        {key !== "all" && key !== "__mine__" && (
-                          <span
-                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: getTagDotColor(key) }}
-                          />
-                        )}
-                        {label}
-                        <span className={`text-[10px] ${activeTag === key ? "opacity-70" : "opacity-50"}`}>
-                          {count}
-                        </span>
-                      </button>
-                    ))}
+                    ].map(({ key, label, count }) => {
+                      const specialStyle = SPECIAL_TAG_STYLES[key];
+                      const isActive = activeTag === key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setActiveTag(key)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            isActive
+                              ? (specialStyle?.activeClass ?? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm")
+                              : (specialStyle?.inactiveClass ?? "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]")
+                          }`}
+                        >
+                          {key !== "all" && key !== "__mine__" && (
+                            <span
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: specialStyle?.dot ?? getTagDotColor(key) }}
+                            />
+                          )}
+                          {label}
+                          <span className={`text-[10px] ${isActive ? "opacity-70" : "opacity-50"}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
