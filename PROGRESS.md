@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-30 — Session 63: Tag Pills in Color-Search Strip + Info Row Lock Badge
+
+### What was done
+- **Special tag pills in the inline color-search filter strip** — when color search is active and any harmony, trend, or shared-tagged palettes appear in the results, pill buttons for those tags now appear in the inline filter strip (the contextual strip that already showed mood + locked pills)
+  - Separated from mood/locked pills by the dot divider (`·`) for visual clarity
+  - Each pill uses the existing `SPECIAL_TAG_STYLES` colors: emerald for harmony, rose for trend, sky for shared
+  - Clicking a tag pill toggles `activeTag` to filter within color search results (clicking again returns to "all")
+  - Only tags that actually appear in the current `baseFiltered` results are shown — no phantom pills for irrelevant tags
+  - Pattern is generic (`["harmony","trend","shared"].filter(...)`) so adding future special tags to `SPECIAL_TAG_STYLES` automatically picks them up
+- **Frozen "Locked" badge in PaletteCard info row** — when `palette.frozen` is true, a compact indigo badge (`Lock` icon + "Locked" label) now appears in the info row alongside mood, freshness, and ΔE badges
+  - Makes freeze state immediately scannable across the grid at the same visual level as other metadata
+  - Complements the existing swatch-area overlay badge (absolute-positioned, sometimes hard to see against dark palettes) and the name-row lock icon
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **IIFE pattern for the special tag pills block** — the `(() => { ... })()` pattern (already used in this file for the single-mood label) lets us do `filter → early return null → map` without extracting to an intermediate variable; keeps the conditional rendering self-contained
+- **`const` array with `.filter()`** — uses `["harmony","trend","shared"].filter(tag => baseFiltered.some(...))` rather than `Object.entries(SPECIAL_TAG_STYLES)` to guarantee pill order and avoid picking up keys that may be added for other purposes
+- **Badge in info row, not replacing name-row icon** — the name-row lock icon stays (it's part of the rename-hint UX); the info row badge adds a second, more prominent signal in the scanning-area metadata row — two signals for an important state is not redundant
+
+### What's next (Session 64)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched stylesheets so sites that split design tokens into imported CSS files get full color extraction
+- **Palette mood filter in color search** — when similarity search is active, allow filtering results by mood category simultaneously (e.g. "show me palettes similar to #ee4b2b that are also 'cool' or 'dreamy'")
+- **Harmony view dark mode toggle** — invert luminance roles in the mock shop preview to simulate dark mode interpretation of the palette
+
+---
+
 ## 2026-05-29 — Session 62: Harmony Tag Semantic Color
 
 ### What was done
