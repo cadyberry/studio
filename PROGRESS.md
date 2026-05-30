@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-05-30 — Session 64: @import CSS Recursion in URL Color Extractor
+
+### What was done
+- **One level of `@import` recursion** added to `/api/extract-url-colors`
+  - After fetching `<link rel="stylesheet">` files, each fetched CSS text is scanned for `@import url("...")` / `@import "..."` statements (both syntaxes handled)
+  - Import URLs are resolved relative to the CSS file's own URL (not the original HTML page), so relative paths like `../tokens.css` or `./base.css` resolve correctly
+  - Up to 8 additional CSS files are fetched (3s timeout each, parallel via `Promise.all`)
+  - A `fetchedUrls: Set<string>` tracks every URL already fetched — prevents re-fetching the same file even if multiple stylesheets import it, and prevents trivial cycles
+  - Import files that fail or return no content are silently skipped; they never block the extraction
+- **`importCount` field** added to the API response alongside the existing `cssCount`
+- **ImportModal UI** updated:
+  - Source-count badge changes from `HTML + N CSS` to `HTML + N CSS + M @import` when any @imports were successfully fetched
+  - Footer description text updated: "…linked stylesheets, and their @imports" to set the right expectation even before extraction
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **One level only** — full recursive @import following would require cycle detection across an unbounded graph and could hit many more URLs than expected; one level covers the common case (design systems that split tokens into `@import`ed files like `_colors.css`, `_typography.css`) without the complexity
+- **8-file cap on imports** — keeps total CSS fetches bounded (max 5 linked + 8 imported = 13 files); beyond 8 the incremental color discovery would be very low and latency would spike
+- **Relative resolution against the CSS file, not the HTML base** — critical for correctness; `@import "tokens.css"` inside `https://site.com/css/main.css` should resolve to `https://site.com/css/tokens.css`, not `https://site.com/tokens.css`
+- **Backward-compatible response** — `cssCount` is unchanged; `importCount` is a new additive field; any caller that ignored `cssCount` continues to work without changes
+
+### What's next (Session 65)
+- **`oklch()` / `lch()` color parsing** in the URL extractor — oklch is increasingly common in modern design systems (Tailwind v4 uses it); add HSL→RGB conversion path for oklch space syntax
+- **Palette quick-compare view** — side-by-side comparison of two palettes from the library, showing paired ΔE distances so Cady can quickly check if two palettes "talk to each other"
+- **Shade scale generator** — for any palette color, generate a 9-stop shade scale (100–900) for use as a full design-system color ramp, exportable as CSS custom properties
+
+---
+
 ## 2026-05-30 — Session 63: Tag Pills in Color-Search Strip + Info Row Lock Badge
 
 ### What was done
