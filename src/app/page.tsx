@@ -1065,6 +1065,37 @@ export default function Home() {
                         <span className="text-[10px] opacity-60">{frozenInView}</span>
                       </button>
                     )}
+                    {/* Special tag pills (harmony, trend, shared) present in color search results */}
+                    {(() => {
+                      const specialTagsInResults = ["harmony", "trend", "shared"]
+                        .filter((tag) => baseFiltered.some((p) => p.tags?.includes(tag)));
+                      if (specialTagsInResults.length === 0) return null;
+                      return (
+                        <>
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                          {specialTagsInResults.map((tag) => {
+                            const style = SPECIAL_TAG_STYLES[tag];
+                            if (!style) return null;
+                            const count = baseFiltered.filter((p) => p.tags?.includes(tag)).length;
+                            const isActive = activeTag === tag;
+                            return (
+                              <button
+                                key={tag}
+                                onClick={() => setActiveTag(isActive ? "all" : tag)}
+                                title={`${isActive ? "Clear" : "Show only"} ${tag} palettes`}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                                  isActive ? style.activeClass : style.inactiveClass
+                                }`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: style.dot }} />
+                                {tag.charAt(0).toUpperCase() + tag.slice(1)}
+                                <span className="text-[10px] opacity-60">{count}</span>
+                              </button>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
                     {/* Single-mood label when only one mood in results */}
                     {moodCounts.size === 1 && (() => {
                       const [mood] = [...moodCounts.keys()];

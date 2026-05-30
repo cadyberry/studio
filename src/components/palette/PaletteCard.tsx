@@ -631,6 +631,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           )}
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
             <span className="text-xs text-[var(--muted)]">{palette.colors.length} colors</span>
+            {palette.frozen && (
+              <span
+                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300 flex items-center gap-0.5"
+                title="Palette is locked"
+              >
+                <Lock size={8} className="flex-shrink-0" />
+                Locked
+              </span>
+            )}
             <span
               className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${moodStyle.bg} ${moodStyle.text}`}
               title={`Dominant mood: ${moodStyle.label}`}
