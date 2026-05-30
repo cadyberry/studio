@@ -48,6 +48,7 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [urlColors, setUrlColors] = useState<string[] | null>(null);
   const [urlCssCount, setUrlCssCount] = useState<number | null>(null);
+  const [urlImportCount, setUrlImportCount] = useState<number | null>(null);
   const [paletteName, setPaletteName] = useState("");
 
   const textColors = parseHexInput(textInput);
@@ -60,6 +61,7 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
     setUrlError(null);
     setUrlColors(null);
     setUrlCssCount(null);
+    setUrlImportCount(null);
     setUrlLoading(true);
     try {
       const res = await fetch("/api/extract-url-colors", {
@@ -71,6 +73,7 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
       if (!res.ok) throw new Error(data.error ?? "Failed to extract colors");
       setUrlColors(data.colors as string[]);
       setUrlCssCount(typeof data.cssCount === "number" ? data.cssCount : null);
+      setUrlImportCount(typeof data.importCount === "number" ? data.importCount : null);
     } catch (err) {
       setUrlError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -195,8 +198,14 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
               )}
               <p className="text-[10px] text-[var(--muted)] mt-1">
                 {urlColors && urlCssCount != null && urlCssCount > 0
-                  ? `Scanned HTML + ${urlCssCount} linked stylesheet${urlCssCount !== 1 ? "s" : ""} — hex, rgb(), and hsl() values extracted.`
-                  : "Extracts hex, rgb(), and hsl() colors from the page HTML and linked stylesheets. Works best on design portfolio and brand sites."}
+                  ? (() => {
+                      const cssLabel = `${urlCssCount} linked stylesheet${urlCssCount !== 1 ? "s" : ""}`;
+                      const importLabel = urlImportCount && urlImportCount > 0
+                        ? ` + ${urlImportCount} @import${urlImportCount !== 1 ? "s" : ""}`
+                        : "";
+                      return `Scanned HTML + ${cssLabel}${importLabel} — hex, rgb(), and hsl() values extracted.`;
+                    })()
+                  : "Extracts hex, rgb(), and hsl() colors from the page HTML, linked stylesheets, and their @imports. Works best on design portfolio and brand sites."}
               </p>
             </div>
           )}
@@ -216,6 +225,9 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
                   {tab === "url" && urlCssCount != null && urlCssCount > 0 && (
                     <span className="ml-1.5 text-[10px] bg-[var(--surface-2)] border border-[var(--border)] rounded-full px-2 py-0.5 align-middle">
                       HTML + {urlCssCount} CSS
+                      {urlImportCount != null && urlImportCount > 0 && (
+                        <> + {urlImportCount} @import</>
+                      )}
                     </span>
                   )}
                 </p>

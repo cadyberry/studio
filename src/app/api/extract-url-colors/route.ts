@@ -106,6 +106,18 @@ function extractStylesheetHrefs(html: string, baseUrl: string): string[] {
   return hrefs;
 }
 
+// Extract @import URLs from a CSS text, resolved relative to the CSS file's own URL.
+// Handles: @import "url", @import 'url', @import url("url"), @import url('url')
+function extractImportUrls(css: string, baseCssUrl: string): string[] {
+  const urls: string[] = [];
+  for (const m of css.matchAll(/@import\s+(?:url\s*\(\s*)?["']([^"'\)]+)["']/gi)) {
+    try {
+      urls.push(new URL(m[1], baseCssUrl).href);
+    } catch { /* skip unparseable */ }
+  }
+  return urls;
+}
+
 async function fetchCssSafe(cssUrl: string): Promise<string> {
   try {
     const res = await fetch(cssUrl, {
@@ -161,22 +173,56 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not fetch that URL" }, { status: 422 });
   }
 
-  // Fetch linked CSS stylesheets in parallel (skip for direct CSS URLs)
-  let cssTexts: string[] = [];
+  // Step 1: Fetch linked CSS stylesheets from <link rel="stylesheet"> (skip for direct CSS URLs)
+  const fetchedUrls = new Set<string>([url]);
+  let linkedCssTexts: Array<{ text: string; url: string }> = [];
   let cssCount = 0;
+
   if (!isCssOnly) {
     const styleHrefs = extractStylesheetHrefs(html, url).slice(0, 5);
     if (styleHrefs.length > 0) {
-      cssTexts = await Promise.all(styleHrefs.map(fetchCssSafe));
-      cssCount = cssTexts.filter((t) => t.length > 0).length;
+      const results = await Promise.all(
+        styleHrefs.map(async (href) => {
+          fetchedUrls.add(href);
+          return { text: await fetchCssSafe(href), url: href };
+        })
+      );
+      linkedCssTexts = results.filter((r) => r.text.length > 0);
+      cssCount = linkedCssTexts.length;
+    }
+  }
+
+  // Step 2: Follow one level of @import from the linked stylesheets.
+  // Collect all @import URLs found across every successfully-fetched stylesheet,
+  // skip any URL already fetched, cap at 8 additional files.
+  let importCount = 0;
+  const importCssTexts: string[] = [];
+
+  if (linkedCssTexts.length > 0) {
+    const importUrls: string[] = [];
+    for (const { text, url: cssUrl } of linkedCssTexts) {
+      for (const importUrl of extractImportUrls(text, cssUrl)) {
+        if (!fetchedUrls.has(importUrl) && importUrls.length < 8) {
+          fetchedUrls.add(importUrl);
+          importUrls.push(importUrl);
+        }
+      }
+    }
+    if (importUrls.length > 0) {
+      const importTexts = await Promise.all(importUrls.map(fetchCssSafe));
+      for (const t of importTexts) {
+        if (t) {
+          importCssTexts.push(t);
+          importCount++;
+        }
+      }
     }
   }
 
   const counts = new Map<string, number>();
   mineColors(html, counts);
-  for (const css of cssTexts) {
-    if (css) mineColors(css, counts);
-  }
+  for (const { text } of linkedCssTexts) mineColors(text, counts);
+  for (const text of importCssTexts) mineColors(text, counts);
 
   // Filter and sort by frequency
   const candidates = [...counts.entries()]
@@ -198,5 +244,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ colors: selected, cssCount });
+  return NextResponse.json({ colors: selected, cssCount, importCount });
 }
