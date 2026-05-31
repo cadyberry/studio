@@ -401,3 +401,52 @@ export function computeCohesionScore(palettes: { colors: { hex: string }[] }[]):
 
   return Math.round(hueScore * 0.5 + satScore * 0.3 + lightScore * 0.2);
 }
+
+// ─── Shade Scale Generator ────────────────────────────────────────────────────
+
+export interface ShadeStop {
+  stop: number;
+  hex: string;
+  isSource: boolean;
+}
+
+// Reference lightness targets per stop, tuned to Tailwind-style ramps
+const SHADE_STOP_L: Record<number, number> = {
+  50: 97, 100: 93, 200: 86, 300: 76, 400: 65, 500: 52, 600: 42, 700: 32, 800: 22, 900: 12,
+};
+
+// Generates a 10-stop shade scale (50–900) anchored to the source color.
+// Finds the stop whose reference lightness is closest to the source, pegs the
+// source there, and interpolates toward near-white (L=97) and near-black (L=8).
+export function generateShadeScale(sourceHex: string): ShadeStop[] {
+  const rgb = hexToRgb(sourceHex);
+  if (!rgb) return [];
+  const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const stops = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+
+  const anchorStop = stops.reduce((best, stop) =>
+    Math.abs(SHADE_STOP_L[stop] - l) < Math.abs(SHADE_STOP_L[best] - l) ? stop : best
+  , 500);
+  const anchorIdx = stops.indexOf(anchorStop);
+
+  return stops.map((stop, i) => {
+    if (stop === anchorStop) return { stop, hex: sourceHex, isSource: true };
+    let targetL: number;
+    let targetS: number;
+    if (i < anchorIdx) {
+      const t = anchorIdx > 0 ? (anchorIdx - i) / anchorIdx : 0;
+      targetL = l + t * (97 - l);
+      targetS = s * (1 - t * 0.85);
+    } else {
+      const remaining = stops.length - 1 - anchorIdx;
+      const t = remaining > 0 ? (i - anchorIdx) / remaining : 0;
+      targetL = l - t * (l - 8);
+      targetS = s * (1 - t * 0.28);
+    }
+    return {
+      stop,
+      hex: hslToHex(h, Math.max(0, Math.min(100, Math.round(targetS))), Math.max(0, Math.min(100, Math.round(targetL)))),
+      isSource: false,
+    };
+  });
+}

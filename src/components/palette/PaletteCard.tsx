@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -81,6 +81,7 @@ interface PaletteCardProps {
   onAssignCollection: (palette: Palette) => void;
   onHarmony: (palette: Palette) => void;
   onEditSwatch: (palette: Palette, swatchIndex: number) => void;
+  onShadeScale: (palette: Palette, swatchIndex: number) => void;
   onDuplicate: (palette: Palette) => void;
   isSelected?: boolean;
   selectionActive?: boolean;
@@ -103,7 +104,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -466,6 +467,22 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       <span className="hidden group-hover/swatch:inline"> · {getMatchTier(bestMatchIndex.dE).label}</span>
                     </div>
                   )}
+                  {!isMatch && (
+                    <button
+                      className="absolute top-1 left-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
+                      style={{
+                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                        color: getContrastColor(color.hex),
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShadeScale(palette, i);
+                      }}
+                      title="Generate shade scale"
+                    >
+                      <Layers size={9} />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -520,6 +537,22 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       ΔE {bestMatchIndex.dE.toFixed(1)}
                       <span className="hidden group-hover/swatch:inline"> · {getMatchTier(bestMatchIndex.dE).label}</span>
                     </div>
+                  )}
+                  {!isMatch && (
+                    <button
+                      className="absolute top-1 left-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"
+                      style={{
+                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                        color: getContrastColor(color.hex),
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShadeScale(palette, i);
+                      }}
+                      title="Generate shade scale"
+                    >
+                      <Layers size={9} />
+                    </button>
                   )}
                   <button
                     className="absolute top-1 right-1 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity hover:scale-110"

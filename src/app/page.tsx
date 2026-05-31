@@ -16,6 +16,7 @@ import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
 import ImportModal from "@/components/palette/ImportModal";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
+import ShadeModal from "@/components/palette/ShadeModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection } from "@/types";
@@ -94,6 +95,7 @@ export default function Home() {
   const [collectionTarget, setCollectionTarget] = useState<Palette | null>(null);
   const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
+  const [shadeTarget, setShadeTarget] = useState<{ hex: string; name?: string } | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -1416,6 +1418,7 @@ export default function Home() {
                         onAssignCollection={setCollectionTarget}
                         onHarmony={setHarmonyTarget}
                         onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
+                        onShadeScale={(p, i) => setShadeTarget({ hex: p.colors[i].hex, name: p.colors[i].name })}
                         onDuplicate={(p) => duplicatePalette(p.id)}
                         isSelected={selectedIds.has(palette.id)}
                         selectionActive={selectedIds.size > 0}
@@ -1441,6 +1444,7 @@ export default function Home() {
       </main>
 
       {/* Modals */}
+      <ShadeModal color={shadeTarget} onClose={() => setShadeTarget(null)} />
       <ExportModal palette={exportTarget} onClose={() => setExportTarget(null)} />
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />
