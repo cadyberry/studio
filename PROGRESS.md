@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-05-31 — Session 66: Shade Scale Save as Palette
+
+### What was done
+- **"Save as Palette" button in ShadeModal** — a full-width accent button at the bottom of the shade scale modal that saves the 10-stop scale directly to the library as a new palette in one click
+  - Button label reads "Save as Palette" with a `BookmarkPlus` icon; changes to "Saved to Library" + `Check` icon for 1.8s after forking (same confirmation-flash pattern used by harmony/trend fork buttons)
+  - New palette name: `{swatch name} · Shades` when the source swatch has a name (e.g. "Forest · Shades"); falls back to `#HEX · Shades` when the swatch has no name
+  - Each stop becomes a `ColorSwatch` with its stop number as the name (`"50"`, `"100"`, …, `"900"`) — so swatch names double as CSS variable references, consistent with how harmony forks use role names
+  - Palette is tagged `"shades"` automatically so all shade-derived palettes are filterable via the sidebar tag inventory
+  - `onSaveAsPalette` is an optional prop — ShadeModal gracefully omits the button when not provided (e.g. in future read-only contexts)
+  - `forked` state is local to the modal (not a URL or store read) — reset to `false` on close so reopening shows the button fresh
+- **`BookmarkPlus` added to lucide-react imports** in ShadeModal
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **`BookmarkPlus` over `Plus` or `GitFork`** — `Plus` is too generic (already on the harmony fork strip and other inline CTAs); `GitFork` implies branching/versioning; `BookmarkPlus` reads as "add to saved collection" which is exactly what saving to the library is
+- **Stop number as swatch name** — "900" as a name is immediately meaningful to any designer; when they later open the export or view the palette, the names tell them exactly where each color sits in the ramp without counting
+- **`"shades"` tag, not `"shade-scale"` or `"gradient"`** — short, searchable, consistent with the `"harmony"` and `"trend"` tag vocabulary; designers say "the shades of X", not "the shade-scale of X"
+- **Button only when `onSaveAsPalette` is provided** — keeps ShadeModal reusable in read-only or embed contexts without needing a separate `readOnly` prop or conditional everywhere
+
+### What's next (Session 67)
+- **`oklch()` / `lch()` color parsing in URL extractor** — oklch is increasingly common in modern design systems (Tailwind v4 uses it); add an HSL→RGB conversion path so oklch colors are captured during URL extraction
+- **Palette quick-compare view** — side-by-side comparison of two palettes with per-color ΔE distances, so Cady can instantly see how similar two palettes are and which swatches diverge most
+- **"Shades" tag filter shortcut** — since shade-derived palettes are now a first-class concept (tagged `"shades"` on fork), add a dedicated filter pill for them alongside harmony/trend/shared
+
+---
+
 ## 2026-05-31 — Session 65: Shade Scale Generator
 
 ### What was done
