@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-05-31 — Session 65: Shade Scale Generator
+
+### What was done
+- **`generateShadeScale(sourceHex)` added to `utils.ts`** — produces a 10-stop (50–900) shade ramp anchored to the source color
+  - Algorithm: finds which standard stop (50/100/200/300/400/500/600/700/800/900) the source color's HSL lightness is closest to (using Tailwind-style reference lightness targets per stop)
+  - Pegs the source color to that stop (exact hex preserved), then interpolates lighter stops toward L=97 and darker stops toward L=8
+  - Saturation tapers: reduces 85% toward white extreme, 28% toward black extreme — matches the natural desaturation of extreme-lightness colors
+  - Exported as `ShadeStop[]` with `{ stop, hex, isSource }` so callers know which stop is the anchor
+- **`ShadeModal.tsx`** — new modal component
+  - Header: source color dot + hex + "pegged to N" annotation showing the auto-detected anchor stop
+  - 10-stop strip: ~64px tall swatches with source-stop inset ring indicator; each swatch clickable to copy that stop's hex; animated hex tooltip on hover
+  - Stop labels (50, 100 … 900) below the strip; anchor stop label in bold
+  - Variable name derivation: if the swatch has a name, it's sanitized to kebab-case for the CSS variable prefix; falls back to `--color-*`
+  - Three export buttons: **CSS vars** (`:root { --name-50: #hex; … }`), **Tailwind config** (`name: { 50: '#hex', … }`), **Hex list** (`stop: #hex` per line)
+  - Copy flash state per button + per individual swatch
+- **`PaletteCard.tsx`** — `Layers` icon button added to each swatch
+  - Appears on hover at top-left of each swatch (both frozen and unfrozen paths)
+  - Suppressed when the swatch is the active color-search best-match (the ΔE badge occupies top-left at that point)
+  - Added `onShadeScale: (palette, swatchIndex) => void` prop
+- **`page.tsx`** — `shadeTarget` state + `ShadeModal` rendered with it; `onShadeScale` wired to all PaletteCard instances
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Peg to closest stop, not always 500** — a dark forest green (L=28) would generate a useless scale if pegged to 500; pegging to the closest Tailwind reference stop (e.g., 700) produces a scale that actually spans light-to-dark naturally with the source color in the right visual position
+- **Saturation taper on light end is heavier than dark (85% vs 28%)** — light tints naturally desaturate dramatically in most real design systems; dark shades retain their chroma longer; this asymmetry matches Tailwind's actual values
+- **`isSource` flag, not a stop number in the API** — callers only need to know which stop is the source to render the indicator ring; surfacing just a boolean keeps the interface clean
+- **`Layers` icon over `Palette` or `Swatch`** — Layers conveys "depth/levels", which is exactly what a shade scale is; Palette would be ambiguous with the palette concept already throughout the app
+
+### What's next (Session 66)
+- **`oklch()` / `lch()` color parsing** in the URL extractor — oklch is increasingly common in modern design systems (Tailwind v4 uses it); add conversion path
+- **Palette quick-compare view** — side-by-side comparison of two palettes with paired ΔE distances
+- **Shade scale "save as palette"** — a fork button in ShadeModal that saves the 10-stop scale directly to the library as a new palette (named "Name · Shades")
+
+---
+
 ## 2026-05-30 — Session 64: @import CSS Recursion in URL Color Extractor
 
 ### What was done
