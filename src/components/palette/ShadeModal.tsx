@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Code2, Check, Braces } from "lucide-react";
+import { X, Copy, Code2, Check, Braces, BookmarkPlus } from "lucide-react";
 import { generateShadeScale, getContrastColor } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 interface ShadeModalProps {
   color: { hex: string; name?: string } | null;
   onClose: () => void;
+  onSaveAsPalette?: (colors: { hex: string; name: string }[]) => void;
 }
 
-export default function ShadeModal({ color, onClose }: ShadeModalProps) {
+export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeModalProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [hoveredStop, setHoveredStop] = useState<number | null>(null);
+  const [forked, setForked] = useState(false);
 
   if (!color) return null;
 
@@ -44,6 +46,13 @@ export default function ShadeModal({ color, onClose }: ShadeModalProps) {
     const entries = shades.map((s) => `    ${s.stop}: '${s.hex}',`).join("\n");
     navigator.clipboard.writeText(`${varName}: {\n${entries}\n}`);
     flash("tailwind");
+  };
+
+  const handleSaveAsPalette = () => {
+    if (!onSaveAsPalette || forked) return;
+    onSaveAsPalette(shades.map((s) => ({ hex: s.hex, name: String(s.stop) })));
+    setForked(true);
+    setTimeout(() => setForked(false), 1800);
   };
 
   return (
@@ -228,6 +237,26 @@ export default function ShadeModal({ color, onClose }: ShadeModalProps) {
             <p className="text-[9px] text-[var(--muted)] text-center">
               Click any swatch in the strip to copy individual hex values
             </p>
+
+            {onSaveAsPalette && (
+              <button
+                onClick={handleSaveAsPalette}
+                disabled={forked}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius-sm)] bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90 transition-opacity text-sm font-medium disabled:opacity-80"
+              >
+                {forked ? (
+                  <>
+                    <Check size={14} />
+                    <span>Saved to Library</span>
+                  </>
+                ) : (
+                  <>
+                    <BookmarkPlus size={14} />
+                    <span>Save as Palette</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </motion.div>
       </motion.div>

@@ -1444,7 +1444,14 @@ export default function Home() {
       </main>
 
       {/* Modals */}
-      <ShadeModal color={shadeTarget} onClose={() => setShadeTarget(null)} />
+      <ShadeModal
+        color={shadeTarget}
+        onClose={() => setShadeTarget(null)}
+        onSaveAsPalette={(colors) => {
+          const baseName = shadeTarget?.name || shadeTarget?.hex?.toUpperCase() || "Color";
+          addPalette({ name: `${baseName} · Shades`, colors, tags: ["shades"] });
+        }}
+      />
       <ExportModal palette={exportTarget} onClose={() => setExportTarget(null)} />
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />
