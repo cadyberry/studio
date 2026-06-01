@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-06-01 — Session 68: oklch/lch Color Parsing + Shades Tag Color
+
+### What was done
+- **oklch/lch color parsing in URL extractor** — `mineColors()` in `/api/extract-url-colors` now handles `oklch()` and `lch()` color syntax, which modern design systems (Tailwind v4, Radix, many new design tokens) use extensively
+  - `oklchToHex`: full OKLab pipeline — oklch → oklab (via L,C,H) → linear sRGB (via Björn Ottosson matrix) → gamma-corrected sRGB hex
+  - `lchToHex`: full CIELAB pipeline — lch → lab → XYZ D65 → linear sRGB → gamma-corrected sRGB hex
+  - Both handle optional `%` on L/C channels, optional `deg` suffix on hue, `/alpha` component (ignored), and the CSS `none` keyword (color skipped)
+  - Zero new dependencies — pure math, all server-side
+- **`"shades"` added to `SPECIAL_TAG_STYLES`** — shade-derived palettes now have a distinct stone/warm-gray visual identity instead of falling back to the generic gray dot
+  - `dot: "#78716c"` (stone-500) — warm gray reads as "derived, tonal, structured" vs. the generic zinc used for user tags
+  - Full active/inactive/dark variants matching the harmony/trend/shared pattern
+  - Applies automatically to: sidebar tag filter pills, color-search result strip special tag pills, PaletteCard tag pills (both clickable and display-only)
+  - Added `"shades"` to the color-search special tag strip array so it appears as a filter pill there too
+- **ImportModal description updated** to mention oklch/lch support in both the post-scan confirmation text and the default description
+
+### Key decisions
+- **OKLab matrix from Björn Ottosson's spec** — oklch is mathematically more perceptually uniform than CIELAB; the cube-root operations are in the intermediate OKLab space, not on XYZ (unlike CIELAB), so the conversion is slightly different from lch
+- **Stone for shades** — warm gray conveys "these are tonal derivations of a real color" without competing with any of the hue-based special tags (rose=trend, sky=shared, emerald=harmony); stone also feels grounded and craft-like, appropriate for a shade scale
+- **`none` keyword → skip** — rather than treating `none` as 0 (which would silently produce wrong colors, e.g. oklch with `none` hue makes black), we return null and skip; correctness over completeness
+
+### What's next (Session 69)
+- **`rgb()` space syntax support** — `rgb(R G B)` without commas (modern CSS Level 4); common in compiled Tailwind output
+- **Palette size sparkline on card** — tiny per-swatch lightness dot strip giving each card a visual fingerprint beyond the swatch colors (answering "light vs. dark palette" at a glance)
+- **SwatchEditor oklch readout** — when editing a swatch, show its oklch values alongside hex/HSL so creators can reason about perceptual lightness vs. chroma
+
+---
+
 ## 2026-06-01 — Session 67: Palette Quick-Compare View
 
 ### What was done
