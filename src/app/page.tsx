@@ -52,6 +52,12 @@ const SPECIAL_TAG_STYLES: Record<string, { dot: string; activeClass: string; ina
     inactiveClass: "bg-[var(--surface)] text-emerald-600 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/60 dark:text-emerald-400 dark:border-emerald-800/60 dark:hover:bg-emerald-950/20",
     sidebarActiveText: "text-emerald-600",
   },
+  shades: {
+    dot: "#78716c",
+    activeClass: "bg-stone-100 text-stone-700 border-stone-300 shadow-sm dark:bg-stone-900/40 dark:text-stone-300 dark:border-stone-700",
+    inactiveClass: "bg-[var(--surface)] text-stone-500 border-stone-200 hover:border-stone-400 hover:bg-stone-50/60 dark:text-stone-400 dark:border-stone-700/60 dark:hover:bg-stone-900/20",
+    sidebarActiveText: "text-stone-600",
+  },
 };
 
 function getTagDotColor(tag: string): string {
@@ -1072,7 +1078,7 @@ export default function Home() {
                     )}
                     {/* Special tag pills (harmony, trend, shared) present in color search results */}
                     {(() => {
-                      const specialTagsInResults = ["harmony", "trend", "shared"]
+                      const specialTagsInResults = ["harmony", "trend", "shared", "shades"]
                         .filter((tag) => baseFiltered.some((p) => p.tags?.includes(tag)));
                       if (specialTagsInResults.length === 0) return null;
                       return (

@@ -203,9 +203,9 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
                       const importLabel = urlImportCount && urlImportCount > 0
                         ? ` + ${urlImportCount} @import${urlImportCount !== 1 ? "s" : ""}`
                         : "";
-                      return `Scanned HTML + ${cssLabel}${importLabel} — hex, rgb(), and hsl() values extracted.`;
+                      return `Scanned HTML + ${cssLabel}${importLabel} — hex, rgb(), hsl(), oklch(), and lch() values extracted.`;
                     })()
-                  : "Extracts hex, rgb(), and hsl() colors from the page HTML, linked stylesheets, and their @imports. Works best on design portfolio and brand sites."}
+                  : "Extracts hex, rgb(), hsl(), oklch(), and lch() colors from the page HTML, linked stylesheets, and their @imports. Works best on design portfolio and brand sites."}
               </p>
             </div>
           )}

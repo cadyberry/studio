@@ -59,6 +59,52 @@ function hslToHex(h: number, s: number, l: number): string | null {
   );
 }
 
+function oklchToHex(Lraw: string, Craw: string, Hraw: string): string | null {
+  if ([Lraw, Craw, Hraw].some((v) => v.toLowerCase() === "none")) return null;
+  const L = Lraw.endsWith("%") ? parseFloat(Lraw) / 100 : parseFloat(Lraw);
+  const C = Craw.endsWith("%") ? parseFloat(Craw) * 0.004 : parseFloat(Craw);
+  const H = parseFloat(Hraw);
+  if (isNaN(L) || isNaN(C) || isNaN(H)) return null;
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+  const lc = l_ * l_ * l_, mc = m_ * m_ * m_, sc = s_ * s_ * s_;
+  const rL = +4.0767416621 * lc - 3.3077115913 * mc + 0.2309699292 * sc;
+  const gL = -1.2684380046 * lc + 2.6097574011 * mc - 0.3413193965 * sc;
+  const bL = -0.0041960863 * lc - 0.7034186147 * mc + 1.7076147010 * sc;
+  const gam = (x: number) => x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+  const r = Math.round(Math.min(1, Math.max(0, gam(rL))) * 255);
+  const g = Math.round(Math.min(1, Math.max(0, gam(gL))) * 255);
+  const bv = Math.round(Math.min(1, Math.max(0, gam(bL))) * 255);
+  return normalizeHex("#" + r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + bv.toString(16).padStart(2, "0"));
+}
+
+function lchToHex(Lraw: string, Craw: string, Hraw: string): string | null {
+  if ([Lraw, Craw, Hraw].some((v) => v.toLowerCase() === "none")) return null;
+  const L = parseFloat(Lraw); // L* 0–100 whether or not % present
+  const C = Craw.endsWith("%") ? parseFloat(Craw) * 1.5 : parseFloat(Craw);
+  const H = parseFloat(Hraw);
+  if (isNaN(L) || isNaN(C) || isNaN(H)) return null;
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+  const fy = (L + 16) / 116, fx = a / 500 + fy, fz = fy - b / 200;
+  const d = 6 / 29;
+  const f2xyz = (t: number) => t > d ? t * t * t : 3 * d * d * (t - 4 / 29);
+  const X = 0.95047 * f2xyz(fx), Y = 1.00000 * f2xyz(fy), Z = 1.08883 * f2xyz(fz);
+  const rL = +3.2404542 * X - 1.5371385 * Y - 0.4985314 * Z;
+  const gL = -0.9692660 * X + 1.8760108 * Y + 0.0415560 * Z;
+  const bL = +0.0556434 * X - 0.2040259 * Y + 1.0572252 * Z;
+  const gam = (x: number) => x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+  const r = Math.round(Math.min(1, Math.max(0, gam(rL))) * 255);
+  const g = Math.round(Math.min(1, Math.max(0, gam(gL))) * 255);
+  const bv = Math.round(Math.min(1, Math.max(0, gam(bL))) * 255);
+  return normalizeHex("#" + r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + bv.toString(16).padStart(2, "0"));
+}
+
 function mineColors(text: string, counts: Map<string, number>): void {
   const bump = (raw: string) => {
     const hex = normalizeHex(raw);
@@ -88,6 +134,18 @@ function mineColors(text: string, counts: Map<string, number>): void {
   // hsl() — space syntax: hsl(H S% L%)
   for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*\)/gi)) {
     const hex = hslToHex(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+
+  // oklch() — oklch(L C H) with optional % on L/C, optional deg on H, optional /alpha
+  for (const m of text.matchAll(/\boklch\(\s*([\d.]+%?|none)\s+([\d.]+%?|none)\s+([\d.]+(?:deg)?|none)\s*(?:\/[^)]+)?\s*\)/gi)) {
+    const hex = oklchToHex(m[1], m[2], m[3].replace(/deg$/i, ""));
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+
+  // lch() — lch(L C H) with optional % on L/C, optional deg on H, optional /alpha
+  for (const m of text.matchAll(/\blch\(\s*([\d.]+%?|none)\s+([\d.]+%?|none)\s+([\d.]+(?:deg)?|none)\s*(?:\/[^)]+)?\s*\)/gi)) {
+    const hex = lchToHex(m[1], m[2], m[3].replace(/deg$/i, ""));
     if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
   }
 }
