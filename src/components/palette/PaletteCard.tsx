@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -96,6 +96,8 @@ interface PaletteCardProps {
   onClearCollection?: () => void;
   onFilterByTag?: (tag: string) => void;
   activeTag?: string;
+  onCompare?: (palette: Palette) => void;
+  isCompareAnchor?: boolean;
 }
 
 type NamingState =
@@ -104,7 +106,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -852,6 +854,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           >
             {duplicated ? <Check size={13} className="text-green-500" /> : <CopyPlus size={13} />}
           </Button>
+          {onCompare && (
+            <Button
+              variant={isCompareAnchor ? "outline" : "ghost"}
+              size="sm"
+              onClick={() => onCompare(palette)}
+              title={isCompareAnchor ? "Comparing — click another palette to compare" : "Compare with another palette"}
+              className={isCompareAnchor ? "border-violet-400 text-violet-600 dark:text-violet-400" : ""}
+            >
+              <ArrowLeftRight size={13} className={isCompareAnchor ? "text-violet-600 dark:text-violet-400" : ""} />
+            </Button>
+          )}
           {onSetCover && (
             <Button
               variant={isCover ? "outline" : "ghost"}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -17,6 +17,7 @@ import TrendLibrary from "@/components/palette/TrendLibrary";
 import ImportModal from "@/components/palette/ImportModal";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import ShadeModal from "@/components/palette/ShadeModal";
+import CompareModal from "@/components/palette/CompareModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection } from "@/types";
@@ -96,6 +97,8 @@ export default function Home() {
   const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
   const [shadeTarget, setShadeTarget] = useState<{ hex: string; name?: string } | null>(null);
+  const [compareAnchor, setCompareAnchor] = useState<Palette | null>(null);
+  const [compareTarget, setCompareTarget] = useState<Palette | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -1250,6 +1253,35 @@ export default function Home() {
               )}
             </AnimatePresence>
 
+            {/* Compare anchor hint banner */}
+            <AnimatePresence>
+              {compareAnchor && !compareTarget && (
+                <motion.div
+                  key="compare-hint"
+                  initial={{ opacity: 0, y: -6, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -6, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-sm)] border border-violet-300 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 text-sm">
+                    <ArrowLeftRight size={13} className="text-violet-500 shrink-0" />
+                    <span className="text-violet-700 dark:text-violet-400 text-xs">
+                      Comparing <strong className="font-semibold">{compareAnchor.name}</strong> — click{" "}
+                      <ArrowLeftRight size={10} className="inline -mt-0.5 mx-0.5" /> on another palette to compare
+                    </span>
+                    <button
+                      onClick={() => setCompareAnchor(null)}
+                      className="ml-auto p-0.5 rounded hover:bg-violet-100 dark:hover:bg-violet-900/40 text-violet-400 hover:text-violet-600 transition-colors shrink-0"
+                      title="Cancel compare"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {palettes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="flex gap-1.5 mb-4">
@@ -1419,6 +1451,16 @@ export default function Home() {
                         onHarmony={setHarmonyTarget}
                         onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
                         onShadeScale={(p, i) => setShadeTarget({ hex: p.colors[i].hex, name: p.colors[i].name })}
+                        onCompare={(p) => {
+                          if (!compareAnchor) {
+                            setCompareAnchor(p);
+                          } else if (compareAnchor.id === p.id) {
+                            setCompareAnchor(null);
+                          } else {
+                            setCompareTarget(p);
+                          }
+                        }}
+                        isCompareAnchor={compareAnchor?.id === palette.id}
                         onDuplicate={(p) => duplicatePalette(p.id)}
                         isSelected={selectedIds.has(palette.id)}
                         selectionActive={selectedIds.size > 0}
@@ -1451,6 +1493,11 @@ export default function Home() {
           const baseName = shadeTarget?.name || shadeTarget?.hex?.toUpperCase() || "Color";
           addPalette({ name: `${baseName} · Shades`, colors, tags: ["shades"] });
         }}
+      />
+      <CompareModal
+        paletteA={compareAnchor}
+        paletteB={compareTarget}
+        onClose={() => { setCompareAnchor(null); setCompareTarget(null); }}
       />
       <ExportModal palette={exportTarget} onClose={() => setExportTarget(null)} />
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
