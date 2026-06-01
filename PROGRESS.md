@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-06-01 — Session 67: Palette Quick-Compare View
+
+### What was done
+- **`CompareModal.tsx`** — new modal for side-by-side palette comparison with ΔE distances
+  - For each swatch in palette A, finds the nearest-matching swatch in palette B using CIE76 ΔE (greedy nearest-neighbor)
+  - Pairs displayed in a `grid-cols-[1fr_auto_1fr]` layout: swatch A on the left (hex + optional name), ΔE badge in the center, nearest swatch B on the right — all sorted closest-first
+  - ΔE badges color-coded by the same excellent/good/fair/loose tier used throughout the app (emerald < 5, sky < 10, amber < 15, rose ≥ 15)
+  - Summary stats footer: avg ΔE · closest pair ΔE · furthest pair ΔE — each with tier color
+  - Plain-language verdict below the stats: "Strong similarity — these palettes share a clear color family" etc.
+  - Both palette strips shown at the top (full-width, h-10) with name + swatch count
+  - Center badge shows the average ΔE at a glance before drilling into pairs
+  - Max-h-60 scrollable pairs list so long palettes don't push the footer off screen
+  - Animated entry/exit via Framer Motion spring; backdrop click closes
+- **Compare flow wired into `page.tsx`**
+  - `compareAnchor: Palette | null` and `compareTarget: Palette | null` states
+  - First `onCompare(p)` call → sets anchor; second call on different palette → opens modal; same palette again → cancels anchor
+  - CompareModal `onClose` clears both states
+- **Violet hint banner** — animated `AnimatePresence` banner below the filter rows when an anchor is selected but no second palette chosen yet; shows "Comparing [name] — click another palette to compare" with a cancel X; disappears when modal opens
+- **PaletteCard updates** — new optional `onCompare` / `isCompareAnchor` props; `ArrowLeftRight` button in the action bar (after Duplicate); button highlights violet when this card is the compare anchor; suppressed when `onCompare` not provided
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Greedy nearest-neighbor, not Hungarian algorithm** — for palette comparison Cady cares about "how close is my closest match for each color", not optimal global assignment; greedy NN is instant and more intuitive (no swatches disappear from either side)
+- **Sorted by ΔE ascending** — pairs sorted closest-first (not by palette A order) so the "how well do these palettes overlap" story is visible at a glance: if the first few pairs are emerald, the palettes share a color family
+- **Anchor-then-click UX, not a palette picker inside the modal** — Cady is already looking at the grid; clicking directly on two palettes is faster than a two-dropdown picker; the hint banner keeps her oriented
+- **Violet for compare anchor** — distinguishes from the indigo "locked" state and the emerald "harmony" tag; violet reads as "selection in progress" not "this palette has a special property"
+- **Max-h-60 overflow on pairs list** — palettes can have 8+ swatches; without a height cap the modal would overflow the viewport on mobile; 60 (240px) fits ~5 pairs with comfortable spacing before requiring scroll
+
+### What's next (Session 68)
+- **`oklch()` / `lch()` color parsing in URL extractor** — oklch is increasingly common in modern design systems (Tailwind v4 uses it); add an HSL→RGB conversion path so oklch colors are captured during URL extraction
+- **"Shades" special tag color** — add shades to `SPECIAL_TAG_STYLES` with a stone/warm-gray color so shade-derived palettes have their own visual identity in tag pills and the sidebar (currently falls back to generic gray dot)
+- **Palette size sparkline on card** — tiny per-swatch lightness/hue dot strip that gives each palette a visual fingerprint beyond the swatch strip (answering "light palette vs dark palette" at a scan)
+
+---
+
 ## 2026-05-31 — Session 66: Shade Scale Save as Palette
 
 ### What was done
