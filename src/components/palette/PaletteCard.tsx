@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, type PaletteMood } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -583,6 +583,32 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-300 leading-none uppercase tracking-wide">locked</span>
           </div>
         )}
+      </div>
+
+      {/* Lightness sparkline — always-visible bar chart of per-swatch HSL lightness */}
+      <div
+        className="flex items-end gap-[2px] px-2 bg-[var(--surface-2)]/30"
+        style={{ height: 14 }}
+        title={`Lightness profile · ${orderedColors.map((c) => {
+          const rgb = hexToRgb(c.hex);
+          return rgb ? `${rgbToHsl(rgb.r, rgb.g, rgb.b).l}%` : "?";
+        }).join(" · ")}`}
+      >
+        {orderedColors.map((color) => {
+          const rgb = hexToRgb(color.hex);
+          const l = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
+          return (
+            <div
+              key={color._key}
+              className="flex-1 rounded-t-[2px]"
+              style={{
+                height: Math.max(2, Math.round((l / 100) * 11)),
+                backgroundColor: color.hex,
+                opacity: 0.72,
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* Harmony mini-preview — slides in on hover */}
