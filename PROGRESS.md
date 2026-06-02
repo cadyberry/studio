@@ -1851,3 +1851,26 @@
 - **Harmony tag filter pill** — quick-filter pill for "harmony"-tagged palettes in the sidebar filter row alongside "trend" and "shared"
 - **Palette mood filter in color search** — when similarity search is active, allow filtering results by mood category simultaneously
 - **@import CSS recursion** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
+
+---
+
+## 2026-06-02 — Session 70: Palette Lightness Sort
+
+### What was done
+- **"Lightest first" and "Darkest first" sort options** in the library sort dropdown — two new entries that order palettes by their mean HSL lightness across all swatches
+  - `paletteMeanLightness`: a `useCallback` that averages the HSL L channel (0–100) across all swatches in a palette, using the same `hexToRgb` + `rgbToHsl` utils already in use by the sparkline
+  - "Lightest first": sorts descending by mean lightness (bright/pastel palettes bubble to the top)
+  - "Darkest first": sorts ascending by mean lightness (moody/dark palettes bubble to the top)
+  - Appears at the bottom of the sort dropdown after "Most annotated", below a natural grouping divide (date sorts, name sorts, property sorts, lightness sorts)
+  - Integrates with all existing filters (collection, mood, tag, freeze) — lightness sort applies to the already-filtered set, same as every other sort key
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Mean lightness (not median)** — mean is faster and for 5–8 swatches the two are nearly identical; the visual distinction between palettes is coarse enough that mean vs. median doesn't matter
+- **HSL L, not oklch L*** — consistent with the sparkline (session 69) which also uses HSL L; perceptually oklch would be more accurate but would require extra utils; the sorting is a workflow convenience, not a color-science measurement
+- **`useCallback` not `useMemo`** — we need a function to call per palette during sort, not a cached array; `useCallback` with empty deps memoizes the function reference so it doesn't get recreated every render and the sort closure is stable
+
+### What's next (Session 71)
+- **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output; add alongside existing `rgb(R, G, B)` parser
+- **SwatchEditor oklch readout** — when editing a swatch, show its oklch L/C/H values alongside hex/HSL so creators can reason about perceptual lightness vs. chroma
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across files
