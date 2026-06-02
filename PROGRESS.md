@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-06-02 — Session 69: Palette Lightness Sparkline
+
+### What was done
+- **Lightness sparkline strip on every palette card** — a thin 14px bar chart always visible below the swatch strip, giving each palette a unique visual fingerprint at a glance
+  - Each bar corresponds to one swatch: height = `max(2px, round(L/100 × 11px))` where L is HSL lightness (0–100)
+  - Bar color = actual swatch hex at 72% opacity — creates a "color-weight echo" of the palette, so you see both the hue and the lightness in the same bars
+  - Bars grow upward from a shared baseline (`items-end` flex), so tall bars = light swatches, short bars = dark swatches
+  - Background: `var(--surface-2)` at 30% opacity — very faint, enough to define the strip as a zone without adding visual noise
+  - Hover tooltip on the strip shows exact lightness percentages: e.g. "Lightness profile · 85% · 62% · 30% · 15% · 8%"
+  - Always visible (not hover-gated) so it contributes to library scanning at rest
+  - Placed between the swatch strip and the harmony preview strip — the harmony strip slides in above the info row as before, sparkline stays fixed
+  - Imported `hexToRgb` and `rgbToHsl` into PaletteCard (both already exported from utils.ts) to compute lightness inline
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Always visible, not hover-only** — the whole purpose is library scanning; a hover-only sparkline would defeat the point (you'd have to hover every card to scan the lightness profile)
+- **HSL lightness as the axis** — perceptually straightforward, already used throughout the app (shadeScale, harmonyColors); oklch would be more accurate but HSL is fast and sufficient for a visual indicator
+- **Hex color per bar** — repeating the swatch colors at reduced opacity creates a distinctive per-palette fingerprint; a single neutral color would make all sparklines look the same except for height
+- **`max(2px, ...)` floor** — without a floor, very dark swatches (L<15) produce bars shorter than 1px that don't render at all; 2px ensures even the darkest swatch is visible as a stub, communicating "dark" without disappearing
+- **Top space intentional** — bars max out at 11px within a 14px container; the 3px top gap gives visual breathing room and makes the baseline alignment clear at a glance
+
+### What's next (Session 70)
+- **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output; add alongside the existing `rgb(R, G, B)` parser
+- **SwatchEditor oklch readout** — when editing a swatch, show its oklch L/C/H values alongside hex/HSL so creators can reason about perceptual lightness vs. chroma
+- **Palette sparkline sort option** — "Sort by lightness (light first)" and "Sort by lightness (dark first)" sort options that use the mean HSL lightness across palette swatches
+
+---
+
 ## 2026-06-01 — Session 68: oklch/lch Color Parsing + Shades Tag Color
 
 ### What was done
