@@ -18,7 +18,7 @@ import ImportModal from "@/components/palette/ImportModal";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
-import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, type PaletteMood } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection } from "@/types";
 
@@ -110,7 +110,17 @@ export default function Home() {
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first">("newest");
+
+  const paletteMeanLightness = useCallback((p: Palette): number => {
+    if (p.colors.length === 0) return 0;
+    const total = p.colors.reduce((sum, c) => {
+      const rgb = hexToRgb(c.hex);
+      if (!rgb) return sum;
+      return sum + rgbToHsl(rgb.r, rgb.g, rgb.b).l;
+    }, 0);
+    return total / p.colors.length;
+  }, []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -308,6 +318,8 @@ export default function Home() {
           case "name-desc": return b.name.localeCompare(a.name);
           case "most-colors": return b.colors.length - a.colors.length;
           case "most-notes": return (b.notes?.length ?? 0) - (a.notes?.length ?? 0);
+          case "light-first": return paletteMeanLightness(b) - paletteMeanLightness(a);
+          case "dark-first": return paletteMeanLightness(a) - paletteMeanLightness(b);
         }
       });
 
@@ -886,6 +898,8 @@ export default function Home() {
                           <option value="name-desc">Name Z→A</option>
                           <option value="most-colors">Most colors</option>
                           <option value="most-notes">Most annotated</option>
+                          <option value="light-first">Lightest first</option>
+                          <option value="dark-first">Darkest first</option>
                         </select>
                       </div>
                     </>
