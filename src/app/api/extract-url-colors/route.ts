@@ -125,6 +125,15 @@ function mineColors(text: string, counts: Map<string, number>): void {
     if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
   }
 
+  // rgb() — space syntax (CSS Level 4): rgb(R G B) or rgb(R G B / alpha)
+  for (const m of text.matchAll(/\brgb\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s*(?:\/[^)]+)?\s*\)/gi)) {
+    const r = parseInt(m[1], 10).toString(16).padStart(2, "0");
+    const g = parseInt(m[2], 10).toString(16).padStart(2, "0");
+    const b = parseInt(m[3], 10).toString(16).padStart(2, "0");
+    const hex = normalizeHex("#" + r + g + b);
+    if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+
   // hsl() — comma syntax: hsl(H, S%, L%)
   for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)/gi)) {
     const hex = hslToHex(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
