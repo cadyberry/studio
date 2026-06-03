@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-06-03 — Session 70: rgb() Space Syntax in URL Extractor
+
+### What was done
+- **`rgb()` space syntax support in URL color extractor** — `rgb(R G B)` and `rgb(R G B / alpha)` (CSS Level 4) now parsed by `mineColors()` in `/api/extract-url-colors`
+  - New regex added after the comma-syntax handler: matches whitespace-separated values with no commas
+  - Optional `/alpha` component captured and ignored — same policy as oklch/lch (opacity carries no meaning for palette extraction)
+  - Emitted by compiled Tailwind v4 output, PostCSS transforms, and other modern build tools that generate CSS Level 4 syntax
+  - Zero new dependencies; pure regex addition
+  - Build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **`\s+` between values (not `\s*`) to prevent collision with comma syntax** — the comma-syntax handler already matches `rgb(R, G, B)` patterns; requiring mandatory whitespace between space-syntax values ensures the two patterns are strictly disjoint and neither double-counts a color
+- **Integer-only for MVP** — Tailwind and most frameworks emit integer values (0–255) in compiled CSS; percentage and float variants (`rgb(100% 50% 0%)`) are valid Level 4 but rare in practice; keeping the scope tight avoids false matches on non-color numeric sequences
+- **Scope check on session start** — verified oklch readout and light/dark sort options noted in session-69's "what's next" were already present in the codebase; avoided duplicating finished work and focused on the one genuinely missing item
+
+### What's next (Session 71)
+- **`hsl()` modern space syntax with `deg` hue** — `hsl(240deg 60% 50%)` (CSS Level 4 allows `deg` suffix on hue in space-separated form); common in design-token exports
+- **Palette "mood board" export** — a single PNG collage layout showing all swatches + name + hex codes for each palette, suitable for sharing on social or a client brief
+- **Contrast pairing view in SwatchEditor** — show which swatches in the palette pair well (WCAG AA/AAA) with the currently edited color, so Cady can spot accessible combos at a glance
+
+---
+
 ## 2026-06-02 — Session 69: Palette Lightness Sparkline
 
 ### What was done
