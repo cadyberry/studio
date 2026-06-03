@@ -12,6 +12,7 @@ import {
   hslToHex,
   isValidHex,
   getContrastRatio,
+  hexToOklch,
 } from "@/lib/utils";
 
 interface SwatchEditorProps {
@@ -90,6 +91,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
 
   const contrastWhite = getContrastRatio(hex, "#ffffff");
   const contrastBlack = getContrastRatio(hex, "#000000");
+  const oklch = hexToOklch(hex);
 
   const previewColors = palette.colors.map((c, i) =>
     i === swatchIndex ? { ...c, hex } : c
@@ -267,6 +269,33 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 ◼{contrastBlack.toFixed(1)}
               </span>
             </div>
+
+            {/* Oklch readout */}
+            {oklch && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold text-[var(--muted)] select-none shrink-0 w-9">
+                  OKLCH
+                </span>
+                <div className="flex-1 flex items-center gap-1.5 bg-[var(--surface-2)] rounded-[var(--radius-sm)] px-3 py-1.5">
+                  {[
+                    { key: "L", value: `${oklch.l.toFixed(1)}`, title: "Perceptual lightness (0–100). Unlike HSL L, this matches how the eye actually perceives brightness." },
+                    { key: "C", value: oklch.c.toFixed(3), title: "Absolute chroma — how colorful the color is (0 = gray, ~0.4 = maximum saturation). Unlike HSL S, not affected by lightness." },
+                    { key: "H", value: `${oklch.h.toFixed(0)}°`, title: "Hue angle in degrees (0°=red, 120°=green, 240°=blue)." },
+                  ].map(({ key, value, title }, i) => (
+                    <span key={key} className="flex items-baseline gap-0.5 select-none">
+                      {i > 0 && <span className="text-[var(--border)] mx-0.5 text-[10px]">·</span>}
+                      <span className="text-[9px] font-mono font-bold text-[var(--muted)]">{key}</span>
+                      <span
+                        className="text-[10px] font-mono text-[var(--foreground)] tabular-nums"
+                        title={title}
+                      >
+                        {value}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Live palette preview */}
             <div>
