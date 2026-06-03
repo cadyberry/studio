@@ -1874,3 +1874,31 @@
 - **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output; add alongside existing `rgb(R, G, B)` parser
 - **SwatchEditor oklch readout** — when editing a swatch, show its oklch L/C/H values alongside hex/HSL so creators can reason about perceptual lightness vs. chroma
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across files
+
+---
+
+## 2026-06-03 — Session 71: Oklch Perceptual Color Readout in SwatchEditor
+
+### What was done
+- Added **oklch (L/C/H) live readout** to the SwatchEditor — creators now see their color in perceptual color space while editing, directly beneath the hex input row
+  - **L (Perceptual Lightness)**: 0–100, one decimal. Unlike HSL L, oklch L is perceptually uniform — a jump of 10 units looks the same size at any hue or chroma level. Tooltip explains the distinction.
+  - **C (Absolute Chroma)**: 0.000–0.400, three decimals. Unlike HSL S (which is relative to lightness), oklch C is absolute — the same red at 30% HSL lightness vs. 60% HSL lightness will show very different HSL S values but similar oklch C values. Invaluable for POD creators comparing "how vivid is this really?"
+  - **H (Hue angle)**: 0–360°, same scale as HSL H for familiarity
+  - Readout is a compact pill row: `OKLCH  L 78.2  ·  C 0.143  ·  H 241°`
+  - Updates live on every slider drag, native color picker change, and hex field commit
+  - Each value has a tooltip explaining what it means vs. HSL, so creators learn the space by using it
+- Added `rgbToOklch` and `hexToOklch` to `utils.ts`:
+  - Full pipeline: sRGB 0-255 → linearize (gamma expand) → M1 matrix to LMS → cube root → M2 matrix to OKLab (L, a, b) → polar conversion to oklch (L, C=√(a²+b²), H=atan2(b,a))
+  - Uses Björn Ottosson's exact published matrices — the same ones used by CSS Color 4 and browsers' native oklch() support
+  - Sign-safe cbrt (handles negative inputs without NaN)
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Read-only, not new sliders** — oklch editing would require converting oklch→sRGB, which needs gamut clipping (out-of-gamut colors exist in oklch). This session's goal was insight, not a full oklch editor; sliders can come later
+- **Three decimal places for C** — typical real-world values run 0.050–0.350; one decimal (0.1–0.4) loses too much precision to distinguish perceptually similar chromas; three gives enough resolution to notice the difference between a muted and a vivid version of the same hue
+- **Tooltip-first education** — rather than a "What is oklch?" modal, each value's hover title gives a one-sentence explanation; low friction, in-context learning
+
+### What's next (Session 72)
+- **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
+- **Oklch sliders** — full oklch color editing with gamut clipping (L/C/H sliders alongside HSL), the logical next step after this readout
