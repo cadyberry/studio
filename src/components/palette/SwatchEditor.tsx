@@ -122,7 +122,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 500, damping: 35 }}
-          className="bg-[var(--surface)] rounded-[var(--radius)] w-full max-w-sm shadow-2xl"
+          className="bg-[var(--surface)] rounded-[var(--radius)] w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -316,6 +316,53 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 ))}
               </div>
             </div>
+
+            {/* Swatch contrast pairings */}
+            {palette.colors.length > 1 && (() => {
+              const pairs = palette.colors
+                .map((c, i) => {
+                  if (i === swatchIndex) return null;
+                  const ratio = getContrastRatio(hex, c.hex);
+                  const tier =
+                    ratio >= 7 ? { label: "AAA", bg: "bg-emerald-100 text-emerald-700" } :
+                    ratio >= 4.5 ? { label: "AA", bg: "bg-sky-100 text-sky-700" } :
+                    ratio >= 3 ? { label: "AA lg", bg: "bg-amber-100 text-amber-700" } :
+                    { label: "Fail", bg: "bg-rose-100 text-rose-600" };
+                  return { hex: c.hex, name: c.name, ratio, tier, i };
+                })
+                .filter((x): x is NonNullable<typeof x> => x !== null)
+                .sort((a, b) => b.ratio - a.ratio);
+
+              return (
+                <div>
+                  <p className="text-[10px] text-[var(--muted)] mb-1.5 uppercase tracking-widest font-semibold select-none">
+                    Contrast pairings
+                  </p>
+                  <div className="space-y-1">
+                    {pairs.map(({ hex: swHex, name, ratio, tier, i }) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 px-2 py-1 rounded-[var(--radius-sm)] bg-[var(--surface-2)]"
+                      >
+                        <div
+                          className="w-5 h-5 rounded-sm flex-shrink-0 border border-[var(--border)]"
+                          style={{ backgroundColor: swHex }}
+                        />
+                        <span className="text-[10px] font-mono flex-1 truncate text-[var(--muted)]">
+                          {name || swHex}
+                        </span>
+                        <span className="text-[10px] font-mono tabular-nums text-[var(--foreground)]">
+                          {ratio.toFixed(1)}:1
+                        </span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded select-none ${tier.bg}`}>
+                          {tier.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Actions */}
             <div className="flex items-center gap-2 pt-1">

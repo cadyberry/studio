@@ -140,8 +140,9 @@ function mineColors(text: string, counts: Map<string, number>): void {
     if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
   }
 
-  // hsl() — space syntax: hsl(H S% L%)
-  for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*\)/gi)) {
+  // hsl() — space syntax: hsl(H S% L%) or hsl(Hdeg S% L%) — CSS Level 4
+  // Optional `deg` suffix on hue; optional `/alpha` component (ignored)
+  for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)(?:deg)?\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*(?:\/[^)]+)?\s*\)/gi)) {
     const hex = hslToHex(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
     if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
   }
