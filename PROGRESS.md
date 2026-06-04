@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-04 — Session 71: Palette Mood Board Export
+
+### What was done
+- **Mood Board PNG export** — new 1080×1080 shareable image exported from the Export modal via a "Download Mood Board" button
+  - Grid layout adapts to palette size: 1 col (1 color), 2 cols (2 colors), 2×2 (3–4 colors), 3-col grid (5–6 colors), 4-col grid (7–8 colors)
+  - Swatches rendered with 14px rounded corners and a subtle drop shadow (`rgba(0,0,0,0.10)`, blur 28px, offset y=8) so each color block feels elevated and premium
+  - Warm cream gradient background (`#FAFAF7` → `#F1F1EB`) — neutral enough to complement any palette
+  - Header: large bold palette name (52px, truncated) + color count pill (right-aligned)
+  - Mood line: colored dot (matching the existing mood color system) + mood label + inline notes excerpt if the palette has notes (`"excerpt…"` in muted italic)
+  - Under each swatch: hex code in monospace (bold, 18px) + swatch name if exists (15px, muted)
+  - Footer: gradient Palette logo mark + "Palette · color intelligence for creators" branding + month/year date (right-aligned)
+  - Filename: `{palette-name}-moodboard.png` — clean slug derived from the palette name
+- **`roundRectPath` helper** extracted as a module-level function in `exportPalette.ts` — used by the mood board; avoids duplicating the quadratic-curve rounded-rect pattern inline
+- **`MOOD_DOTS` constant** added to `exportPalette.ts` — maps mood name to hex color for canvas drawing (mirrors the `MOOD_PILL_STYLES` dot colors in `page.tsx`)
+- **`LayoutGrid` icon** added to `ExportModal` actions list — second in the list, right after "Download Palette Card"
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **1080×1080 format** — the standard Instagram square; portrait (1080×1350) or 16:9 would require the user to know what context they're sharing to; square works everywhere (Instagram, Twitter/X card, Pinterest, Discord) without cropping
+- **Drop shadow on swatches via `ctx.shadow*`** — canvas native shadow is zero-cost and produces the soft elevation effect without the coordinate-system complexity of drawing a separate blur rect; reset immediately after each swatch (`ctx.restore()`) to prevent shadow leaking onto labels
+- **Mood + notes on the same line** — combining them keeps the header compact (one line of context, not two); the italic `"note…"` style makes it read as creative annotation, not metadata
+- **`roundRectPath` as a helper, not inlining** — the existing `buildPaletteCanvas` uses inline quadratic curves for the logo mark; extracting to a helper avoids a fourth copy of the same curve pattern and makes the new function much more readable
+- **Swatch name truncation per-cell** — cell width varies with palette size (231px for 4 cols vs 477px for 2 cols); truncating to `cellW - 8` prevents overflow at any layout size
+
+### What's next (Session 72)
+- **`hsl()` modern space syntax in URL extractor** — `hsl(240deg 60% 50%)` (CSS Level 4 `deg` suffix on hue in space-separated form); common in design-token exports and Figma-generated CSS
+- **Contrast pairing view in SwatchEditor** — show which other swatches in the palette pass WCAG AA/AAA contrast with the currently edited color, so Cady can spot accessible combos without leaving the editor
+- **Mood board "dark mode" variant** — a dark background version of the mood board (`#1A1A14` background, light labels) for darker palettes that disappear on cream
+
+---
+
 ## 2026-06-03 — Session 70: rgb() Space Syntax in URL Extractor
 
 ### What was done
