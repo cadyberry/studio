@@ -2,6 +2,36 @@
 
 ---
 
+## 2026-06-04 — Session 72: Contrast Pairing View in SwatchEditor + hsl() deg Suffix
+
+### What was done
+- **Contrast pairing view in SwatchEditor** — a "Contrast pairings" section now appears in the swatch editor between the palette preview and the action buttons, showing every other swatch in the palette paired with the currently edited color
+  - Each row: colored swatch square · swatch name (or hex fallback) · ratio readout (`X.X:1`) · WCAG tier badge
+  - Tier badges: **AAA** emerald (≥7:1) · **AA** sky (≥4.5:1) · **AA lg** amber (≥3:1, large text / UI graphics) · **Fail** rose (<3:1)
+  - Rows sorted by contrast ratio descending — best pairs rise to the top
+  - Updates live as the user moves HSL sliders or the native color picker, because the contrast is computed from the live `hex` state
+  - Section hidden when the palette has only one swatch (nothing to pair against)
+  - Modal gets `max-h-[90vh] overflow-y-auto` so the editor scrolls gracefully on large palettes rather than overflowing the viewport
+- **hsl() `deg` suffix in URL color extractor** — `hsl(240deg 60% 50%)` (CSS Level 4 space syntax with explicit `deg` unit on hue) now parsed by `mineColors()` in `/api/extract-url-colors`
+  - Extended the existing space-syntax regex: `(?:deg)?` after the hue capture makes the unit optional
+  - Also added optional `/alpha` support to the space-syntax variant (alpha ignored, same policy as rgb/oklch/lch)
+  - Emitted by Figma CSS exports, some design-token generators, and draft CSS that uses explicit angle units for clarity
+  - Zero new dependencies
+  - Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Live contrast, not snapshot** — the pairing section receives the same `hex` state variable that the sliders write to, so every slider nudge instantly shows updated contrast ratios; this turns it into a real-time accessibility guide, not a static report
+- **AA lg tier (≥3:1)** — WCAG 2.1 SC 1.4.11 requires 3:1 for UI components and large text; labeling this tier "AA lg" (not just "Fail") gives Cady a nuanced signal: "this pairing fails for body text but is fine for headlines and icons"
+- **Sorted descending** — designers naturally want to know "which other swatches work with this one"; sorting best-first answers that question without requiring Cady to scan the whole list
+- **`(?:deg)?` not a separate regex** — adding the suffix as optional to the existing space-syntax pattern is cleaner than a second near-identical regex; the comma-syntax pattern already requires commas, so there's no collision risk
+
+### What's next (Session 73)
+- **Mood board "dark mode" variant** — a second download button in the Export modal for a dark background (near-black `#1A1A14`) version of the mood board, so dark-dominant palettes look their best when shared
+- **hsl() comma syntax `deg` hue** — `hsl(240deg, 60%, 50%)` — the `deg` suffix on hue in the older comma-separated form; less common but valid CSS
+- **Palette "pin to top" feature** — a pin action on palette cards that keeps selected palettes at the top of the library grid regardless of sort order, so Cady can keep current-project palettes always visible
+
+---
+
 ## 2026-06-04 — Session 71: Palette Mood Board Export
 
 ### What was done
