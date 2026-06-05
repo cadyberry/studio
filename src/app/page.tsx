@@ -252,6 +252,9 @@ export default function Home() {
   const bucketMed   = palettes.filter((p) => p.colors.length >= 5 && p.colors.length <= 6).length;
   const bucketLarge = palettes.filter((p) => p.colors.length >= 7).length;
   const bucketMax   = Math.max(bucketSmall, bucketMed, bucketLarge, 1);
+  const pinnedCount = palettes.filter((p) => p.pinned).length;
+  const frozenCount = palettes.filter((p) => p.frozen).length;
+  const avgColors   = palettes.length > 0 ? Math.round(totalSwatches / palettes.length) : 0;
 
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
   const COLOR_MATCH_THRESHOLD = 25;
@@ -469,6 +472,26 @@ export default function Home() {
                     >
                       <div className="text-[11px] font-semibold leading-none truncate">{oldestSince ?? "—"}</div>
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">oldest</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 divide-x divide-[var(--border)] border-t border-[var(--border)]">
+                    <div className="px-2 py-2.5 bg-[var(--surface)]" title={pinnedCount > 0 ? `${pinnedCount} palette${pinnedCount !== 1 ? "s" : ""} pinned to top` : "No pinned palettes"}>
+                      <div className="text-sm font-bold tabular-nums leading-none" style={{ color: pinnedCount > 0 ? "#f97316" : undefined }}>
+                        <AnimatedStat value={pinnedCount} />
+                      </div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">pinned</div>
+                    </div>
+                    <div className="px-2 py-2.5 bg-[var(--surface)]" title={frozenCount > 0 ? `${frozenCount} palette${frozenCount !== 1 ? "s" : ""} frozen` : "No frozen palettes"}>
+                      <div className="text-sm font-bold tabular-nums leading-none" style={{ color: frozenCount > 0 ? "#6366f1" : undefined }}>
+                        <AnimatedStat value={frozenCount} />
+                      </div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">frozen</div>
+                    </div>
+                    <div className="px-2 py-2.5 bg-[var(--surface)]" title={`Average palette size: ${avgColors} color${avgColors !== 1 ? "s" : ""}`}>
+                      <div className="text-sm font-bold tabular-nums leading-none">
+                        <AnimatedStat value={avgColors} />
+                      </div>
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-1">avg size</div>
                     </div>
                   </div>
                   {/* Sparkline — palette size distribution */}

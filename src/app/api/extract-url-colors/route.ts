@@ -134,8 +134,8 @@ function mineColors(text: string, counts: Map<string, number>): void {
     if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
   }
 
-  // hsl() — comma syntax: hsl(H, S%, L%)
-  for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)/gi)) {
+  // hsl() — comma syntax: hsl(H, S%, L%) or hsl(Hdeg, S%, L%)
+  for (const m of text.matchAll(/\bhsl\(\s*(\d+(?:\.\d+)?)(?:deg)?\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)/gi)) {
     const hex = hslToHex(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
     if (hex) counts.set(hex, (counts.get(hex) ?? 0) + 1);
   }

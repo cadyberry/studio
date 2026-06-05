@@ -510,3 +510,180 @@ export function exportAsMoodBoard(palette: Palette): void {
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
+
+export function exportAsDarkMoodBoard(palette: Palette): void {
+  const n = palette.colors.length;
+  if (n === 0) return;
+
+  const W = 1080, H = 1080;
+  const PAD = 56;
+  const HEADER_H = 148;
+  const FOOTER_H = 76;
+  const GAP = 14;
+  const LABEL_H = 70;
+  const RADIUS = 14;
+  const SANS = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+  const MONO = "'Courier New', Courier, monospace";
+
+  const cols = n === 1 ? 1 : n === 2 ? 2 : n <= 4 ? 2 : n <= 6 ? 3 : 4;
+  const rows = Math.ceil(n / cols);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Background: near-black gradient
+  const bgGrd = ctx.createLinearGradient(0, 0, W, H);
+  bgGrd.addColorStop(0, "#1A1A14");
+  bgGrd.addColorStop(1, "#0F0F0A");
+  ctx.fillStyle = bgGrd;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header — palette name
+  const titleY = PAD + 56;
+  ctx.font = `bold 52px ${SANS}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  const maxTitleW = W - PAD * 2 - 200;
+  let title = palette.name;
+  while (ctx.measureText(title).width > maxTitleW && title.length > 5) {
+    title = title.slice(0, -1);
+  }
+  if (title.length < palette.name.length) title += "…";
+  ctx.fillStyle = "#F5F5EF";
+  ctx.fillText(title, PAD, titleY);
+
+  // Color count pill
+  ctx.font = `500 18px ${SANS}`;
+  const pillText = `${n} color${n !== 1 ? "s" : ""}`;
+  const pillTextW = ctx.measureText(pillText).width;
+  const pillW = pillTextW + 24;
+  const pillH = 30;
+  const pillX = W - PAD - pillW;
+  const pillY = titleY - pillH / 2;
+  roundRectPath(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+  ctx.fillStyle = "#2A2A22";
+  ctx.fill();
+  ctx.fillStyle = "#888880";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(pillText, pillX + pillW / 2, titleY);
+
+  // Mood + optional notes line
+  const mood = getPaletteMood(palette.colors);
+  const moodDot = MOOD_DOTS[mood] ?? "#8A8A80";
+  const moodY = PAD + 108;
+
+  ctx.beginPath();
+  ctx.arc(PAD + 7, moodY, 7, 0, Math.PI * 2);
+  ctx.fillStyle = moodDot;
+  ctx.fill();
+
+  ctx.font = `18px ${SANS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#888880";
+  ctx.fillText(mood, PAD + 22, moodY);
+
+  if (palette.notes) {
+    const moodTextW = ctx.measureText(mood).width;
+    const sepX = PAD + 22 + moodTextW + 12;
+    ctx.fillStyle = "#3A3A30";
+    ctx.fillText("·", sepX, moodY);
+    const noteStartX = sepX + ctx.measureText("· ").width + 4;
+    ctx.font = `italic 17px ${SANS}`;
+    ctx.fillStyle = "#666660";
+    let noteText = palette.notes.split("\n")[0];
+    const maxNoteW = W - PAD - noteStartX;
+    while (ctx.measureText(noteText).width > maxNoteW && noteText.length > 4) {
+      noteText = noteText.slice(0, -1);
+    }
+    if (noteText.length < palette.notes.split("\n")[0].length) noteText += "…";
+    ctx.fillText(`"${noteText}"`, noteStartX, moodY);
+  }
+
+  // Swatch Grid
+  const gridTop = PAD + HEADER_H;
+  const gridW = W - PAD * 2;
+  const gridH = H - gridTop - PAD - FOOTER_H;
+  const cellW = (gridW - GAP * (cols - 1)) / cols;
+  const cellH = (gridH - GAP * (rows - 1)) / rows;
+  const swatchH = cellH - LABEL_H;
+
+  palette.colors.forEach((color, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = PAD + col * (cellW + GAP);
+    const cy = gridTop + row * (cellH + GAP);
+
+    // Swatch — deeper shadow reads on dark bg
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 36;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 10;
+    ctx.fillStyle = color.hex;
+    roundRectPath(ctx, cx, cy, cellW, swatchH, RADIUS);
+    ctx.fill();
+    ctx.restore();
+
+    // Hex label — light on dark
+    const labelCy = cy + swatchH;
+    ctx.font = `bold 18px ${MONO}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "#F5F5EF";
+    ctx.fillText(color.hex.toUpperCase(), cx + cellW / 2, labelCy + 12);
+
+    if (color.name) {
+      ctx.font = `15px ${SANS}`;
+      ctx.fillStyle = "#666660";
+      let swName = color.name;
+      const maxSW = cellW - 8;
+      while (ctx.measureText(swName).width > maxSW && swName.length > 3) {
+        swName = swName.slice(0, -1);
+      }
+      if (swName.length < color.name.length) swName += "…";
+      ctx.fillText(swName, cx + cellW / 2, labelCy + 38);
+    }
+  });
+
+  // Footer
+  const footerTop = H - PAD - FOOTER_H;
+  ctx.fillStyle = "#2A2A22";
+  ctx.fillRect(PAD, footerTop + 10, gridW, 1);
+
+  // Gradient logo mark
+  const lx = PAD, ly = footerTop + 24;
+  const lw = 26, lh = 26, lr = 6;
+  const logoGrd = ctx.createLinearGradient(lx, ly, lx + lw, ly + lh);
+  logoGrd.addColorStop(0, "#fda4af");
+  logoGrd.addColorStop(0.5, "#c4b5fd");
+  logoGrd.addColorStop(1, "#93c5fd");
+  ctx.fillStyle = logoGrd;
+  roundRectPath(ctx, lx, ly, lw, lh, lr);
+  ctx.fill();
+
+  ctx.font = `bold 17px ${SANS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#C8C8C0";
+  ctx.fillText("Palette", lx + lw + 10, ly + lh / 2);
+
+  ctx.font = `500 15px ${SANS}`;
+  ctx.fillStyle = "#555550";
+  ctx.fillText("color intelligence for creators", lx + lw + 84, ly + lh / 2);
+
+  const dateStr = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date());
+  ctx.font = `15px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#444440";
+  ctx.fillText(dateStr, W - PAD, ly + lh / 2);
+
+  const link = document.createElement("a");
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-moodboard-dark.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}

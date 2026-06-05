@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, Printer, Link2, AlertTriangle, LayoutGrid } from "lucide-react";
-import { exportAsPngStrip, exportAsMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, Printer, Link2, AlertTriangle, LayoutGrid, Moon } from "lucide-react";
+import { exportAsPngStrip, exportAsMoodBoard, exportAsDarkMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -50,6 +50,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "1080×1080 shareable image — swatches, hex codes & mood",
       icon: LayoutGrid,
       onClick: () => { exportAsMoodBoard(palette); },
+    },
+    {
+      key: "moodboard-dark",
+      label: "Download Dark Mood Board",
+      desc: "Same layout on a near-black background — best for dark palettes",
+      icon: Moon,
+      onClick: () => { exportAsDarkMoodBoard(palette); },
     },
     {
       key: "hex",
