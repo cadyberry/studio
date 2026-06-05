@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-06-05 — Session 73: Palette Pin to Top
+
+### What was done
+- **Palette "pin to top" feature** — palettes can now be pinned to always appear at the top of the library grid regardless of active sort order (newest, name, color search, etc.)
+  - `pinned?: boolean` added to the `Palette` type
+  - `togglePin(id)` action added to `paletteStore` — does not mutate `updatedAt` since pinning is a workspace state, not a content edit; avoids re-sorting the palette to the top of "newest" order when pinned
+  - `displayList` computation now partitions into pinned-first, unpinned-second before applying the cover palette reorder; the two features compose correctly (pinned palettes precede the cover, cover is first in the unpinned section)
+  - **Orange `Pin` badge** at the top-right of each pinned card (the amber Crown badge takes priority when a card is also the collection cover)
+  - **Small pin icon in the name row** — alongside the Lock icon when frozen; gives a scannable at-rest signal without hovering
+  - **Orange border ring** on pinned cards — `border-orange-200 ring-1 ring-orange-100/60` — visually distinct from frozen (indigo), cover (amber), and selected (accent)
+  - **`Pin` toggle button** in the action bar, after the Compare button and before the Cover button — active state shows `fill-orange-200` filled pin with orange border outline, matching the Lock/Crown button pattern
+  - **`P` keyboard shortcut** — hovering any card and pressing P toggles its pin, consistent with D/F2/H/L/E/Del shortcuts
+  - Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **`togglePin` does not touch `updatedAt`** — if it did, a newly pinned palette would jump to the top of "sort by newest" (double-promotion); pin is workspace state, not content, so `updatedAt` should reflect the last meaningful edit
+- **Pinned-first partition beats sort, beats cover** — pinned palettes should be immediately visible; the cover palette is a collection-context affordance; the two features need to compose correctly without one unexpectedly suppressing the other
+- **Orange as the pin color** — amber is taken by Cover, indigo by Frozen, violet by Compare anchor; orange reads as "flagged/prioritized" without competing with these; the filled pin badge on the card echoes the filled crown badge pattern
+- **`P` key not `ctrl+P`** — consistent with the other single-key shortcuts on this card; modifier keys are reserved for browser actions
+
+### What's next (Session 74)
+- **Mood board "dark mode" variant** — a second download button in the Export modal for a dark background (`#1A1A14`) version of the mood board PNG, so dark-dominant palettes look their best when shared on dark-background contexts
+- **hsl() comma syntax `deg` hue** — `hsl(240deg, 60%, 50%)` — the `deg` suffix on hue in the older comma-separated form; less common but valid CSS, worth handling cleanly
+- **Pinned palette count in sidebar stats** — add "pinned" count to the library stats panel so Cady can see at a glance how many palettes she's tracking as current-project references
+
+---
+
 ## 2026-06-04 — Session 72: Contrast Pairing View in SwatchEditor + hsl() deg Suffix
 
 ### What was done
