@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-06-05 — Session 74: Dark Mood Board, hsl deg Comma Syntax, Pinned Stats
+
+### What was done
+- **Dark Mood Board export** — `exportAsDarkMoodBoard()` added to `exportPalette.ts`; produces a 1080×1080 PNG with a near-black gradient background (`#1A1A14` → `#0F0F0A`), cream hex labels (`#F5F5EF`), muted gray swatch names (`#666660`), and a deeper canvas shadow (`rgba(0,0,0,0.55)` blur 36px) that reads clearly on the dark surface; filename gets a `-dark` suffix; "Download Dark Mood Board" action added to ExportModal with the `Moon` icon — positioned right after the light mood board, so both variants are visible together
+- **hsl() comma syntax `deg` suffix** — optional `(?:deg)?` added after the hue capture in the comma-syntax regex in `/api/extract-url-colors`; handles the valid but less-common `hsl(240deg, 60%, 50%)` form emitted by some design tools and style preprocessors; zero new dependencies
+- **Sidebar stats third row** — `pinned | frozen | avg size` row added to the library stats panel, using the same 3-column `AnimatedStat` layout as the existing rows; pinned count renders in orange (`text-orange-500`) when non-zero (matching the pin badge color), frozen count in indigo when non-zero (matching the frozen border), avg size neutral; computed from `pinnedCount`, `frozenCount`, and `Math.round(totalSwatches / palettes.length)` — all values already available at the render point
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Dark shadow on dark bg** — `rgba(0,0,0,0.55)` with blur 36px still creates a visible elevation halo on the near-black gradient because the swatches themselves are colored; an inner white glow (`rgba(255,255,255,0.05)`) was considered but would add a faint white border that doesn't belong on all palette colors
+- **Pill background `#2A2A22`** — slightly lighter than the near-black bg so it reads as a surface element without being bright enough to distract; cream text (`#888880`) gives sufficient contrast without glowing
+- **Cream hex labels instead of white** — pure white (`#FFFFFF`) would be too stark against the very dark bg for a design tool export; cream (`#F5F5EF`) is softer and matches the "warm" brand feel carried through from the light version
+- **Third stats row, not sidebar widget** — adding a free-standing "pinned: N" count below the collections list was also considered, but three numeric stats together in the existing grid keeps information density consistent and avoids cluttering the sidebar with additional labeled sections
+- **`(?:deg)?` in comma-syntax** — adding the suffix as optional to the existing comma-syntax pattern is cleaner than a new near-identical regex; the space-syntax pattern already has this suffix from Session 72, so the two patterns are now symmetrical
+
+### What's next (Session 75)
+- **Mood board 4:5 portrait variant** — a 1080×1350 "Instagram portrait" version button in the Export modal; the grid layout would widen from square to portrait, giving swatches more vertical breathing room
+- **Color name suggestions on hover in SwatchEditor** — show 2–3 closest color names from a curated list (based on hue/lightness buckets) so Cady can quickly assign a natural-language name when editing a swatch
+- **Palette duplication shortcut** — a "Duplicate" action on the palette card (and via keyboard `ctrl+D`) that creates a copy with a `(copy)` suffix and opens it immediately for editing
+
+---
+
 ## 2026-06-05 — Session 73: Palette Pin to Top
 
 ### What was done
