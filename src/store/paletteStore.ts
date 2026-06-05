@@ -15,6 +15,7 @@ interface PaletteStore {
   deletePalettes: (ids: string[]) => void;
   duplicatePalette: (id: string) => Palette | null;
   assignPalettesToCollection: (ids: string[], collectionId: string | undefined) => void;
+  togglePin: (id: string) => void;
 
   addCollection: (name: string, description?: string) => Collection;
   updateCollection: (id: string, updates: Partial<Collection>) => void;
@@ -56,6 +57,14 @@ export const usePaletteStore = create<PaletteStore>()(
       deletePalettes: (ids) => {
         const idSet = new Set(ids);
         set((s) => ({ palettes: s.palettes.filter((p) => !idSet.has(p.id)) }));
+      },
+
+      togglePin: (id) => {
+        set((s) => ({
+          palettes: s.palettes.map((p) =>
+            p.id === id ? { ...p, pinned: !p.pinned } : p
+          ),
+        }));
       },
 
       assignPalettesToCollection: (ids, collectionId) => {

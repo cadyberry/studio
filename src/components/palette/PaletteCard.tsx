@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -98,6 +98,8 @@ interface PaletteCardProps {
   activeTag?: string;
   onCompare?: (palette: Palette) => void;
   isCompareAnchor?: boolean;
+  onPin?: (palette: Palette) => void;
+  isPinned?: boolean;
 }
 
 type NamingState =
@@ -106,7 +108,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, onPin, isPinned = false }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -148,6 +150,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   updatePaletteRef.current = updatePalette;
   const deletePaletteRef = useRef(deletePalette);
   deletePaletteRef.current = deletePalette;
+  const onPinRef = useRef(onPin);
+  onPinRef.current = onPin;
 
   // Keyboard shortcuts — active when this card is hovered, no text field is focused
   useEffect(() => {
@@ -179,6 +183,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         case "h": case "H":
           e.preventDefault();
           onHarmonyRef.current(pal);
+          break;
+        case "p": case "P":
+          if (onPinRef.current) { e.preventDefault(); onPinRef.current(pal); }
           break;
         case "e": case "E":
           e.preventDefault();
@@ -403,6 +410,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
         isCover ? "border-amber-300 shadow-sm ring-1 ring-amber-200/60" :
         palette.frozen ? "border-indigo-200 dark:border-indigo-800/60 ring-1 ring-indigo-100/60 dark:ring-indigo-900/40" :
+        isPinned ? "border-orange-200 dark:border-orange-800/60 ring-1 ring-orange-100/60 dark:ring-orange-900/30" :
         isSelected ? "border-[var(--accent)] shadow-sm" : "border-[var(--border)]"
       } ${className ?? ""}`}
     >
@@ -428,6 +436,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400 shadow-sm pointer-events-none">
           <Crown size={9} className="text-white fill-white" />
           <span className="text-[9px] font-bold text-white leading-none">cover</span>
+        </div>
+      )}
+
+      {/* Pin badge — top-right when pinned and no cover badge */}
+      {isPinned && !isCover && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-400/90 shadow-sm pointer-events-none">
+          <Pin size={8} className="text-white fill-white" />
+          <span className="text-[9px] font-bold text-white leading-none">pinned</span>
         </div>
       )}
 
@@ -679,6 +695,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             />
           ) : (
             <div className="flex items-center gap-1.5 min-w-0">
+              {isPinned && <Pin size={9} className="text-orange-400 dark:text-orange-500 flex-shrink-0 fill-orange-100 dark:fill-orange-900/40" />}
               {palette.frozen && <Lock size={10} className="text-indigo-400 dark:text-indigo-500 flex-shrink-0" />}
               <div
                 className="text-sm font-medium truncate select-none"
@@ -897,6 +914,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               <ArrowLeftRight size={13} className={isCompareAnchor ? "text-violet-600 dark:text-violet-400" : ""} />
             </Button>
           )}
+          {onPin && (
+            <Button
+              variant={isPinned ? "outline" : "ghost"}
+              size="sm"
+              onClick={() => onPin(palette)}
+              title={isPinned ? "Unpin — remove from top" : "Pin to top of library (P)"}
+              className={isPinned ? "text-orange-500 border-orange-300 dark:border-orange-700" : ""}
+            >
+              <Pin size={13} className={isPinned ? "fill-orange-200 dark:fill-orange-900/40 text-orange-500" : ""} />
+            </Button>
+          )}
           {onSetCover && (
             <Button
               variant={isCover ? "outline" : "ghost"}
@@ -947,7 +975,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
           {palette.frozen
             ? "L unlock"
-            : "D dup · F2 name · H view · L lock · Del"}
+            : "D dup · F2 name · H view · L lock · P pin · Del"}
         </span>
       </div>
 

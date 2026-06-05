@@ -94,7 +94,7 @@ function AnimatedStat({ value, suffix }: { value: number; suffix?: string }): JS
 }
 
 export default function Home() {
-  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection, updatePalette } = usePaletteStore();
+  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection, updatePalette, togglePin } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -332,15 +332,20 @@ export default function Home() {
     ? [...selectedIds].filter(id => !palettes.find(p => p.id === id)?.frozen)
     : [];
 
-  // Pin cover palette to front of grid when browsing a specific collection
+  // Pinned palettes always first; cover palette first within the unpinned section
   const displayList = (() => {
-    if (activeCollection === "all" || !coverPaletteId) return sorted;
-    const coverIdx = sorted.findIndex((p) => p.id === coverPaletteId);
-    if (coverIdx <= 0) return sorted;
-    const reordered = [...sorted];
-    const [cover] = reordered.splice(coverIdx, 1);
-    reordered.unshift(cover);
-    return reordered;
+    const pinnedItems = sorted.filter((p) => p.pinned);
+    const rest = sorted.filter((p) => !p.pinned);
+    if (activeCollection !== "all" && coverPaletteId) {
+      const coverIdx = rest.findIndex((p) => p.id === coverPaletteId);
+      if (coverIdx > 0) {
+        const reordered = [...rest];
+        const [cover] = reordered.splice(coverIdx, 1);
+        reordered.unshift(cover);
+        return [...pinnedItems, ...reordered];
+      }
+    }
+    return [...pinnedItems, ...rest];
   })();
 
   const handleSetCover = (palette: Palette) => {
@@ -1495,6 +1500,8 @@ export default function Home() {
                         onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
                         onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}
                         activeTag={activeTag !== "all" ? activeTag : undefined}
+                        onPin={(p) => togglePin(p.id)}
+                        isPinned={!!palette.pinned}
                       />
                     );
                   })}
