@@ -41,7 +41,8 @@ function buildPaletteCanvas(palette: Palette): HTMLCanvasElement | null {
   const SW = CARD_W / n;
   const HEADER_H = 64;
   const SWATCH_H = 190;
-  const LABEL_H = 84;
+  const hasNames = palette.colors.some((c) => c.name);
+  const LABEL_H = hasNames ? 106 : 84;
   const FOOTER_H = 30;
   const TOTAL_H = HEADER_H + SWATCH_H + LABEL_H + FOOTER_H;
 
@@ -194,6 +195,18 @@ function buildPaletteCanvas(palette: Palette): HTMLCanvasElement | null {
       ctx.fillText(`${rgb.r} ${rgb.g} ${rgb.b}`, centerX, labelY + 61);
     }
 
+    if (hasNames && color.name) {
+      ctx.font = `italic 10px ${SANS}`;
+      ctx.fillStyle = "#9a9a90";
+      let swName = color.name;
+      const maxW = w - 8;
+      while (swName.length > 3 && ctx.measureText(swName).width > maxW) {
+        swName = swName.slice(0, -1);
+      }
+      if (swName.length < color.name.length) swName += "…";
+      ctx.fillText(swName, centerX, labelY + 78);
+    }
+
     cx += SW;
   });
 
@@ -290,7 +303,16 @@ export async function batchExportZip(palettes: Palette[], zipName?: string): Pro
 
 export function copyCssVariables(palette: Palette): void {
   const vars = palette.colors
-    .map((c, i) => `  --color-${i + 1}: ${c.hex};`)
+    .map((c, i) => {
+      let varName: string;
+      if (c.name) {
+        const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        varName = slug || `color-${i + 1}`;
+      } else {
+        varName = `color-${i + 1}`;
+      }
+      return `  --${varName}: ${c.hex};`;
+    })
     .join("\n");
   const css = `:root {\n${vars}\n}`;
   navigator.clipboard.writeText(css);
@@ -319,7 +341,7 @@ export function getJsonExport(palette: Palette): string {
       name: palette.name,
       colors: palette.colors.map((c) => {
         const rgb = hexToRgb(c.hex);
-        return { hex: c.hex, rgb };
+        return { hex: c.hex, ...(c.name ? { name: c.name } : {}), rgb };
       }),
     },
     null,
