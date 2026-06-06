@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-06 — Session 75: Color Name Suggestions in SwatchEditor
+
+### What was done
+- **Color name suggestions in SwatchEditor** — when editing any swatch, a "Name" section now appears with a text input and 3 clickable suggestion chips showing the closest designer-friendly color names based on perceptual distance
+  - `getColorNameSuggestions(hex, count)` added to `utils.ts` — 115 curated names covering the full hue/lightness spectrum (Crimson, Sage, Denim, Coral, Espresso, Midnight, Lavender, Sand, etc.) matched using the existing CIE76 `deltaE` function for perceptual accuracy
+  - Suggestions debounce 380ms after slider movement stops so they don't flash on every tick; they update immediately on initial open and when `palette`/`swatchIndex` changes
+  - Clicking a chip sets the name input to that value; the active chip highlights in accent color so you can see which suggestion is selected
+  - The text input accepts freeform names up to 40 chars, pre-populated with the swatch's existing name if it has one
+  - `handleSave` now persists `name: trimmedName || undefined` alongside `hex` — empty names clear the field rather than storing an empty string
+  - Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **CIE76 `deltaE` for matching** — already exists in utils.ts, perceptually more accurate than HSL Euclidean distance (which would mislead on low-saturation colors where hue distance is irrelevant)
+- **Debounce 380ms, not live** — immediate updates as the hue slider drags would flash through dozens of names per second, distracting the user from choosing; 380ms lets them settle on a color before seeing new suggestions
+- **115 names, not 30 or 1000** — a small curated set of designer vocabulary words that creators actually use; too few would miss obvious names, too many would dilute ranking quality (any hex is within ΔE ~40 of a hundred names in a large list)
+- **`name: undefined` not `name: ""`** — storing an empty string would appear as an unnamed swatch with an explicit blank name, potentially breaking display logic; `undefined` cleanly signals "no name set"
+- **Suggestion chips, not a dropdown** — 3 chips are visible without interaction, inviting exploration; a dropdown would require a click to open and suggest a more formal / required UX
+
+### What's next (Session 76)
+- **Mood board 4:5 portrait variant** — a 1080×1350 "Instagram portrait" button in the Export modal; the grid layout widens to portrait, giving swatches more vertical breathing room
+- **Palette duplication shortcut** — open the duplicated palette immediately for editing after `D` key or Duplicate button, and ensure the copy gets a `(copy)` suffix; the current duplicate action just adds to the library silently
+- **Named swatches in export** — when any swatches have names, show them under the hex codes in the mood board and palette card PNG exports
+
+---
+
 ## 2026-06-05 — Session 74: Dark Mood Board, hsl deg Comma Syntax, Pinned Stats
 
 ### What was done
