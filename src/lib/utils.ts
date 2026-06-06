@@ -444,6 +444,76 @@ export function hexToOklch(hex: string): OklchValues | null {
   return rgbToOklch(rgb.r, rgb.g, rgb.b);
 }
 
+// ─── Color Name Suggestions ───────────────────────────────────────────────────
+
+// Curated set of designer-friendly color names covering the full hue/lightness
+// spectrum. Each entry is [displayName, referenceHex].
+const COLOR_NAMES_DATA: [string, string][] = [
+  // Reds
+  ["Crimson", "#DC143C"], ["Scarlet", "#FF2400"], ["Tomato", "#FF6347"],
+  ["Brick", "#CB4154"], ["Burgundy", "#800020"], ["Maroon", "#800000"],
+  ["Ruby", "#9B111E"], ["Carmine", "#960018"], ["Candy", "#FF0800"],
+  // Pinks
+  ["Coral", "#FF6B6B"], ["Salmon", "#FA8072"], ["Blush", "#DE5D83"],
+  ["Rose", "#FF007F"], ["Hot Pink", "#FF69B4"], ["Fuchsia", "#FF00FF"],
+  ["Flamingo", "#FC8EAC"], ["Bubblegum", "#FFC1CC"], ["Dusty Rose", "#DCAE96"],
+  ["Petal", "#EFBCCE"], ["Magenta", "#FF00CC"],
+  // Purples
+  ["Violet", "#8B00FF"], ["Amethyst", "#9966CC"], ["Grape", "#6F2DA8"],
+  ["Plum", "#8E4585"], ["Mauve", "#E0B0FF"], ["Lavender", "#B57EDC"],
+  ["Lilac", "#C8A2C8"], ["Orchid", "#DA70D6"], ["Wisteria", "#C9A0DC"],
+  ["Indigo", "#4B0082"], ["Mulberry", "#C54B8C"],
+  // Blues
+  ["Midnight", "#191970"], ["Navy", "#000080"], ["Cobalt", "#0047AB"],
+  ["Sapphire", "#0F52BA"], ["Royal", "#4169E1"], ["Denim", "#1560BD"],
+  ["Cornflower", "#6495ED"], ["Periwinkle", "#CCCCFF"], ["Slate", "#708090"],
+  ["Steel", "#4682B4"], ["Sky", "#87CEEB"], ["Baby Blue", "#89CFF0"],
+  ["Ice Blue", "#DAF0F7"], ["Twilight", "#4A5278"],
+  // Teals / Cyans
+  ["Teal", "#008080"], ["Peacock", "#006D8F"], ["Cerulean", "#007BA7"],
+  ["Lagoon", "#007892"], ["Turquoise", "#40E0D0"], ["Cyan", "#00CED1"],
+  ["Seafoam", "#71EEB8"], ["Verdigris", "#43B3AE"],
+  // Greens
+  ["Emerald", "#50C878"], ["Jade", "#00A86B"], ["Forest", "#228B22"],
+  ["Hunter", "#355E3B"], ["Pine", "#01796F"], ["Fern", "#4F7942"],
+  ["Jungle", "#29AB87"], ["Shamrock", "#009E60"], ["Avocado", "#568203"],
+  ["Sage", "#8BAA7D"], ["Mint", "#98FF98"], ["Pistachio", "#93C572"],
+  ["Moss", "#8A9A5B"], ["Olive", "#808000"],
+  // Yellow-Greens
+  ["Chartreuse", "#7FFF00"], ["Lime", "#32CD32"], ["Pear", "#D1E231"],
+  ["Citron", "#9FA91F"],
+  // Yellows
+  ["Lemon", "#FFF44F"], ["Sunshine", "#FFD300"], ["Gold", "#FFD700"],
+  ["Mustard", "#FFDB58"], ["Honey", "#EEA229"], ["Banana", "#FFE135"],
+  ["Butter", "#FFFDD0"], ["Champagne", "#F7E7CE"],
+  // Oranges
+  ["Amber", "#FFBF00"], ["Tangerine", "#F28500"], ["Pumpkin", "#FF7518"],
+  ["Burnt Orange", "#CC5500"], ["Rust", "#B7410E"], ["Terra Cotta", "#E2725B"],
+  ["Cinnamon", "#D2691E"], ["Apricot", "#FBCEB1"], ["Peach", "#FFCBA4"],
+  // Warm Neutrals
+  ["Ivory", "#FFFFF0"], ["Cream", "#FFFDD0"], ["Linen", "#FAF0E6"],
+  ["Snow", "#FFFAFA"], ["Pearl", "#EAE0C8"], ["Wheat", "#F5DEB3"],
+  ["Sand", "#C2B280"], ["Tan", "#D2B48C"], ["Camel", "#C19A6B"],
+  ["Khaki", "#C3B091"], ["Taupe", "#8B7D70"], ["Sienna", "#A0522D"],
+  ["Chocolate", "#7B3F00"], ["Espresso", "#3E2723"], ["Walnut", "#5C4033"],
+  ["Umber", "#635147"],
+  // Cool Neutrals
+  ["Cloud", "#F1F1EF"], ["Fog", "#CCCCCC"], ["Silver", "#C0C0C0"],
+  ["Ash", "#B2BEB5"], ["Pewter", "#8D8D8D"], ["Stone", "#787878"],
+  ["Charcoal", "#36454F"], ["Graphite", "#383838"], ["Onyx", "#353839"],
+  ["Ink", "#1A1A1A"], ["Smoke", "#738276"],
+];
+
+// Returns the `count` closest designer color names for a given hex, ranked by
+// CIE76 ΔE (perceptual distance). Suggestions update as the color changes.
+export function getColorNameSuggestions(hex: string, count = 3): string[] {
+  return COLOR_NAMES_DATA
+    .map(([name, namedHex]) => ({ name, dE: deltaE(hex, namedHex) }))
+    .sort((a, b) => a.dE - b.dE)
+    .slice(0, count)
+    .map((s) => s.name);
+}
+
 // ─── Shade Scale Generator ────────────────────────────────────────────────────
 
 export interface ShadeStop {

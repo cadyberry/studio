@@ -13,6 +13,7 @@ import {
   isValidHex,
   getContrastRatio,
   hexToOklch,
+  getColorNameSuggestions,
 } from "@/lib/utils";
 
 interface SwatchEditorProps {
@@ -35,6 +36,8 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const [hex, setHex] = useState(originalHex);
   const [hexInput, setHexInput] = useState(originalHex);
   const [hsl, setHsl] = useState<{ h: number; s: number; l: number }>({ h: 0, s: 0, l: 50 });
+  const [swatchName, setSwatchName] = useState(palette?.colors[swatchIndex]?.name ?? "");
+  const [suggestions, setSuggestions] = useState<string[]>(() => getColorNameSuggestions(originalHex));
 
   useEffect(() => {
     if (palette) {
@@ -43,8 +46,16 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
       setHex(initial);
       setHexInput(initial);
       setHsl(initialHsl);
+      setSwatchName(palette.colors[swatchIndex]?.name ?? "");
+      setSuggestions(getColorNameSuggestions(initial));
     }
   }, [palette, swatchIndex]);
+
+  // Debounce suggestion updates so they don't flash on every slider tick.
+  useEffect(() => {
+    const timer = setTimeout(() => setSuggestions(getColorNameSuggestions(hex)), 380);
+    return () => clearTimeout(timer);
+  }, [hex]);
 
   const applyHex = useCallback((newHex: string) => {
     const parsed = hexToHsl(newHex);
@@ -80,8 +91,9 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
 
   const handleSave = () => {
     if (!palette) return;
+    const trimmedName = swatchName.trim();
     const newColors = palette.colors.map((c, i) =>
-      i === swatchIndex ? { ...c, hex } : c
+      i === swatchIndex ? { ...c, hex, name: trimmedName || undefined } : c
     );
     updatePalette(palette.id, { colors: newColors });
     onClose();
@@ -296,6 +308,37 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 </div>
               </div>
             )}
+
+            {/* Color name */}
+            <div>
+              <p className="text-[10px] text-[var(--muted)] mb-1.5 uppercase tracking-widest font-semibold select-none">
+                Name
+              </p>
+              <input
+                type="text"
+                value={swatchName}
+                onChange={(e) => setSwatchName(e.target.value)}
+                placeholder="Name this color…"
+                className="w-full text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)] placeholder:font-normal"
+                maxLength={40}
+              />
+              <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                {suggestions.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => setSwatchName(name)}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                      swatchName === name
+                        ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--foreground)] font-medium"
+                        : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                    }`}
+                    title={`Use "${name}" as this color's name`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Live palette preview */}
             <div>
