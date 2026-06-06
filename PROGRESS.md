@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-06 — Session 76: Named Swatches in Palette Card PNG + CSS Variables Export
+
+### What was done
+- **Palette card PNG shows swatch names** — when any swatches in a palette have names, the palette card PNG (`buildPaletteCanvas`) now renders them in italic below the RGB line
+  - `hasNames = palette.colors.some(c => c.name)` check drives a conditional `LABEL_H`: 84px (unchanged) when no names; 106px when names exist — canvas grows naturally, all positions are relative to `labelY` so nothing else shifts
+  - Italic 10px sans-serif name in `#9a9a90` (muted gray) at `labelY + 78`, `measureText`-truncated with `…` to fit each column width
+  - Unnamed swatches in a partially-named palette simply leave the name row blank — the reserved height keeps the layout uniform
+- **CSS variables use swatch names as var names** — `copyCssVariables` now slugifies swatch names into CSS custom property identifiers: `--crimson: #dc143c` instead of `--color-1: #dc143c`; falls back to `--color-N` when the swatch has no name or the slug would be empty
+- **JSON export includes swatch names** — `getJsonExport` now emits `{ hex, name, rgb }` per color when a name is set; unnamed swatches omit the name key (no empty strings in the output)
+- The mood boards (light + dark) already rendered names since the session 74 code — this session closes the gap for the card PNG and copy workflows
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Conditional LABEL_H on `hasNames`, not per-swatch** — if individual swatches had different heights, columns would misalign; uniform height per palette is simpler and the blank row on unnamed swatches is a fair tradeoff
+- **`hasNames` checked once before canvas setup** — avoids re-checking mid-draw and ensures `TOTAL_H` (which sets canvas.height) is correct before any drawing starts
+- **`measureText` truncation over fixed char limit** — column width varies by palette size (100–800px); pixel-accurate truncation handles a 7-swatch palette (narrow columns) and a 2-swatch palette (wide columns) correctly
+- **CSS slugification: `/[^a-z0-9]+/g → "-"` + trim leading/trailing** — covers spaces, punctuation, mixed case; "Burnt Sienna" → `--burnt-sienna`, "Rose #3" → `--rose-3`, edge cases produce clean idents
+
+### What's next (Session 77)
+- **Mood board 4:5 portrait variant** — 1080×1350 "Instagram portrait" download in Export modal; swatches get more vertical breathing room
+- **Palette duplication shortcut** — after duplicating, open the copy immediately for editing with `(copy)` suffix; current duplicate action is silent
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across files
+
+---
+
 ## 2026-06-06 — Session 75: Color Name Suggestions in SwatchEditor
 
 ### What was done
