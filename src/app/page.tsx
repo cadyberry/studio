@@ -778,7 +778,7 @@ export default function Home() {
                                     </div>
                                     <span className="text-[9px] text-[var(--muted)] truncate shrink-0 max-w-[64px]">{p.name}</span>
                                     <button
-                                      onClick={() => duplicatePalette(p.id)}
+                                      onClick={() => { const copy = duplicatePalette(p.id); if (copy) setRenameTarget(copy); }}
                                       title={`Duplicate "${p.name}"`}
                                       className="shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]"
                                     >
@@ -1509,7 +1509,7 @@ export default function Home() {
                           }
                         }}
                         isCompareAnchor={compareAnchor?.id === palette.id}
-                        onDuplicate={(p) => duplicatePalette(p.id)}
+                        onDuplicate={(p) => { const copy = duplicatePalette(p.id); if (copy) setRenameTarget(copy); }}
                         isSelected={selectedIds.has(palette.id)}
                         selectionActive={selectedIds.size > 0}
                         onSelect={toggleSelect}
