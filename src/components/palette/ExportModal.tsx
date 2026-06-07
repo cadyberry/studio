@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, Printer, Link2, AlertTriangle, LayoutGrid, Moon } from "lucide-react";
-import { exportAsPngStrip, exportAsMoodBoard, exportAsDarkMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone } from "lucide-react";
+import { exportAsPngStrip, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -57,6 +57,20 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "Same layout on a near-black background — best for dark palettes",
       icon: Moon,
       onClick: () => { exportAsDarkMoodBoard(palette); },
+    },
+    {
+      key: "moodboard-portrait",
+      label: "Download Portrait Mood Board",
+      desc: "1080×1350 Instagram 4:5 — swatches with more vertical breathing room",
+      icon: Smartphone,
+      onClick: () => { exportAsPortraitMoodBoard(palette); },
+    },
+    {
+      key: "moodboard-portrait-dark",
+      label: "Download Dark Portrait Mood Board",
+      desc: "Portrait format on near-black — for dark palettes shared as Stories",
+      icon: Smartphone,
+      onClick: () => { exportAsDarkPortraitMoodBoard(palette); },
     },
     {
       key: "hex",
