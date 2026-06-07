@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-06-07 — Session 78: Portrait Mood Board Export (1080×1350 Instagram 4:5)
+
+### What was done
+- **Portrait mood board export** — two new Export modal actions for Instagram 4:5 portrait format (1080×1350 px)
+  - "Download Portrait Mood Board" (Smartphone icon) — light cream background, same grid layout as the square mood board but 270px taller; swatches get ~46% more vertical height (e.g. 430px per swatch at 2 rows vs 295px in square)
+  - "Download Dark Portrait Mood Board" — near-black background portrait variant for dark palettes shared to Instagram Stories or portrait-crop contexts
+  - Filenames: `{name}-moodboard-portrait.png` and `{name}-moodboard-portrait-dark.png`
+- **`buildMoodBoardCanvas` refactor** — extracted a single parameterized canvas builder `buildMoodBoardCanvas(palette, { dark, portrait })` that all 4 mood board variants share; the 4 export functions are now 4-line wrappers; eliminated ~230 lines of near-identical canvas code; dark/light colors are all inline ternary expressions on `dark` flag, portrait uses `H = portrait ? 1350 : 1080`
+
+### Key decisions
+- **Column count unchanged for portrait** — the existing `cols` formula (1→1, 2→2, ≤4→2, ≤6→3, ≤8→4) produces the right number of columns; the extra 270px of height is absorbed naturally into `cellH` via `gridH / rows`, so each swatch grows taller without any special cases
+- **`Smartphone` icon** — signals "this is for your phone / Instagram Stories" without being prescriptive; distinguishes the portrait actions from the `LayoutGrid` square and `Moon` dark variants
+- **Refactor over duplication** — three near-identical functions were already a maintenance burden; the shared helper means any future tweak (shadow, font, colors) applies to all variants at once
+
+### What's next (Session 79)
+- **Palette notes character count** — live character counter in the notes textarea so Cady can see when she's approaching any practical limit and avoid notes being truncated in exports
+- **SwatchEditor oklch readout** — show oklch L/C/H values alongside hex/HSL when editing a swatch, for creators who reason in perceptual color space
+- **Export modal grouping** — as the action list grows (now 10 items), consider grouping into "Download" and "Copy" sections with a subtle divider for scannability
+
+---
+
 ## 2026-06-07 — Session 77: Palette Duplicate → Immediate Rename
 
 ### What was done
