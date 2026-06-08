@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-06-08 — Session 79: Export Modal Grouping (Download / Copy Sections)
+
+### What was done
+- **Export modal split into two labeled sections** — the flat 10-item action list is now organized into a "Download" section (5 items) and a "Copy" section (5 items), each introduced by a small uppercase label with a hairline divider rule
+  - **Download** section: Palette Card PNG, Mood Board (square light), Dark Mood Board, Portrait Mood Board, Dark Portrait Mood Board — all file-generating actions together
+  - **Copy** section: Hex Codes, CSS Variables, JSON, CMYK values, Share Link — all clipboard actions together
+  - Section label style: `text-[9px] font-bold uppercase tracking-widest text-[var(--muted)]` + `flex-1 h-px bg-[var(--border)]` rule — matches the existing section header vocabulary used in SwatchEditor ("Name", "Contrast pairings", etc.)
+  - `space-y-2` between actions reduced to `space-y-1` (tighter within a section; sections are separated by the 4px bottom margin on the list div)
+- **Modal scroll fix** — modal container gets `max-h-[92vh] flex flex-col`; inner content area gets `overflow-y-auto flex-1` so the fixed palette preview strip stays pinned at the top while the action list scrolls independently on small viewports
+- **Scope check on session start** — verified that the oklch readout (listed as session-78 "what's next") was already implemented in SwatchEditor.tsx (lines 285–310); same for the notes character counter (PaletteCard.tsx line 1207 `{notesValue.length}/280`); avoided duplicating finished work and focused on the one genuinely missing item
+
+### Key decisions
+- **Download before Copy, not alphabetical** — downloading is the more primary/permanent action; copy-to-clipboard is lighter/transient; ordering by permanence matches how designers think: "I want to save this" vs "I want to use this right now"
+- **Section labels match SwatchEditor's vocabulary** — the same tiny uppercase label + hairline rule pattern is already used throughout the app; adding a new visual language for the export modal would be inconsistent
+- **`mb-4` after each section list** — provides visual breathing room between sections without adding a heavy divider element; the empty space + section label together create enough separation
+
+### What's next (Session 80)
+- **Palette color count filter** — a compact "# colors" filter in the filter bar so Cady can narrow the library to palettes of exactly N (or N–M) colors; useful when she's building product lines that need consistent swatch counts
+- **Keyboard shortcut for Export modal** — pressing `E` on a hovered card already opens export; a visible `E` keyboard hint in the card's hint footer (alongside existing shortcuts like D, P, F2, etc.)
+- **SwatchEditor copy-hex button** — a small "copy" icon next to the hex input in SwatchEditor so Cady can grab the hex of the color she just edited without leaving the editor
+
+---
+
 ## 2026-06-07 — Session 78: Portrait Mood Board Export (1080×1350 Instagram 4:5)
 
 ### What was done
