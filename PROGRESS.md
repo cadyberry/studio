@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-06-08 — Session 80: Palette Color Count Filter
+
+### What was done
+- **Color count filter pills** — a new "# Colors" filter row appears in the library filter bar whenever the current view contains palettes with 2+ distinct color counts
+  - Pills show each unique color count in the current (mood-filtered) view as a compact numbered button with its palette count beside it (e.g. "5 · 12" = 5-color palettes, 12 of them)
+  - Clicking any pill filters the library to palettes with exactly that many colors; clicking again or clicking "All" clears it
+  - Pills are hidden when color similarity search is active (matches the existing mood pills behavior)
+  - `AnimatePresence` with `height: 0 → auto` transition so the row animates in/out cleanly
+  - Each button has a `title` tooltip ("Show only palettes with N color(s)") for accessibility
+- **Active filter chip** — when a color count filter is active and produces no results, an `#N colors` chip appears in the empty-state dismissible chip list so users know why the library is empty and can clear just that filter
+- **Clear all filters** — `setActiveColorCount("all")` added to the bulk clear handler
+- **Pipeline refactor** — `frozenInView` and the freeze filter now operate on `countFiltered` (after color count applied), not raw `moodFiltered`, so the Locked pill shows the correct count within the filtered set
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Exact match, not buckets** — "small / medium / large" buckets are too coarse for the POD workflow; Cady builds product lines with consistent swatch counts and needs to find all "6-color palettes" specifically, not "medium"
+- **Derived from current view, not all palettes** — pills reflect the color counts present in the mood-filtered set, so switching mood filter first narrows the counts; this mirrors how mood pills reflect the tag/collection-filtered set
+- **`font-mono tabular-nums` on the number** — the count digit is monospace so buttons stay visually stable as the active button's font-weight changes (prevents layout jitter)
+- **No icon, just `# Colors` label** — the `#` in the section header already communicates "number of"; an icon (Hash, etc.) would be redundant given the label is self-explanatory
+
+### What's next (Session 81)
+- **Keyboard shortcut hint for Export modal** — visible `E` shortcut hint in the palette card's keyboard hint footer (alongside existing D, P, F2, etc.)
+- **SwatchEditor copy-hex button** — small copy icon next to the hex input in SwatchEditor so the edited hex can be grabbed without leaving the editor
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across files
+
+---
+
 ## 2026-06-08 — Session 79: Export Modal Grouping (Download / Copy Sections)
 
 ### What was done
