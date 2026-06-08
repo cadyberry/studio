@@ -139,6 +139,7 @@ export default function Home() {
   const [inlineCollectionName, setInlineCollectionName] = useState("");
   const [flashedCollectionId, setFlashedCollectionId] = useState<string | null>(null);
   const [showArchivedCollections, setShowArchivedCollections] = useState(false);
+  const [activeColorCount, setActiveColorCount] = useState<number | "all">("all");
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -302,10 +303,19 @@ export default function Home() {
       ? baseFiltered
       : baseFiltered.filter((p) => getPaletteMood(p.colors) === activeMood);
 
-  const anyFrozen = palettes.some((p) => p.frozen);
-  const frozenInView = moodFiltered.filter((p) => p.frozen).length;
+  const colorCountTally = new Map<number, number>();
+  for (const p of moodFiltered) {
+    const n = p.colors.length;
+    colorCountTally.set(n, (colorCountTally.get(n) ?? 0) + 1);
+  }
+  const distinctColorCounts = [...colorCountTally.keys()].sort((a, b) => a - b);
 
-  const filtered = activeFreezeFilter === "locked" ? moodFiltered.filter((p) => p.frozen) : moodFiltered;
+  const countFiltered = activeColorCount === "all" ? moodFiltered : moodFiltered.filter((p) => p.colors.length === activeColorCount);
+
+  const anyFrozen = palettes.some((p) => p.frozen);
+  const frozenInView = countFiltered.filter((p) => p.frozen).length;
+
+  const filtered = activeFreezeFilter === "locked" ? countFiltered.filter((p) => p.frozen) : countFiltered;
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -1301,6 +1311,58 @@ export default function Home() {
               )}
             </AnimatePresence>
 
+            {/* Color count filter pills */}
+            <AnimatePresence>
+              {!colorSearchActive && distinctColorCounts.length >= 2 && (
+                <motion.div
+                  key="count-pills"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5">
+                      # Colors
+                    </span>
+                    <button
+                      onClick={() => setActiveColorCount("all")}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                        activeColorCount === "all"
+                          ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
+                          : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      All
+                      <span className={`text-[10px] ${activeColorCount === "all" ? "opacity-70" : "opacity-50"}`}>
+                        {moodFiltered.length}
+                      </span>
+                    </button>
+                    {distinctColorCounts.map((n) => {
+                      const count = colorCountTally.get(n)!;
+                      const isActive = activeColorCount === n;
+                      return (
+                        <button
+                          key={n}
+                          onClick={() => setActiveColorCount(isActive ? "all" : n)}
+                          title={`Show only palettes with ${n} color${n === 1 ? "" : "s"}`}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            isActive
+                              ? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm"
+                              : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--foreground)]"
+                          }`}
+                        >
+                          <span className="font-mono tabular-nums">{n}</span>
+                          <span className={`text-[10px] ${isActive ? "opacity-70" : "opacity-50"}`}>{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Compare anchor hint banner */}
             <AnimatePresence>
               {compareAnchor && !compareTarget && (
@@ -1462,6 +1524,16 @@ export default function Home() {
                       <X size={10} className="shrink-0" />
                     </button>
                   )}
+                  {activeColorCount !== "all" && (
+                    <button
+                      onClick={() => setActiveColorCount("all")}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <span className="font-mono text-[10px] font-semibold shrink-0">#</span>
+                      {activeColorCount} colors
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
                 </div>
 
                 <Button
@@ -1472,6 +1544,7 @@ export default function Home() {
                     setActiveTag("all");
                     setActiveMood("all");
                     setActiveFreezeFilter("all");
+                    setActiveColorCount("all");
                     setColorSearchActive(false);
                     setColorSearchHex("");
                   }}
