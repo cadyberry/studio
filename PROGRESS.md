@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-06-09 — Session 81: SwatchEditor Copy-Hex Button + E Export Keyboard Hint
+
+### What was done
+- **Copy-hex button in SwatchEditor** — a small `Copy` icon button now sits between the hex text input and the contrast badges in the swatch editor; clicking it copies the current (possibly unsaved) hex to the clipboard and flashes a green `Check` icon for 1.5s as confirmation; state is local (`hexCopied`) and resets automatically; the button is 24×24px (`w-6 h-6`), matching the nudge button size, with the same muted hover style
+  - Workflow fix: previously Cady had to manually triple-click the hex input and copy to grab a color value; now one button press captures it even mid-edit before saving
+  - `Copy` and `Check` imported from lucide-react; zero new dependencies
+- **"E export" in the keyboard hint footer** — the palette card's hover-visible hint strip now reads `D dup · E export · F2 name · H view · L lock · P pin · Del` (was missing `E export` despite the shortcut being live since an earlier session); the `E` shortcut was already fully wired at line 190 of PaletteCard.tsx, only the discoverability hint was absent
+- **Scope check** — `@import` CSS recursion was listed in session 80's "what's next" but was already fully implemented in session 64; confirmed by reading PROGRESS.md before starting; avoided duplicating finished work
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Copy button between input and contrast badges, not after them** — placing the button immediately after the input (before the contrast readout) keeps the copy action spatially associated with the input field; the contrast badges are passive metadata and don't need to be nearest to the input
+- **`navigator.clipboard.writeText(hex)` uses the live `hex` state, not `hexInput`** — `hex` is the validated, applied value (always a valid 7-char hex); `hexInput` may be mid-edit and not yet applied; copying the live value ensures Cady always gets a clean hex, not an invalid partial string
+- **1.5s flash** — consistent with the duplicate/fork confirmation pattern used throughout the app (session 54, 66, etc.); long enough to notice, short enough not to linger
+
+### What's next (Session 82)
+- **Collection rename** — currently collections can be created and deleted but not renamed in-place; a rename affordance (double-click or edit icon on the sidebar row) would complete the collection CRUD surface
+- **Palette notes search in URL share** — when a palette is shared via a `/p/` URL, the notes field is included in the share but the recipient has no indicator that there are notes; a small "has notes" indicator (StickyNote icon) in the shared view header would help
+- **Swatch copy from palette card** — right now copying a swatch hex requires hovering + clicking the swatch strip badge; a more direct way (click hex on the harmony strip, or a copy button on the info row's swatch preview) would reduce friction for common color-grabbing
+
+---
+
 ## 2026-06-08 — Session 80: Palette Color Count Filter
 
 ### What was done
