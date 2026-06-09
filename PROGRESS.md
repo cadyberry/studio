@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-06-09 — Session 82: Palette Notes in Share URL + Shared View
+
+### What was done
+- **Palette notes included in share URL** — when a palette has notes, `getPaletteShareUrl` now appends `&no=<encodeURIComponent(notes)>` to the `/p/` URL; previously notes were silently dropped when sharing, so recipients had no creative context
+  - Only added when `palette.notes` is truthy — palettes without notes produce the same compact URL as before
+  - Works with the existing "Copy Share Link" action in the Export modal (no UI changes needed there)
+- **Notes block in SharedPaletteView** — the `/p/` shared palette page now displays notes in a styled yellow StickyNote block between the palette header and swatch list when notes are present
+  - Block: `bg-yellow-50 border-yellow-200` card with a `StickyNote` icon and `whitespace-pre-wrap` text — matches the visual vocabulary of notes throughout the app (yellow/StickyNote is the established note semantic color)
+  - Framer Motion fade-in-up with a 0.12s delay, between the header (0.08s) and swatches (0.14s) — feels natural in the staggered page reveal
+  - Omitted entirely when no notes — zero visual noise for share links without notes
+- **`/p/page.tsx`** — parses `no` query param, passes as `notes?: string` prop to `SharedPaletteView`; swatch colors still parsed as before
+- **Scope checks** — verified that: collection rename IS already implemented (double-click on name + inline input at page.tsx:714–718, already done in a prior session), swatch click-to-copy IS already implemented (PaletteCard.tsx:462 frozen path, :528–531 unfrozen path); both PROGRESS.md "what's next" entries were inaccurate; chose the genuinely missing feature
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **`no` as the URL param name** — `notes` would work but adds 3 chars per URL; `no` is clear enough in context and keeps the URL compact; `n` (palette name) and `c` (colors) established the short-key pattern
+- **Yellow StickyNote block, not italic paragraph** — the existing SharedPaletteView uses plain italic for the color count ("N colors — shared palette"); notes need stronger visual distinction to signal "this is creative context from the creator", not metadata; the yellow block communicates that clearly without being aggressive
+- **`whitespace-pre-wrap`** — notes may contain line breaks for lists or structured direction; `pre-wrap` preserves them without requiring markdown parsing; same approach used elsewhere in the app for notes display
+- **Server-side parse in page.tsx** — the shared palette page is already a server component; keeping the notes extraction there is zero extra complexity and avoids a client-side `useSearchParams` hook
+
+### What's next (Session 83)
+- **Swatch copy flash feedback** — clicking a swatch in the palette card grid copies the hex but shows no visual confirmation; a brief white flash ring or small tooltip toast on the swatch would close the feedback loop (currently the only signal is the silent clipboard change)
+- **Collection rename icon button** — the existing double-click rename is fully implemented but not discoverable; adding an explicit `Pencil` icon button in the collection row hover action set (alongside Archive, Download, Cohesion) would complete the affordance
+- **Swatch name in share URL** — extend the share URL to include swatch names alongside hex codes so named swatches (e.g. "Crimson", "Sage") are preserved in the shared view and fork; currently only hex values are in the URL
+
+---
+
 ## 2026-06-09 — Session 81: SwatchEditor Copy-Hex Button + E Export Keyboard Hint
 
 ### What was done
