@@ -18,6 +18,7 @@ export default async function SharedPalettePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const name = typeof params.n === "string" ? params.n : "Shared Palette";
   const colorsStr = typeof params.c === "string" ? params.c : "";
+  const notes = typeof params.no === "string" ? params.no : undefined;
 
   const colors = colorsStr
     .split(",")
@@ -38,5 +39,5 @@ export default async function SharedPalettePage({ searchParams }: PageProps) {
     );
   }
 
-  return <SharedPaletteView name={name} colors={colors} />;
+  return <SharedPaletteView name={name} colors={colors} notes={notes} />;
 }

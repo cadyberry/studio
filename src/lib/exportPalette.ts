@@ -32,7 +32,9 @@ function roundRectPath(
 export function getPaletteShareUrl(palette: Palette): string {
   const base = typeof window !== "undefined" ? window.location.origin : "";
   const colors = palette.colors.map((c) => c.hex.replace("#", "")).join(",");
-  return `${base}/p?n=${encodeURIComponent(palette.name)}&c=${colors}`;
+  let url = `${base}/p?n=${encodeURIComponent(palette.name)}&c=${colors}`;
+  if (palette.notes) url += `&no=${encodeURIComponent(palette.notes)}`;
+  return url;
 }
 
 function buildPaletteCanvas(palette: Palette): HTMLCanvasElement | null {

@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check, ArrowLeft, BookMarked } from "lucide-react";
+import { Copy, Check, ArrowLeft, BookMarked, StickyNote } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 import type { ColorSwatch } from "@/types";
 
 interface SharedPaletteViewProps {
   name: string;
   colors: ColorSwatch[];
+  notes?: string;
 }
 
-export default function SharedPaletteView({ name, colors }: SharedPaletteViewProps) {
+export default function SharedPaletteView({ name, colors, notes }: SharedPaletteViewProps) {
   const [copied, setCopied] = useState<number | "all" | null>(null);
 
   const copy = (text: string, key: number | "all") => {
@@ -67,6 +68,19 @@ export default function SharedPaletteView({ name, colors }: SharedPaletteViewPro
             {colors.length} color{colors.length !== 1 ? "s" : ""} — shared palette
           </p>
         </motion.div>
+
+        {/* Notes */}
+        {notes && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.12 }}
+            className="mb-6 flex gap-3 px-4 py-3 rounded-[var(--radius-md)] bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/40"
+          >
+            <StickyNote size={15} className="shrink-0 mt-0.5 text-yellow-500 dark:text-yellow-400 fill-yellow-100 dark:fill-yellow-900/40" />
+            <p className="text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">{notes}</p>
+          </motion.div>
+        )}
 
         {/* Swatches */}
         <motion.div
