@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw, Minus, Plus } from "lucide-react";
+import { X, RotateCcw, Minus, Plus, Copy, Check } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
@@ -38,6 +38,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const [hsl, setHsl] = useState<{ h: number; s: number; l: number }>({ h: 0, s: 0, l: 50 });
   const [swatchName, setSwatchName] = useState(palette?.colors[swatchIndex]?.name ?? "");
   const [suggestions, setSuggestions] = useState<string[]>(() => getColorNameSuggestions(originalHex));
+  const [hexCopied, setHexCopied] = useState(false);
 
   useEffect(() => {
     if (palette) {
@@ -260,6 +261,19 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 maxLength={7}
                 spellCheck={false}
               />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(hex);
+                  setHexCopied(true);
+                  setTimeout(() => setHexCopied(false), 1500);
+                }}
+                className="w-6 h-6 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors shrink-0"
+                title="Copy hex to clipboard"
+              >
+                {hexCopied
+                  ? <Check size={11} className="text-emerald-500" />
+                  : <Copy size={11} />}
+              </button>
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded select-none ${
                   contrastWhite >= 4.5

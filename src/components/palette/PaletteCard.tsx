@@ -975,7 +975,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
           {palette.frozen
             ? "L unlock"
-            : "D dup · F2 name · H view · L lock · P pin · Del"}
+            : "D dup · E export · F2 name · H view · L lock · P pin · Del"}
         </span>
       </div>
 
