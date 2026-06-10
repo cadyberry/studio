@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-06-10 — Session 84: Collection Rename Icon Button
+
+### What was done
+- **Pencil rename button in the collection sidebar action bar** — hovering any collection row now reveals a `Pencil` icon button alongside the existing Download, Archive, and Cohesion buttons; clicking it opens the inline rename input in one click instead of requiring an undiscoverable double-click gesture
+  - Button activates the same logic as double-click: `setRenamingCollectionId(c.id)` + `setInlineCollectionName(c.name)` + `setHoveredCollectionId(null)` (hides the hover tooltip while renaming)
+  - Same hover style (`opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]`) as the other action buttons — consistent visual language
+  - Positioned first in the action set (leftmost), before Download — rename is the most common edit action so it deserves the primary position
+  - `{!isRenaming && ...}` guard prevents the button from appearing while the input is already open (consistent with the other action buttons)
+  - `Pencil` added to the lucide-react import; no new dependencies
+  - The collection name span's `title` tooltip no longer says "Double-click to rename" — the icon is now the discoverability surface; description-only tooltips still appear when the collection has a description set
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Pencil as the rename icon** — universally understood as "edit name"; distinguishes from the Archive (box) and Cohesion (bar chart) actions without ambiguity; `Pencil` rather than `PencilLine` because the fill-weight at 12px is cleaner
+- **First in action order** — rename is more frequent than export or archive; placing it leftmost (immediately reachable on first hover) reduces movement distance vs. hunting for it at the far end of the action bar
+- **Remove the tooltip double-click instruction** — once a dedicated button exists, documenting the gesture fallback in a tooltip is redundant noise; the button is the primary affordance now; double-click still works as a power-user shortcut but doesn't need advertising
+
+### What's next (Session 85)
+- **Swatch name in share URL** — extend the `/p/` share URL to include swatch names alongside hex codes so named swatches (e.g. "Crimson", "Sage") survive sharing and are visible in the shared view and fork; currently only hex values are in the URL
+- **Harmony swatch copy flash** — the harmony mini-preview strip clicks call `navigator.clipboard.writeText` directly with no visual feedback; applying the same 800ms Check badge flash (from session 83) to harmony swatches would make the app feel consistent
+- **Collection description edit** — collections can have a description (shown in the tooltip) but there's no UI to set or edit it; a small "description" input in a collection settings panel or right below the rename input would complete the collection metadata surface
+
+---
+
 ## 2026-06-10 — Session 83: Swatch Copy Flash Feedback
 
 ### What was done
