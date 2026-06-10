@@ -124,6 +124,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [confirming, setConfirming] = useState(false);
   const [duplicated, setDuplicated] = useState(false);
   const [forkedHarmony, setForkedHarmony] = useState(false);
+  const [copiedSwatchKey, setCopiedSwatchKey] = useState<string | null>(null);
   const [naming, setNaming] = useState<NamingState>({ type: "idle" });
   const [tagging, setTagging] = useState(false);
   const [tagInput, setTagInput] = useState("");
@@ -248,6 +249,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     dragEndTimeRef.current = Date.now();
     const plain = orderedColorsRef.current.map(({ _key: _k, ...c }) => c);
     updatePalette(palette.id, { colors: plain });
+  };
+
+  const handleSwatchCopy = (key: string, hex: string) => {
+    navigator.clipboard.writeText(hex);
+    setCopiedSwatchKey(key);
+    setTimeout(() => setCopiedSwatchKey(null), 800);
   };
 
   const openNotes = () => {
@@ -459,11 +466,29 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   key={color._key}
                   style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
                   className="group/swatch cursor-pointer"
-                  onClick={() => navigator.clipboard.writeText(color.hex)}
+                  onClick={() => handleSwatchCopy(color._key, color.hex)}
                   title={`${color.hex} — click to copy`}
                 >
                   {isMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+                  )}
+                  {copiedSwatchKey === color._key && (
+                    <motion.div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <div
+                        className="rounded-full flex items-center justify-center w-[18px] h-[18px]"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)",
+                          color: getContrastColor(color.hex),
+                        }}
+                      >
+                        <Check size={9} />
+                      </div>
+                    </motion.div>
                   )}
                   <div
                     className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
@@ -527,7 +552,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   onDragEnd={handleDragEnd}
                   onClick={() => {
                     if (Date.now() - dragEndTimeRef.current > 250) {
-                      navigator.clipboard.writeText(color.hex);
+                      handleSwatchCopy(color._key, color.hex);
                     }
                   }}
                   title={`${color.hex} — drag to reorder · click to copy`}
@@ -535,6 +560,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 >
                   {isMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+                  )}
+                  {copiedSwatchKey === color._key && (
+                    <motion.div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <div
+                        className="rounded-full flex items-center justify-center w-[18px] h-[18px]"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)",
+                          color: getContrastColor(color.hex),
+                        }}
+                      >
+                        <Check size={9} />
+                      </div>
+                    </motion.div>
                   )}
                   <div
                     className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
