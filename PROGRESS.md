@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-10 — Session 83: Swatch Copy Flash Feedback
+
+### What was done
+- **Swatch copy flash feedback** — clicking any swatch in the palette card grid now shows a brief visual confirmation that the hex code was copied to clipboard
+  - A small rounded badge (18×18px) with a `Check` icon fades in at the center of the clicked swatch and clears after 800ms
+  - Badge color adapts to the swatch: light pill (`rgba(255,255,255,0.85)`) on dark swatches, dark pill (`rgba(0,0,0,0.55)`) on light swatches — uses the existing `getContrastColor` utility for consistency
+  - `copiedSwatchKey: string | null` state tracks which swatch is currently flashing; `handleSwatchCopy(key, hex)` centralizes clipboard write + state set/clear in one place
+  - `motion.div` with `initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}` gives a clean fade-in; disappears instantly when state clears (instant disappearance reads as "done")
+  - Covers both the frozen (static `<div>`) and unfrozen (`Reorder.Item` drag) swatch rendering paths
+  - Drag-to-reorder timing guard (`dragEndTimeRef`) preserved — copy + flash only fire on clean clicks, not drag-end events
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Check badge, not ring or toast** — a small centered Check icon is the universal "done" signal; a ring would clash with the existing white match ring (color search best-match indicator); a toast would require positioning logic and feels heavy for a one-click action
+- **`copiedSwatchKey` as a string (the `_key`), not an index** — `_key` is stable and unique per swatch even when reordered; using an index would break after drag-to-reorder changes the visual order relative to the array
+- **800ms clear timeout** — long enough to read and register the Check badge, short enough not to linger; consistent with the 800–1500ms pattern used throughout the app for copy/fork confirmations
+- **`handleSwatchCopy` helper, not inline** — both the frozen and unfrozen paths now share one clipboard + state function; previously they each had their own `navigator.clipboard.writeText(hex)` call, which would mean two places to update if behavior changes
+
+### What's next (Session 84)
+- **Collection rename icon button** — the existing double-click rename is fully implemented but not discoverable; adding an explicit `Pencil` icon button in the collection row hover action set (alongside Archive, Download, Cohesion) would complete the affordance
+- **Swatch name in share URL** — extend the `/p/` share URL to include swatch names alongside hex codes so named swatches (e.g. "Crimson", "Sage") survive sharing and are visible in the shared view
+- **Harmony swatch copy flash** — the harmony mini-preview strip (slides in on card hover) also calls `navigator.clipboard.writeText` directly; the same flash pattern could be applied there for consistency
+
+---
+
 ## 2026-06-09 — Session 82: Palette Notes in Share URL + Shared View
 
 ### What was done
