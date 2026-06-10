@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -710,7 +710,7 @@ export default function Home() {
                             <FolderOpen size={13} className="shrink-0" />
                             <span
                               className="truncate"
-                              title={c.description ? `${c.description}\n\nDouble-click to rename` : "Double-click to rename"}
+                              title={c.description ?? undefined}
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
                                 setRenamingCollectionId(c.id);
@@ -721,6 +721,20 @@ export default function Home() {
                               {c.name}
                             </span>
                             {scoreAndCount}
+                          </button>
+                        )}
+                        {!isRenaming && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRenamingCollectionId(c.id);
+                              setInlineCollectionName(c.name);
+                              setHoveredCollectionId(null);
+                            }}
+                            className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"
+                            title={`Rename "${c.name}"`}
+                          >
+                            <Pencil size={12} />
                           </button>
                         )}
                         {!isRenaming && count > 0 && (
