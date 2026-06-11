@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-06-11 — Session 86: Harmony Swatch Copy Flash
+
+### What was done
+- **Harmony swatch copy flash** — clicking any swatch in the harmony mini-preview strip (the 36px strip that slides in on palette card hover) now shows the same 800ms Check badge flash introduced for main swatches in session 83
+  - `copiedHarmonyHex: string | null` state added alongside the existing `copiedSwatchKey` state — harmony swatches use their hex string as the key since derived harmony colors are always distinct by construction (no `_key` field)
+  - Click handler updated: sets `copiedHarmonyHex(hc.hex)` and schedules a `setTimeout(() => setCopiedHarmonyHex(null), 800)` alongside the existing `navigator.clipboard.writeText(hc.hex)` call
+  - Flash badge: 18×18px rounded-full pill, `motion.div` with `opacity: 0 → 1` at 150ms — same spec as the main swatch badge; contrast-aware bg/fg using `getContrastColor(hc.hex)` so it reads on both light and dark harmony swatches
+  - Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **`hc.hex` as the flash key** — harmony swatches are derived (no `_key`), and each has a guaranteed-unique hex (the derivation filters out near-duplicates of palette colors); using hex as the key is safe and requires no schema changes
+- **800ms timeout** — matches the main swatch grid timing exactly; keeps all copy interactions consistent throughout the app
+- **Same badge formula as main swatches** — `getContrastColor(hc.hex) === "#fafaf8"` → dark pill, else light pill; reusing the same contrast logic means the badge is legible on every harmony swatch regardless of hue
+
+### What's next (Session 87)
+- **Collection description edit** — collections can have a description (shown in the hover tooltip) but there's no UI to set or edit it; a small inline input below the rename field in the sidebar would complete the collection metadata surface
+- **Palette notes word count** — alongside the character counter, show approximate word count so Cady can gauge density of creative direction notes at a glance
+- **Harmony strip on shared palette page** — the `/p/` shared palette page shows the swatch grid and info but not the harmony preview; adding the same strip to SharedPaletteView would let recipients explore color derivations
+
+---
+
 ## 2026-06-11 — Session 85: Swatch Names in Share URL + Fork
 
 ### What was done
