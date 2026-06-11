@@ -34,6 +34,9 @@ export function getPaletteShareUrl(palette: Palette): string {
   const colors = palette.colors.map((c) => c.hex.replace("#", "")).join(",");
   let url = `${base}/p?n=${encodeURIComponent(palette.name)}&c=${colors}`;
   if (palette.notes) url += `&no=${encodeURIComponent(palette.notes)}`;
+  if (palette.colors.some((c) => c.name)) {
+    url += `&s=${palette.colors.map((c) => encodeURIComponent(c.name ?? "")).join(",")}`;
+  }
   return url;
 }
 

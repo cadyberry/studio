@@ -19,12 +19,16 @@ export default async function SharedPalettePage({ searchParams }: PageProps) {
   const name = typeof params.n === "string" ? params.n : "Shared Palette";
   const colorsStr = typeof params.c === "string" ? params.c : "";
   const notes = typeof params.no === "string" ? params.no : undefined;
+  const swatchNamesStr = typeof params.s === "string" ? params.s : "";
+  const swatchNames = swatchNamesStr
+    ? swatchNamesStr.split(",").map((s) => { try { return decodeURIComponent(s); } catch { return s; } })
+    : [];
 
   const colors = colorsStr
     .split(",")
     .map((h) => h.trim())
     .filter((h) => /^[0-9a-fA-F]{6}$/.test(h))
-    .map((h) => ({ hex: `#${h}` }));
+    .map((h, i) => ({ hex: `#${h}`, ...(swatchNames[i] ? { name: swatchNames[i] } : {}) }));
 
   if (colors.length === 0) {
     return (

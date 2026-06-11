@@ -20,7 +20,7 @@ import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
-import type { Palette, Collection } from "@/types";
+import type { Palette, Collection, ColorSwatch } from "@/types";
 
 const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
 
@@ -109,7 +109,7 @@ export default function Home() {
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
-  const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: { hex: string }[] } | null>(null);
+  const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first">("newest");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
@@ -210,12 +210,15 @@ export default function Home() {
     const url = new URL(window.location.href);
     const fork = url.searchParams.get("fork");
     if (!fork) return;
-    const [name, colorsStr] = fork.split("|");
+    const [name, colorsStr, namesSegment] = fork.split("|");
     if (!name || !colorsStr) return;
-    const colors = colorsStr
+    const swatchNames = namesSegment
+      ? namesSegment.split("~").map((s) => { try { return decodeURIComponent(s); } catch { return s; } })
+      : [];
+    const colors: ColorSwatch[] = colorsStr
       .split(",")
       .filter((h) => /^[0-9a-fA-F]{6}$/.test(h))
-      .map((h) => ({ hex: `#${h}` }));
+      .map((h, i) => ({ hex: `#${h}`, ...(swatchNames[i] ? { name: swatchNames[i] } : {}) }));
     if (colors.length > 0) {
       setForkPrompt({ name: decodeURIComponent(name), colors });
       url.searchParams.delete("fork");

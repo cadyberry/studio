@@ -22,7 +22,10 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
     });
   };
 
-  const forkUrl = `/p/fork?n=${encodeURIComponent(name)}&c=${colors.map((c) => c.hex.replace("#", "")).join(",")}`;
+  const hasNames = colors.some((c) => c.name);
+  const forkParam = hasNames
+    ? `${name}|${colors.map((c) => c.hex.replace("#", "")).join(",")}|${colors.map((c) => encodeURIComponent(c.name ?? "")).join("~")}`
+    : `${name}|${colors.map((c) => c.hex.replace("#", "")).join(",")}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)]">
@@ -112,9 +115,12 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
                   </span>
                 </div>
 
-                {/* Hex value */}
+                {/* Hex value + optional name */}
                 <div className="flex-1 min-w-0">
                   <span className="font-mono text-sm font-medium">{color.hex.toUpperCase()}</span>
+                  {color.name && (
+                    <p className="text-xs text-[var(--muted)] mt-0.5 truncate italic">{color.name}</p>
+                  )}
                 </div>
 
                 {/* Copy button */}
@@ -164,7 +170,7 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
           </button>
 
           <a
-            href={`/?fork=${encodeURIComponent(`${name}|${colors.map((c) => c.hex.replace("#", "")).join(",")}`)}` }
+            href={`/?fork=${encodeURIComponent(forkParam)}`}
             className="flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-sm)] bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90 transition-opacity text-sm font-medium"
           >
             <BookMarked size={13} />
