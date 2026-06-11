@@ -125,6 +125,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [duplicated, setDuplicated] = useState(false);
   const [forkedHarmony, setForkedHarmony] = useState(false);
   const [copiedSwatchKey, setCopiedSwatchKey] = useState<string | null>(null);
+  const [copiedHarmonyHex, setCopiedHarmonyHex] = useState<string | null>(null);
   const [naming, setNaming] = useState<NamingState>({ type: "idle" });
   const [tagging, setTagging] = useState(false);
   const [tagInput, setTagInput] = useState("");
@@ -686,7 +687,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 key={hc.hex}
                 className="group/hc flex-1 relative cursor-pointer"
                 style={{ backgroundColor: hc.hex }}
-                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(hc.hex); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(hc.hex);
+                  setCopiedHarmonyHex(hc.hex);
+                  setTimeout(() => setCopiedHarmonyHex(null), 800);
+                }}
                 title={`${hc.label} · ${hc.hex}`}
               >
                 <div
@@ -697,6 +703,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     {hc.hex.slice(1).toUpperCase()}
                   </span>
                 </div>
+                {copiedHarmonyHex === hc.hex && (
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <div
+                      className="rounded-full flex items-center justify-center w-[18px] h-[18px]"
+                      style={{
+                        backgroundColor: getContrastColor(hc.hex) === "#fafaf8" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)",
+                        color: getContrastColor(hc.hex),
+                      }}
+                    >
+                      <Check size={9} />
+                    </div>
+                  </motion.div>
+                )}
               </div>
             ))}
             {/* Fork to palette button */}
