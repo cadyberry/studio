@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-06-11 — Session 85: Swatch Names in Share URL + Fork
+
+### What was done
+- **Swatch names now survive sharing** — when a palette has named swatches (e.g. "Crimson", "Sage"), those names are encoded into the `/p/` share URL as an `&s=` param and decoded back on the shared palette page; previously only hex values were in the URL, so names were silently dropped at the share boundary
+  - `getPaletteShareUrl` in `exportPalette.ts` now appends `&s=<encname1>,<encname2>,...` when at least one swatch has a name; palettes without names produce identical (shorter) URLs as before — zero regression
+  - `app/p/page.tsx` parses the `s` param, splits by comma, decodes each segment, and merges names into the color objects passed to `SharedPaletteView` — the existing `colors: ColorSwatch[]` prop already supported optional `name`, only the parse path was missing
+- **Swatch names shown in shared palette view** — the `/p/` shared palette page now renders the swatch name as a small italic muted line below the hex code in each swatch row when a name is present; absent for unnamed swatches, so the layout is unchanged for palettes without names
+- **Swatch names survive forking** — the "Fork to my library" button on `/p/` now passes names through the `?fork=` URL param as a third `|`-delimited segment encoded as `~`-joined per-name URI components; `page.tsx` decodes this segment and reconstructs the full `ColorSwatch[]` (with names) when creating the fork prompt; the forked palette arrives in the library with names intact
+  - `forkPrompt` state type updated from `{ hex: string }[]` to `ColorSwatch[]` to correctly type the named colors
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **`&s=` param, comma-separated encoded names** — mirrors the `&c=` hex param structure; empty string for unnamed swatches preserves position alignment (e.g. `&s=Crimson,,Sage` means only swatches 1 and 3 are named); only appended when at least one swatch has a name, keeping anonymous palette URLs short
+- **`~` as intra-names separator in the fork param** — the `?fork=` param already uses `|` to delimit name/hexes/names segments; swatch names within the names segment are separated by `~` rather than `,` (which is already used for hex codes) to avoid ambiguity; `~` is essentially absent from typical color names ("Sage", "Ocean Blue", etc.) so this is safe in practice
+- **Swatch name as italic muted line below hex** — small, quiet, doesn't compete with the hex code as the primary identifier; consistent with the typographic treatment of names elsewhere in the app (swatch editor, palette card label area)
+- **Decode error fallback** — `decodeURIComponent` wrapped in try/catch returns the raw segment on malformed input; prevents a bad URL segment from crashing the shared view
+
+### What's next (Session 86)
+- **Harmony swatch copy flash** — the harmony mini-preview strip (slides in on palette card hover) calls `navigator.clipboard.writeText` directly with no visual feedback; applying the same 800ms Check badge flash used in the main swatch grid would make the interaction consistent
+- **Collection description edit** — collections can have a description (shown in the hover tooltip) but there's no UI to set or edit it; a small inline input below the rename field or a settings popover would complete the collection metadata surface
+- **Color search history** — the color search (search by hex) has no history; a small dropdown of recent searches below the input would save re-typing frequently-used hex values
+
+---
+
 ## 2026-06-10 — Session 84: Collection Rename Icon Button
 
 ### What was done
