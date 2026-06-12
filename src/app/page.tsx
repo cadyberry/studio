@@ -137,6 +137,7 @@ export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
   const [inlineCollectionName, setInlineCollectionName] = useState("");
+  const [inlineCollectionDesc, setInlineCollectionDesc] = useState("");
   const [flashedCollectionId, setFlashedCollectionId] = useState<string | null>(null);
   const [showArchivedCollections, setShowArchivedCollections] = useState(false);
   const [activeColorCount, setActiveColorCount] = useState<number | "all">("all");
@@ -150,9 +151,12 @@ export default function Home() {
   const commitCollectionRename = useCallback(() => {
     if (!renamingCollectionId) return;
     const trimmed = inlineCollectionName.trim();
-    if (trimmed) updateCollection(renamingCollectionId, { name: trimmed });
+    if (trimmed) updateCollection(renamingCollectionId, {
+      name: trimmed,
+      description: inlineCollectionDesc.trim() || undefined,
+    });
     setRenamingCollectionId(null);
-  }, [renamingCollectionId, inlineCollectionName, updateCollection]);
+  }, [renamingCollectionId, inlineCollectionName, inlineCollectionDesc, updateCollection]);
 
   const cancelCollectionRename = useCallback(() => {
     setRenamingCollectionId(null);
@@ -682,24 +686,44 @@ export default function Home() {
                           />
                         )}
                         {isRenaming ? (
-                          <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-sm ${
+                          <div className={`flex-1 flex flex-col gap-0.5 px-3 py-2 rounded-[var(--radius-sm)] text-sm ${
                             isActive ? "bg-[var(--accent)] text-[var(--accent-fg)]" : "bg-[var(--surface-2)]"
                           }`}>
-                            <FolderOpen size={13} className="shrink-0" />
+                            <div className="flex items-center gap-2">
+                              <FolderOpen size={13} className="shrink-0" />
+                              <input
+                                autoFocus
+                                type="text"
+                                value={inlineCollectionName}
+                                onChange={(e) => setInlineCollectionName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); commitCollectionRename(); }
+                                  if (e.key === "Escape") { e.preventDefault(); cancelCollectionRename(); }
+                                }}
+                                onBlur={(e) => {
+                                  if ((e.relatedTarget as HTMLElement | null)?.dataset?.descField === "true") return;
+                                  commitCollectionRename();
+                                }}
+                                className="flex-1 min-w-0 bg-transparent outline-none text-sm"
+                                spellCheck={false}
+                              />
+                              {scoreAndCount}
+                            </div>
                             <input
-                              autoFocus
                               type="text"
-                              value={inlineCollectionName}
-                              onChange={(e) => setInlineCollectionName(e.target.value)}
+                              data-desc-field="true"
+                              placeholder="Add a description…"
+                              value={inlineCollectionDesc}
+                              onChange={(e) => setInlineCollectionDesc(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") { e.preventDefault(); commitCollectionRename(); }
                                 if (e.key === "Escape") { e.preventDefault(); cancelCollectionRename(); }
                               }}
                               onBlur={commitCollectionRename}
-                              className="flex-1 min-w-0 bg-transparent outline-none text-sm"
+                              className="ml-[21px] bg-transparent outline-none text-xs italic placeholder:opacity-40"
+                              style={{ color: "inherit", opacity: 0.65 }}
                               spellCheck={false}
                             />
-                            {scoreAndCount}
                           </div>
                         ) : (
                           <button
@@ -718,6 +742,7 @@ export default function Home() {
                                 e.stopPropagation();
                                 setRenamingCollectionId(c.id);
                                 setInlineCollectionName(c.name);
+                                setInlineCollectionDesc(c.description ?? "");
                                 setHoveredCollectionId(null);
                               }}
                             >
@@ -732,6 +757,7 @@ export default function Home() {
                               e.stopPropagation();
                               setRenamingCollectionId(c.id);
                               setInlineCollectionName(c.name);
+                              setInlineCollectionDesc(c.description ?? "");
                               setHoveredCollectionId(null);
                             }}
                             className="p-1.5 rounded opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] shrink-0"
@@ -794,8 +820,11 @@ export default function Home() {
                             onMouseLeave={() => setHoveredCollectionId(null)}
                           >
                             <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-md)] shadow-2xl p-3 w-60">
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-2.5 truncate">{c.name}</p>
-                              <div className="space-y-1">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] truncate">{c.name}</p>
+                              {c.description && (
+                                <p className="text-[10px] italic text-[var(--muted)] mt-0.5 mb-2 line-clamp-2" style={{ opacity: 0.7 }}>{c.description}</p>
+                              )}
+                              <div className={`space-y-1 ${c.description ? "" : "mt-2.5"}`}>
                                 {collectionPalettes.slice(0, 7).map((p) => (
                                   <div key={p.id} className="group/row flex items-center gap-2">
                                     <div className="flex rounded-sm overflow-hidden h-[14px] flex-1 min-w-0">
