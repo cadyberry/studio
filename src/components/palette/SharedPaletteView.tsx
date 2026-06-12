@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, ArrowLeft, BookMarked, StickyNote } from "lucide-react";
-import { getContrastColor } from "@/lib/utils";
+import { getContrastColor, getHarmonyColors } from "@/lib/utils";
 import type { ColorSwatch } from "@/types";
 
 interface SharedPaletteViewProps {
@@ -14,6 +14,7 @@ interface SharedPaletteViewProps {
 
 export default function SharedPaletteView({ name, colors, notes }: SharedPaletteViewProps) {
   const [copied, setCopied] = useState<number | "all" | null>(null);
+  const [copiedHarmonyHex, setCopiedHarmonyHex] = useState<string | null>(null);
 
   const copy = (text: string, key: number | "all") => {
     navigator.clipboard.writeText(text).then(() => {
@@ -21,6 +22,15 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
       setTimeout(() => setCopied(null), 1500);
     });
   };
+
+  const copyHarmony = (hex: string) => {
+    navigator.clipboard.writeText(hex).then(() => {
+      setCopiedHarmonyHex(hex);
+      setTimeout(() => setCopiedHarmonyHex(null), 800);
+    });
+  };
+
+  const harmonyColors = getHarmonyColors(colors);
 
   const hasNames = colors.some((c) => c.name);
   const forkParam = hasNames
@@ -144,6 +154,78 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
             );
           })}
         </motion.div>
+
+        {/* Harmony derivations */}
+        {harmonyColors.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.28 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
+                Harmony
+              </span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+            <div className="rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] flex" style={{ height: 64 }}>
+              {harmonyColors.map((hc) => {
+                const fg = getContrastColor(hc.hex);
+                const isCopied = copiedHarmonyHex === hc.hex;
+                return (
+                  <button
+                    key={hc.hex}
+                    onClick={() => copyHarmony(hc.hex)}
+                    title={`${hc.label} · ${hc.hex} — click to copy`}
+                    className="flex-1 relative group/hc flex flex-col items-center justify-center gap-0.5 cursor-pointer focus:outline-none"
+                    style={{ backgroundColor: hc.hex }}
+                  >
+                    {/* Hover overlay: label + hex */}
+                    <span
+                      className="text-[8px] font-semibold uppercase tracking-wide opacity-0 group-hover/hc:opacity-80 transition-opacity leading-none"
+                      style={{ color: fg }}
+                    >
+                      {hc.label}
+                    </span>
+                    <span
+                      className="text-[9px] font-mono font-bold opacity-0 group-hover/hc:opacity-90 transition-opacity leading-none"
+                      style={{ color: fg }}
+                    >
+                      {hc.hex.slice(1).toUpperCase()}
+                    </span>
+                    {/* Copy flash badge */}
+                    <AnimatePresence>
+                      {isCopied && (
+                        <motion.div
+                          key="badge"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        >
+                          <div
+                            className="rounded-full flex items-center justify-center w-[18px] h-[18px]"
+                            style={{
+                              backgroundColor: fg === "#fafaf8" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)",
+                              color: fg,
+                            }}
+                          >
+                            <Check size={9} />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[10px] text-[var(--muted)] text-right">
+              Click any swatch to copy hex
+            </p>
+          </motion.div>
+        )}
 
         {/* Copy all + Fork actions */}
         <motion.div
