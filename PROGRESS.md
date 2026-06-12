@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-12 — Session 88: Harmony Strip on Shared Palette Page
+
+### What was done
+- **Harmony strip on the `/p/` shared palette page** — recipients of a share link can now explore the derived harmony colors without needing to fork the palette into their own library
+  - `getHarmonyColors` imported into `SharedPaletteView`; harmony colors computed from the passed `colors` prop — zero new dependencies
+  - Harmony section rendered as a full-width 64px strip of colored buttons in a bordered rounded container, placed between the swatch list and the copy/fork action row; only shown when at least one harmony color is derived (some palettes produce 0 if all candidate hues conflict with existing palette hues)
+  - Section header: tiny bold uppercase "HARMONY" label + hairline divider rule — matches the section header vocabulary used elsewhere in the app
+  - On hover each swatch reveals its role label (e.g. "complement", "analog −30°") and hex code in contrast-aware text; on click it copies the hex and flashes an 800ms Check badge — the same flash spec as the main swatch copy flash in session 83/86
+  - `copiedHarmonyHex: string | null` state manages the flash; `AnimatePresence` gives the badge a clean fade-in/exit
+  - Small "Click any swatch to copy hex" hint line below the strip so the interaction is discoverable without tooltip-hunting
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Static section, not hover-reveal** — the shared page is read-only and already a scrollable single column; there is no hover affordance like the palette card grid, so a persistent section (revealed by scroll) is more appropriate than a hover-triggered strip
+- **Same copy UX as main app** — `copiedHarmonyHex` + 800ms timeout + `AnimatePresence` Check badge mirrors sessions 83/86 exactly; a visitor who has used the main app recognizes the pattern; a new visitor gets immediate feedback from the badge
+- **No fork button for harmony on the shared page** — the shared page already has a "Fork to my library" button for the whole palette; adding a separate harmony fork would require encoding harmony colors in the URL (more complexity) and the use case (recipient wants just the harmony colors) is niche enough to leave for a future session if needed
+- **`AnimatePresence` with `exit` variant** — `motion.div` alone (no `AnimatePresence`) would fade in but not fade out; wrapping in `AnimatePresence` gives the badge a clean disappearance rather than an abrupt state cut
+
+### What's next (Session 89)
+- **Palette notes word count** — alongside the existing character counter in the notes textarea (`{notesValue.length}/280`), show an approximate word count so Cady can gauge the density of creative direction notes at a glance
+- **Lightness range badge on palette card** — a small `L: 8–92` readout in the info row showing the min–max HSL lightness across swatches, complementing the sparkline strip with a numeric summary
+- **Harmony fork button on shared page** — add a small "+" button to the harmony strip on the shared page that forks just the harmony colors to the library (encoding them in the fork URL as an additional segment)
+
+---
+
 ## 2026-06-12 — Session 87: Collection Description Inline Edit
 
 ### What was done
