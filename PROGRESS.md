@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-06-12 — Session 87: Collection Description Inline Edit
+
+### What was done
+- **Collection description inline edit** — the pencil rename UI now includes a second input for the collection description, completing the metadata surface that was previously read-only
+  - `inlineCollectionDesc: string` state added alongside `inlineCollectionName`; initialized to the current description (or `""`) whenever the rename UI opens (via pencil button or double-click)
+  - `commitCollectionRename` now saves both `name` and `description` in a single `updateCollection` call; empty description string maps to `undefined` so the field is cleanly removed rather than set to `""`
+  - Description input appears below the name input, indented `ml-[21px]` to align with the name text (accounting for the 13px folder icon + 8px gap)
+  - `data-desc-field="true"` attribute on the description input is checked in the name input's `onBlur` via `relatedTarget` — if the user tabs from name to description, the blur does NOT commit early; only blurring away from the description commits
+  - Enter and Escape in the description input commit/cancel identically to the name input
+  - Description shown as a small italic muted line inside the hover tooltip card when set — creators can now see the description without opening the rename UI
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **relatedTarget guard on name blur** — without it, tabbing to the description input would commit the rename immediately, discarding any description edit before it could be typed; `data-desc-field` attribute is the lightest-weight way to identify the target without needing a React ref inside a `.map()` closure
+- **`undefined` not `""`** — the `Collection` type has `description?: string` (optional), so clearing the field should remove the key entirely rather than set it to an empty string; `inlineCollectionDesc.trim() || undefined` handles this cleanly
+- **Description in hover tooltip card** — the description was previously only accessible as a native `title` tooltip (one-second hover, truncated, unstyled); surfacing it in the real tooltip card makes it immediately visible and fully readable
+
+### What's next (Session 88)
+- **Harmony strip on shared palette page** — the `/p/` shared palette page shows the swatch grid and info but not the harmony preview strip; adding the same derived-harmony view to `SharedPaletteView` would let recipients explore color derivations without forking
+- **Palette notes word count** — alongside the existing character counter in the notes textarea, show approximate word count so Cady can gauge the density of creative direction notes at a glance
+- **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use of frequently-searched values
+
+---
+
 ## 2026-06-11 — Session 86: Harmony Swatch Copy Flash
 
 ### What was done
