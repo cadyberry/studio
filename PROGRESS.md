@@ -2370,3 +2370,28 @@
 - **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
 - **Oklch sliders** — full oklch color editing with gamut clipping (L/C/H sliders alongside HSL), the logical next step after this readout
+
+---
+
+## 2026-06-13 — Session 89: Lightness Range Badge + Notes Word Count
+
+### What was done
+- **Lightness range badge on palette card** — a compact `L: minL–maxL` pill in the info row (alongside "6 colors" and the mood badge) shows the HSL lightness span at a glance without hovering the sparkline
+  - Computed inline as a simple IIFE from `palette.colors`, using the already-imported `hexToRgb` + `rgbToHsl` utils — zero new dependencies
+  - Shows `L: 8–92` style range (integers rounded); hidden if hex parse fails for all swatches (graceful null check)
+  - Styled as the same muted surface-2 pill used for "in collection" and other metadata — quiet, doesn't compete with mood or ΔE badges
+  - Tooltip explains the two endpoints: "L 8% (darkest) to L 92% (lightest)" — useful at a glance for quickly identifying high-contrast vs. monochromatic palettes
+- **Notes word count** — the notes footer now shows `3w · 18/280` when text is present; the word count disappears when the field is empty (no distracting "0w")
+  - Computed as `notesValue.trim().split(/\s+/).length` — handles multiple spaces and leading/trailing whitespace correctly
+  - `tabular-nums` font variant on the whole span keeps both the word count and char count from jiggling as values change
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **IIFE not `useMemo`** — 5–8 swatches × 2 utility calls is O(n) and essentially free; a `useMemo` with `[palette.colors]` dep would be correct but adds hook ceremony for negligible benefit
+- **Integer rounding** — `Math.round` keeps the badge tight (single or double digit L values, no decimals); perceptual precision beyond 1% is not meaningful in this context
+- **Word count disappears on empty** — showing "0w ·" in an empty notes field would look odd and clutter the footer; the ternary `notesValue.trim() ? ... : ""` suppresses it cleanly
+
+### What's next (Session 90)
+- **Harmony fork button on shared page** — add a small "+" button to the harmony strip on `/p/` that forks just the harmony colors to the library (encoding them in the fork URL)
+- **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use of frequently-searched values
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
