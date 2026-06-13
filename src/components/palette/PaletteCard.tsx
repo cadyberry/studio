@@ -361,6 +361,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const freshness = getFreshness(palette.createdAt);
   const harmonyColors = getHarmonyColors(palette.colors);
 
+  // Lightness range badge: min–max HSL L across all swatches
+  const lightnessRange = (() => {
+    const ls = palette.colors
+      .map((c) => { const rgb = hexToRgb(c.hex); return rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : null; })
+      .filter((l): l is number => l !== null);
+    if (ls.length === 0) return null;
+    return { min: Math.round(Math.min(...ls)), max: Math.round(Math.max(...ls)) };
+  })();
+
   // Tag autocomplete: existing library tags that match current input, not already on this palette
   const currentTags = palette.tags ?? [];
   const suggestions =
@@ -776,6 +785,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           )}
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
             <span className="text-xs text-[var(--muted)]">{palette.colors.length} colors</span>
+            {lightnessRange && (
+              <span
+                className="px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums bg-[var(--surface-2)] text-[var(--muted)]"
+                title={`Lightness range: L ${lightnessRange.min}% (darkest) to L ${lightnessRange.max}% (lightest)`}
+              >
+                L: {lightnessRange.min}–{lightnessRange.max}
+              </span>
+            )}
             {palette.frozen && (
               <span
                 className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300 flex items-center gap-0.5"
@@ -1271,7 +1288,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             />
             <div className="flex items-center justify-between mt-1">
               <p className="text-[9px] text-[var(--muted)]">Blur or ↵ to save · Esc to cancel</p>
-              <span className="text-[9px] text-[var(--muted)]">{notesValue.length}/280</span>
+              <span className="text-[9px] text-[var(--muted)] tabular-nums">
+                {notesValue.trim() ? `${notesValue.trim().split(/\s+/).length}w · ` : ""}{notesValue.length}/280
+              </span>
             </div>
           </motion.div>
         )}
