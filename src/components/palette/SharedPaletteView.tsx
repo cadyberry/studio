@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Check, ArrowLeft, BookMarked, StickyNote } from "lucide-react";
+import { Copy, Check, ArrowLeft, BookMarked, StickyNote, Plus } from "lucide-react";
 import { getContrastColor, getHarmonyColors } from "@/lib/utils";
 import type { ColorSwatch } from "@/types";
 
@@ -31,6 +31,10 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
   };
 
   const harmonyColors = getHarmonyColors(colors);
+
+  const harmonyForkParam = harmonyColors.length > 0
+    ? `${name} Harmony|${harmonyColors.map((hc) => hc.hex.replace("#", "")).join(",")}|${harmonyColors.map((hc) => encodeURIComponent(hc.label)).join("~")}`
+    : null;
 
   const hasNames = colors.some((c) => c.name);
   const forkParam = hasNames
@@ -221,9 +225,21 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
                 );
               })}
             </div>
-            <p className="mt-1.5 text-[10px] text-[var(--muted)] text-right">
-              Click any swatch to copy hex
-            </p>
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-[10px] text-[var(--muted)]">
+                Click any swatch to copy hex
+              </p>
+              {harmonyForkParam && (
+                <a
+                  href={`/?fork=${encodeURIComponent(harmonyForkParam)}`}
+                  title="Fork harmony palette to my library"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--accent)] bg-[var(--surface)] transition-colors"
+                >
+                  <Plus size={9} />
+                  Fork harmony
+                </a>
+              )}
+            </div>
           </motion.div>
         )}
 
