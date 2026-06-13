@@ -2395,3 +2395,26 @@
 - **Harmony fork button on shared page** — add a small "+" button to the harmony strip on `/p/` that forks just the harmony colors to the library (encoding them in the fork URL)
 - **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use of frequently-searched values
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
+
+---
+
+## 2026-06-13 — Session 90: Harmony Fork Button on Shared Palette Page
+
+### What was done
+- Added **"Fork harmony" button** to the harmony strip on the `/p/` shared palette view
+  - A compact pill button appears to the right of the "Click any swatch to copy hex" hint, below the harmony color strip
+  - Clicking it navigates to `/?fork=...` with the derived harmony colors encoded as a new palette — the fork URL includes swatch names that map to the harmony relationship labels (e.g. "analogous", "complement", "split", "triadic")
+  - The forked palette lands in the user's library as `"<Original Name> Harmony"` with all colors fully editable
+  - Button is only shown when `harmonyColors.length > 0` (harmless guard)
+  - Encoding matches the existing `forkParam` pattern: swatch names are individually `encodeURIComponent`-ed, then the whole param is wrapped in `encodeURIComponent` in the href — parsed correctly by the existing `useEffect` in `page.tsx`
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Harmony label as swatch name** — the harmony relationship label ("analogous", "complement", etc.) becomes each swatch's name in the library, giving creators meaningful names that explain the color relationships rather than generic "Color 1" placeholders
+- **Button in the hint row, not the main actions strip** — the main "Fork to my library" and "Copy all hex codes" buttons are already at the bottom; the harmony fork is a secondary action that belongs near the harmony strip itself, not duplicated in the main CTA area
+- **Stateless link, no toast** — fork redirects to the main app and the existing fork flow handles the `forkPrompt` dialog; no state management needed here
+
+### What's next (Session 91)
+- **Color search history disambiguation** — when a history entry conflicts with a currently-typed partial hex, the dropdown should show a "clear" affordance for that specific entry
+- **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output (already handled! found in review)
+- **Harmony strip live color count badge** — show the number of harmony colors in the section header ("Harmony · 4") so creators know at a glance how many derived colors exist without scanning the strip
