@@ -171,6 +171,9 @@ export default function SharedPaletteView({ name, colors, notes }: SharedPalette
               <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
                 Harmony
               </span>
+              <span className="text-[10px] font-semibold text-[var(--muted)] opacity-60">
+                · {harmonyColors.length}
+              </span>
               <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
             <div className="rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] flex" style={{ height: 64 }}>

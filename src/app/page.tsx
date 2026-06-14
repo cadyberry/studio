@@ -1091,21 +1091,35 @@ export default function Home() {
                                 </button>
                               </div>
                               {colorSearchHistory.map((hex) => (
-                                <button
+                                <div
                                   key={hex}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    setColorSearchHex(hex);
-                                    setShowSearchHistory(false);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 hover:bg-[var(--surface-2)] transition-colors text-left"
+                                  className="group/hist flex items-center hover:bg-[var(--surface-2)] transition-colors"
                                 >
-                                  <div
-                                    className="w-5 h-5 rounded-sm flex-shrink-0 border border-[var(--border)]"
-                                    style={{ backgroundColor: hex }}
-                                  />
-                                  <span className="text-sm font-mono text-[var(--foreground)]">{hex}</span>
-                                </button>
+                                  <button
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setColorSearchHex(hex);
+                                      setShowSearchHistory(false);
+                                    }}
+                                    className="flex-1 flex items-center gap-2.5 px-2.5 py-1.5 text-left"
+                                  >
+                                    <div
+                                      className="w-5 h-5 rounded-sm flex-shrink-0 border border-[var(--border)]"
+                                      style={{ backgroundColor: hex }}
+                                    />
+                                    <span className="text-sm font-mono text-[var(--foreground)]">{hex}</span>
+                                  </button>
+                                  <button
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setColorSearchHistory((h) => h.filter((v) => v !== hex));
+                                    }}
+                                    title="Remove from history"
+                                    className="opacity-0 group-hover/hist:opacity-100 transition-opacity mr-2 p-1 rounded text-[var(--muted)] hover:text-[var(--foreground)]"
+                                  >
+                                    <X size={10} />
+                                  </button>
+                                </div>
                               ))}
                               <div className="h-1.5" />
                             </motion.div>
