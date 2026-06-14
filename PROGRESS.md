@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-06-14 — Session 89: Bulk Tag Add/Remove in Multi-Select Bar
+
+### What was done
+- **Bulk tag add/remove in the multi-select action bar** — when multiple palettes are selected, the bottom action bar now includes a **Tag** button that opens a compact popover for tagging all selected palettes at once
+  - `Tag` icon button added to the bulk bar between the collection selector and the Export ZIP button; clicking it toggles the tag popover and auto-focuses the input
+  - Popover UI: header label ("Tag N palettes"), a lowercase text input with `focus:border-[var(--accent)]` styling, a `+Add` button (accent background, applies the tag to all selected), and a `−` button (removes the tag from all selected)
+  - Keyboard: Enter in the input fires `+Add`; Escape closes the popover
+  - **Tag suggestion chips** — when the library has existing tags, up to 8 suggestions appear below the input (all tags when input is empty, filtered to matches when the user is typing); clicking a chip calls `applyBulkTag` immediately for one-click batch application
+  - `applyBulkTag(tag)` — lowercases and trims the input, then for each selected palette calls `updatePalette(id, { tags: [...existing, tag] })` only if the tag is not already present (no duplicates)
+  - `removeBulkTag(tag)` — for each selected palette, calls `updatePalette(id, { tags: existing.filter(t => t !== tag) })` only if the tag is present
+  - Both functions clear `bulkTagInput` and close the popover on completion
+  - `clearSelection` now also resets `bulkTagOpen` and `bulkTagInput` so the popover doesn't persist into the next selection session
+  - `allLibraryTagsForBulk` computed from all palettes (deduplicated, sorted) — same data as the individual card's `allLibraryTags` but computed at page level for the bulk bar
+  - Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Popover opens upward** (`bottom-full mb-2`) — the bulk bar is pinned to the bottom of the viewport; a downward popover would be clipped; upward is the natural direction
+- **Show all tags when input is empty, not blank** — when Cady opens the popover with no input, she should see her existing tags immediately as one-click options; empty input → show all suggestions (up to 8) gives instant discoverability
+- **Lowercase normalize on entry** — tags are already stored lowercase throughout the app; normalizing in `applyBulkTag/removeBulkTag` means even if a user types "Spring Drop" it matches and applies consistently as "spring drop"
+- **No confirmation step** — applying a tag to N palettes is easily reversible (just remove it); the immediate feedback of `+Add` closing the popover is sufficient; a confirmation would add friction for a low-risk action
+- **`−` button for removal, not a separate "remove" toggle** — a single input that handles both add and remove keeps the popover compact; the `−` button is visually distinct (surface-2 bg, red hover) so the two operations don't blur together
+
+### What's next (Session 90)
+- **Palette notes word count** — show approximate word count alongside the existing char counter in the notes textarea (`{notesValue.length}/280`) so Cady can gauge the density of creative direction at a glance (confirmed this is not yet done — the `trim().split(/\s+/).length` count exists but may need verifying)
+- **Bulk freeze/unfreeze** — the multi-select bar has assign-to-collection, tag, export, and delete; adding a freeze toggle (lock icon) would complete the suite of batch operations for locking production palettes
+- **Tag rename** — from the sidebar tag inventory, allow renaming a tag globally (all palettes that have "spring" get updated to "spring-2026" in one action); currently there is no way to rename a tag without editing each palette individually
+
+---
+
 ## 2026-06-12 — Session 88: Harmony Strip on Shared Palette Page
 
 ### What was done
