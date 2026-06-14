@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -141,6 +141,9 @@ export default function Home() {
   const [flashedCollectionId, setFlashedCollectionId] = useState<string | null>(null);
   const [showArchivedCollections, setShowArchivedCollections] = useState(false);
   const [activeColorCount, setActiveColorCount] = useState<number | "all">("all");
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkTagInput, setBulkTagInput] = useState("");
+  const bulkTagInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -262,6 +265,9 @@ export default function Home() {
   const bucketMax   = Math.max(bucketSmall, bucketMed, bucketLarge, 1);
   const pinnedCount = palettes.filter((p) => p.pinned).length;
   const frozenCount = palettes.filter((p) => p.frozen).length;
+
+  // All tags across the library, used for bulk-tag autocomplete
+  const allLibraryTagsForBulk = [...new Set(palettes.flatMap((p) => p.tags ?? []))].sort();
   const avgColors   = palettes.length > 0 ? Math.round(totalSwatches / palettes.length) : 0;
 
   const validColorSearch = colorSearchActive && isValidHex(colorSearchHex) ? colorSearchHex : null;
@@ -386,7 +392,39 @@ export default function Home() {
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
     setBulkDeleteConfirm(false);
+    setBulkTagOpen(false);
+    setBulkTagInput("");
   }, []);
+
+  const applyBulkTag = useCallback((tag: string) => {
+    const normalized = tag.toLowerCase().trim();
+    if (!normalized) return;
+    [...selectedIds].forEach((id) => {
+      const p = palettes.find((pp) => pp.id === id);
+      if (!p) return;
+      const tags = p.tags ?? [];
+      if (!tags.includes(normalized)) {
+        updatePalette(id, { tags: [...tags, normalized] });
+      }
+    });
+    setBulkTagInput("");
+    setBulkTagOpen(false);
+  }, [selectedIds, palettes, updatePalette]);
+
+  const removeBulkTag = useCallback((tag: string) => {
+    const normalized = tag.toLowerCase().trim();
+    if (!normalized) return;
+    [...selectedIds].forEach((id) => {
+      const p = palettes.find((pp) => pp.id === id);
+      if (!p) return;
+      const tags = p.tags ?? [];
+      if (tags.includes(normalized)) {
+        updatePalette(id, { tags: tags.filter((t) => t !== normalized) });
+      }
+    });
+    setBulkTagInput("");
+    setBulkTagOpen(false);
+  }, [selectedIds, palettes, updatePalette]);
 
   const selectAllVisible = useCallback(() => {
     setSelectedIds(new Set(sorted.map((p) => p.id)));
@@ -1755,6 +1793,86 @@ export default function Home() {
                   </select>
                 </div>
               )}
+
+              {/* Bulk tag */}
+              <div className="relative shrink-0">
+                <Button
+                  variant={bulkTagOpen ? "outline" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    const next = !bulkTagOpen;
+                    setBulkTagOpen(next);
+                    if (next) setTimeout(() => bulkTagInputRef.current?.focus(), 50);
+                  }}
+                  className="gap-1.5"
+                  title="Add or remove a tag from all selected palettes"
+                >
+                  <Tag size={13} />
+                  Tag
+                </Button>
+                <AnimatePresence>
+                  {bulkTagOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute bottom-full mb-2 left-0 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-lg p-3 min-w-[220px] z-10"
+                    >
+                      <p className="text-[11px] text-[var(--muted)] mb-2 font-medium">
+                        Tag {selectedIds.size} palette{selectedIds.size !== 1 ? "s" : ""}
+                      </p>
+                      <div className="flex gap-1.5">
+                        <input
+                          ref={bulkTagInputRef}
+                          type="text"
+                          value={bulkTagInput}
+                          onChange={(e) => setBulkTagInput(e.target.value.toLowerCase())}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && bulkTagInput.trim()) applyBulkTag(bulkTagInput);
+                            if (e.key === "Escape") setBulkTagOpen(false);
+                          }}
+                          placeholder="tag name…"
+                          className="flex-1 text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-1.5 outline-none focus:border-[var(--accent)] min-w-0"
+                        />
+                        <button
+                          onClick={() => bulkTagInput.trim() && applyBulkTag(bulkTagInput)}
+                          disabled={!bulkTagInput.trim()}
+                          title="Add tag to all selected"
+                          className="px-2.5 py-1 text-xs font-semibold bg-[var(--accent)] text-[var(--accent-fg)] rounded-[var(--radius-sm)] disabled:opacity-40 hover:opacity-90 transition-opacity"
+                        >
+                          +Add
+                        </button>
+                        <button
+                          onClick={() => bulkTagInput.trim() && removeBulkTag(bulkTagInput)}
+                          disabled={!bulkTagInput.trim()}
+                          title="Remove tag from all selected"
+                          className="px-2 py-1 text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] disabled:opacity-40 hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-colors"
+                        >
+                          −
+                        </button>
+                      </div>
+                      {allLibraryTagsForBulk.filter((t) => !bulkTagInput.trim() || t.includes(bulkTagInput.trim())).length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {allLibraryTagsForBulk
+                            .filter((t) => !bulkTagInput.trim() || t.includes(bulkTagInput.trim()))
+                            .slice(0, 8)
+                            .map((t) => (
+                              <button
+                                key={t}
+                                onClick={() => applyBulkTag(t)}
+                                title={`Add "${t}" to all selected`}
+                                className="px-1.5 py-0.5 text-[10px] bg-[var(--surface-2)] rounded border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                              >
+                                {t}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Batch export ZIP */}
               <Button
