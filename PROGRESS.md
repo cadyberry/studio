@@ -2447,3 +2447,29 @@
 - **Color search history disambiguation** — when a history entry conflicts with a currently-typed partial hex, the dropdown should show a "clear" affordance for that specific entry
 - **`rgb()` space syntax support in URL extractor** — `rgb(R G B)` without commas (CSS Level 4), common in compiled Tailwind output (already handled! found in review)
 - **Harmony strip live color count badge** — show the number of harmony colors in the section header ("Harmony · 4") so creators know at a glance how many derived colors exist without scanning the strip
+
+---
+
+## 2026-06-14 — Session 91: Per-Entry History Clear + Harmony Count Badge
+
+### What was done
+- **Per-entry remove buttons in color search history dropdown** — each recent-search row now shows an × button on hover that removes only that entry, without clearing the whole history
+  - History rows refactored from a single `<button>` to a `<div class="group/hist">` containing: a flex-1 apply button (swatch + hex, same as before) and a sibling × button on the right
+  - × button uses `opacity-0 group-hover/hist:opacity-100 transition-opacity` — invisible at rest, appears cleanly on row hover so it doesn't clutter the list
+  - `onMouseDown` with `e.preventDefault()` on the × button prevents the input from losing focus (same pattern as the "Clear all" button and apply buttons)
+  - `setColorSearchHistory((h) => h.filter((v) => v !== hex))` — removes the single entry from state; localStorage persistence is handled by the existing `useEffect` on `colorSearchHistory`
+  - "Clear all" header button remains for bulk removal; per-entry × complements it for surgical cleanup of a single bad or duplicate search
+- **Harmony color count badge on shared palette page** — the "HARMONY" section header on `/p/` now shows `· N` next to the label, revealing how many derived colors exist without scanning the strip
+  - Inserted as a sibling `<span>` between the "HARMONY" label and the separator line: `· {harmonyColors.length}` in the same muted style as the label, at 60% opacity to stay secondary
+  - Zero logic change — reads directly from the already-computed `harmonyColors` array
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **`group-hover/hist` scoped group** — using Tailwind's named-group syntax scopes the hover trigger to the row div, not any parent container; avoids interference with parent scroll containers or other hover states
+- **Opacity-0 → opacity-100 pattern** (not `hidden`/`block`) — the × button occupies its layout space at all times, preventing row height shifts when it appears; only visibility changes
+- **`· N` not `(N)` or a pill** — matches the existing "· 4" idiom used throughout the app (tag pills, filter counts); a parenthetical or pill would look heavier in the muted section header context
+
+### What's next (Session 92)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites (like Tailwind-compiled output) that split tokens across imported files
+- **Oklch editing sliders** — full oklch color editing with gamut clipping (L/C/H sliders alongside HSL) in SwatchEditor
+- **Cohesion score shareable link** — when a collection's cohesion report is open, a "Share report" button encodes the result in a URL parameter for easy hand-off
