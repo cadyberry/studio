@@ -444,6 +444,43 @@ export function hexToOklch(hex: string): OklchValues | null {
   return rgbToOklch(rgb.r, rgb.g, rgb.b);
 }
 
+// Convert oklch L (0–100), C (0–0.4+), H (0–360) → sRGB r,g,b (0–255, gamut-clipped)
+// Uses Björn Ottosson's inverse matrices: oklch → OKLab → LMS' → LMS → linear sRGB → sRGB
+export function oklchToRgb(l: number, c: number, h: number): { r: number; g: number; b: number } {
+  const L = l / 100;
+  const hRad = (h * Math.PI) / 180;
+  const a = c * Math.cos(hRad);
+  const bv = c * Math.sin(hRad);
+
+  // M2 inverse: OKLab → LMS'
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * bv;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * bv;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * bv;
+
+  // LMS' → LMS (cube)
+  const lms_l = l_ * l_ * l_;
+  const lms_m = m_ * m_ * m_;
+  const lms_s = s_ * s_ * s_;
+
+  // M1 inverse: LMS → linear sRGB
+  const rl =  4.0767416621 * lms_l - 3.3077115913 * lms_m + 0.2309699292 * lms_s;
+  const gl = -1.2684380046 * lms_l + 2.6097574011 * lms_m - 0.3413193965 * lms_s;
+  const bl = -0.0041960863 * lms_l - 0.7034186147 * lms_m + 1.7076147010 * lms_s;
+
+  // Clamp linear sRGB to [0,1], then gamma-compress to 0–255
+  const compress = (v: number) => {
+    const n = Math.max(0, Math.min(1, v));
+    return Math.round((n <= 0.0031308 ? 12.92 * n : 1.055 * Math.pow(n, 1 / 2.4) - 0.055) * 255);
+  };
+
+  return { r: compress(rl), g: compress(gl), b: compress(bl) };
+}
+
+export function oklchToHex(l: number, c: number, h: number): string {
+  const { r, g, b } = oklchToRgb(l, c, h);
+  return rgbToHex(r, g, b);
+}
+
 // ─── Color Name Suggestions ───────────────────────────────────────────────────
 
 // Curated set of designer-friendly color names covering the full hue/lightness

@@ -13,7 +13,9 @@ import {
   isValidHex,
   getContrastRatio,
   hexToOklch,
+  oklchToHex,
   getColorNameSuggestions,
+  type OklchValues,
 } from "@/lib/utils";
 
 interface SwatchEditorProps {
@@ -39,6 +41,9 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const [swatchName, setSwatchName] = useState(palette?.colors[swatchIndex]?.name ?? "");
   const [suggestions, setSuggestions] = useState<string[]>(() => getColorNameSuggestions(originalHex));
   const [hexCopied, setHexCopied] = useState(false);
+  const [oklchState, setOklchState] = useState<OklchValues>(
+    () => hexToOklch(originalHex) ?? { l: 50, c: 0.1, h: 0 }
+  );
 
   useEffect(() => {
     if (palette) {
@@ -47,6 +52,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
       setHex(initial);
       setHexInput(initial);
       setHsl(initialHsl);
+      setOklchState(hexToOklch(initial) ?? { l: 50, c: 0.1, h: 0 });
       setSwatchName(palette.colors[swatchIndex]?.name ?? "");
       setSuggestions(getColorNameSuggestions(initial));
     }
@@ -64,6 +70,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
       setHex(newHex);
       setHexInput(newHex);
       setHsl(parsed);
+      setOklchState(hexToOklch(newHex) ?? { l: 50, c: 0.1, h: 0 });
     }
   }, []);
 
@@ -72,6 +79,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
     const newHex = hslToHex(newHsl.h, newHsl.s, newHsl.l);
     setHex(newHex);
     setHexInput(newHex);
+    setOklchState(hexToOklch(newHex) ?? { l: 50, c: 0.1, h: 0 });
   }, []);
 
   const nudge = useCallback((key: "h" | "s" | "l", dir: 1 | -1, step = 5) => {
@@ -86,6 +94,38 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
       const newHex = hslToHex(updated.h, updated.s, updated.l);
       setHex(newHex);
       setHexInput(newHex);
+      setOklchState(hexToOklch(newHex) ?? { l: 50, c: 0.1, h: 0 });
+      return updated;
+    });
+  }, []);
+
+  const updateFromOklch = useCallback((newOklch: OklchValues) => {
+    setOklchState(newOklch);
+    const newHex = oklchToHex(newOklch.l, newOklch.c, newOklch.h);
+    setHex(newHex);
+    setHexInput(newHex);
+    const parsed = hexToHsl(newHex);
+    if (parsed) setHsl(parsed);
+  }, []);
+
+  const nudgeOklch = useCallback((key: "l" | "c" | "h", dir: 1 | -1, step?: number) => {
+    const defaults: Record<"l" | "c" | "h", number> = { l: 2.5, c: 0.01, h: 5 };
+    const actualStep = step ?? defaults[key];
+    setOklchState((prev) => {
+      let next: number;
+      if (key === "h") {
+        next = ((prev.h + dir * actualStep) % 360 + 360) % 360;
+      } else if (key === "l") {
+        next = Math.max(0, Math.min(100, prev.l + dir * actualStep));
+      } else {
+        next = parseFloat(Math.max(0, Math.min(0.4, prev.c + dir * actualStep)).toFixed(3));
+      }
+      const updated = { ...prev, [key]: next };
+      const newHex = oklchToHex(updated.l, updated.c, updated.h);
+      setHex(newHex);
+      setHexInput(newHex);
+      const parsed = hexToHsl(newHex);
+      if (parsed) setHsl(parsed);
       return updated;
     });
   }, []);
@@ -104,7 +144,58 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
 
   const contrastWhite = getContrastRatio(hex, "#ffffff");
   const contrastBlack = getContrastRatio(hex, "#000000");
-  const oklch = hexToOklch(hex);
+
+  // Oklch slider gradients — representative L/C for gradient endpoints when current value is near zero
+  const gradC = Math.max(0.12, oklchState.c);
+  const gradL = Math.min(68, Math.max(32, oklchState.l));
+  const oklchLGrad = `linear-gradient(to right, ${[0, 33, 67, 100].map((l) => oklchToHex(l, gradC, oklchState.h)).join(", ")})`;
+  const oklchCGrad = `linear-gradient(to right, ${oklchToHex(gradL, 0, oklchState.h)}, ${oklchToHex(gradL, 0.4, oklchState.h)})`;
+  const oklchHGrad = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360].map((h) => oklchToHex(gradL, gradC, h)).join(", ")})`;
+
+  const oklchSliders = [
+    {
+      key: "l" as const,
+      label: "L",
+      value: oklchState.l,
+      max: 100,
+      step: 0.5,
+      unit: "",
+      gradient: oklchLGrad,
+      display: oklchState.l.toFixed(1),
+      displayW: "w-8",
+      nudgeStep: 2.5,
+      nudgeLarge: 10,
+      title: "Perceptual lightness — 0 (black) to 100 (white). A Δ10 looks the same at any hue.",
+    },
+    {
+      key: "c" as const,
+      label: "C",
+      value: oklchState.c,
+      max: 0.4,
+      step: 0.002,
+      unit: "",
+      gradient: oklchCGrad,
+      display: oklchState.c.toFixed(3),
+      displayW: "w-10",
+      nudgeStep: 0.01,
+      nudgeLarge: 0.05,
+      title: "Absolute chroma — 0 (neutral gray) to ~0.4 (max saturation). Not relative to lightness like HSL S.",
+    },
+    {
+      key: "h" as const,
+      label: "H",
+      value: oklchState.h,
+      max: 360,
+      step: 1,
+      unit: "°",
+      gradient: oklchHGrad,
+      display: String(Math.round(oklchState.h)),
+      displayW: "w-8",
+      nudgeStep: 5,
+      nudgeLarge: 15,
+      title: "Hue angle — 0°=red, ~120°=green, ~240°=blue.",
+    },
+  ];
 
   const previewColors = palette.colors.map((c, i) =>
     i === swatchIndex ? { ...c, hex } : c
@@ -296,32 +387,78 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
               </span>
             </div>
 
-            {/* Oklch readout */}
-            {oklch && (
+            {/* Oklch sliders */}
+            <div className="space-y-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold text-[var(--muted)] select-none shrink-0 w-9">
-                  OKLCH
+                <div className="flex-1 h-px bg-[var(--border)]" />
+                <span
+                  className="text-[9px] font-mono font-bold text-[var(--muted)] uppercase tracking-widest select-none cursor-default"
+                  title="Oklch — a perceptually uniform color space. L/C/H sliders here move lightness and chroma in visually equal steps, unlike HSL."
+                >
+                  oklch
                 </span>
-                <div className="flex-1 flex items-center gap-1.5 bg-[var(--surface-2)] rounded-[var(--radius-sm)] px-3 py-1.5">
-                  {[
-                    { key: "L", value: `${oklch.l.toFixed(1)}`, title: "Perceptual lightness (0–100). Unlike HSL L, this matches how the eye actually perceives brightness." },
-                    { key: "C", value: oklch.c.toFixed(3), title: "Absolute chroma — how colorful the color is (0 = gray, ~0.4 = maximum saturation). Unlike HSL S, not affected by lightness." },
-                    { key: "H", value: `${oklch.h.toFixed(0)}°`, title: "Hue angle in degrees (0°=red, 120°=green, 240°=blue)." },
-                  ].map(({ key, value, title }, i) => (
-                    <span key={key} className="flex items-baseline gap-0.5 select-none">
-                      {i > 0 && <span className="text-[var(--border)] mx-0.5 text-[10px]">·</span>}
-                      <span className="text-[9px] font-mono font-bold text-[var(--muted)]">{key}</span>
-                      <span
-                        className="text-[10px] font-mono text-[var(--foreground)] tabular-nums"
-                        title={title}
-                      >
-                        {value}
-                      </span>
-                    </span>
-                  ))}
-                </div>
+                <div className="flex-1 h-px bg-[var(--border)]" />
               </div>
-            )}
+              {oklchSliders.map(({ key, label, value, max, step, unit, gradient, display, displayW, nudgeStep, nudgeLarge, title }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span
+                    className="text-[10px] font-mono font-bold w-3 text-[var(--muted)] select-none shrink-0"
+                    title={title}
+                  >
+                    {label}
+                  </span>
+                  <div className="relative flex-1 h-3.5 flex items-center">
+                    <div className="absolute inset-0 rounded-full" style={{ background: gradient }} />
+                    <input
+                      type="range"
+                      min={0}
+                      max={max}
+                      step={step}
+                      value={value}
+                      onChange={(e) => updateFromOklch({ ...oklchState, [key]: Number(e.target.value) })}
+                      onKeyDown={(e) => {
+                        if (!e.shiftKey) return;
+                        if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          nudgeOklch(key, -1, nudgeLarge);
+                        } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                          e.preventDefault();
+                          nudgeOklch(key, 1, nudgeLarge);
+                        }
+                      }}
+                      className="relative w-full h-3.5 appearance-none bg-transparent cursor-pointer
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-3.5
+                        [&::-webkit-slider-thumb]:h-3.5
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-white
+                        [&::-webkit-slider-thumb]:border-2
+                        [&::-webkit-slider-thumb]:border-[var(--accent)]
+                        [&::-webkit-slider-thumb]:shadow"
+                    />
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => nudgeOklch(key, -1)}
+                      className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
+                      title={`−${nudgeStep}${unit}`}
+                    >
+                      <Minus size={9} />
+                    </button>
+                    <span className={`text-[10px] font-mono ${displayW} text-center tabular-nums text-[var(--muted)] select-none`}>
+                      {display}{unit}
+                    </span>
+                    <button
+                      onClick={() => nudgeOklch(key, 1)}
+                      className="w-5 h-5 flex items-center justify-center rounded text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
+                      title={`+${nudgeStep}${unit}`}
+                    >
+                      <Plus size={9} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             {/* Color name */}
             <div>
