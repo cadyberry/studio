@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-15 — Session 90: Bulk Freeze/Unfreeze in Multi-Select Bar
+
+### What was done
+- **Bulk freeze/unfreeze in the multi-select action bar** — when multiple palettes are selected, a **Lock/Unlock** button now appears in the bottom action bar between the Tag button and the Export ZIP button, completing the full suite of batch operations
+  - `LockOpen` icon added to lucide-react imports in `page.tsx`
+  - `bulkToggleFreeze` callback: checks if all selected palettes are already frozen; if all are frozen → unfreezes all; otherwise → freezes all unfrozen ones. Does not clear the selection (unlike tag/collection operations) so Cady can lock a batch and continue reviewing them
+  - **Smart label**: "Unlock" + `LockOpen` (indigo) when all selected are frozen; "Lock" + `Lock` (neutral) when any are unfrozen
+  - **Mixed-state badge**: when some are frozen and some are not, shows a small `(N/M)` count inline (e.g. "Lock (3/7)") so the state is transparent before clicking
+  - **Descriptive tooltips**: "Lock all N palettes — prevents editing and deletion" / "Freeze N unlocked (M already locked)" / "Unlock all N selected palettes"
+  - **`outline` + indigo styling** when all-frozen (mirrors the individual card's lock button behavior); `ghost` styling when any are unfrozen — consistent visual language with the rest of the app
+  - Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **"All frozen → unfreeze" toggle semantics** — if any palettes in the selection are unfrozen, the action freezes them all; if all are already frozen, the action unfreezes them all; this matches the natural mental model of "Lock all / Unlock all" without needing two separate buttons
+- **Do not clear selection on freeze** — tagging and collection assignment clear the selection because the batch operation is done and Cady moves on; freeze is different — after locking a batch she may want to inspect the result, see the indigo borders, or immediately unlock one; keeping the selection live lets her do this
+- **`bulkToggleFreeze` reads `palettes` inside, not `frozenSelectedCount`** — `frozenSelectedCount` is a render-phase derived value and would be stale inside a callback closure; computing `allFrozen` fresh from `palettes + selectedIds` inside the callback ensures correctness even if state has changed between renders
+- **Mixed-state badge `(N/M)` instead of two buttons** — separate "Lock unfrozen" and "Unlock frozen" buttons would crowd the bar and duplicate information already shown in the badge; the single button with a state-transparent counter is simpler and still unambiguous
+
+### What's next (Session 91)
+- **Tag rename** — from the sidebar tag inventory, allow renaming a tag globally (all palettes that have "spring" get updated to "spring-2026" in one action); currently there is no way to rename a tag without editing each palette individually
+- **Palette notes word count** — confirmed already implemented at PaletteCard.tsx:1292 (`{notesValue.trim() ? \`${notesValue.trim().split(/\s+/).length}w · \` : ""}{notesValue.length}/280`); verify it is visible in the UI and mark as done
+- **Bulk pin/unpin** — add a Pin toggle to the multi-select bar (parallel to the new freeze toggle) so Cady can pin a whole batch of current-project palettes to the top in one action
+
+---
+
 ## 2026-06-14 — Session 89: Bulk Tag Add/Remove in Multi-Select Bar
 
 ### What was done
