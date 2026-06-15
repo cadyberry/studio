@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -424,6 +424,13 @@ export default function Home() {
     });
     setBulkTagInput("");
     setBulkTagOpen(false);
+  }, [selectedIds, palettes, updatePalette]);
+
+  const bulkToggleFreeze = useCallback(() => {
+    const allFrozen = [...selectedIds].every(id => palettes.find(p => p.id === id)?.frozen);
+    [...selectedIds].forEach((id) => {
+      updatePalette(id, { frozen: !allFrozen });
+    });
   }, [selectedIds, palettes, updatePalette]);
 
   const selectAllVisible = useCallback(() => {
@@ -1887,6 +1894,29 @@ export default function Home() {
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Bulk freeze/unfreeze */}
+              <Button
+                variant={frozenSelectedCount === selectedIds.size ? "outline" : "ghost"}
+                size="sm"
+                onClick={bulkToggleFreeze}
+                className={`shrink-0 gap-1.5${frozenSelectedCount === selectedIds.size ? " text-indigo-500 border-indigo-300 dark:border-indigo-700" : ""}`}
+                title={
+                  frozenSelectedCount === selectedIds.size
+                    ? `Unlock all ${selectedIds.size} selected palettes`
+                    : frozenSelectedCount > 0
+                      ? `Freeze ${selectedIds.size - frozenSelectedCount} unlocked (${frozenSelectedCount} already locked)`
+                      : `Lock all ${selectedIds.size} selected palettes — prevents editing and deletion`
+                }
+              >
+                {frozenSelectedCount === selectedIds.size
+                  ? <LockOpen size={13} className="text-indigo-500" />
+                  : <Lock size={13} />}
+                {frozenSelectedCount === selectedIds.size ? "Unlock" : "Lock"}
+                {frozenSelectedCount > 0 && frozenSelectedCount < selectedIds.size && (
+                  <span className="text-[10px] opacity-55 tabular-nums">({frozenSelectedCount}/{selectedIds.size})</span>
+                )}
+              </Button>
 
               {/* Batch export ZIP */}
               <Button
