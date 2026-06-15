@@ -2473,3 +2473,32 @@
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites (like Tailwind-compiled output) that split tokens across imported files
 - **Oklch editing sliders** — full oklch color editing with gamut clipping (L/C/H sliders alongside HSL) in SwatchEditor
 - **Cohesion score shareable link** — when a collection's cohesion report is open, a "Share report" button encodes the result in a URL parameter for easy hand-off
+
+---
+
+## 2026-06-15 — Session 92: Oklch Editing Sliders in SwatchEditor
+
+### What was done
+- **Interactive oklch L/C/H sliders** in SwatchEditor — the previous read-only oklch readout is replaced by three live sliders that edit the color in perceptual color space
+  - **L (Perceptual Lightness)** 0–100, step 0.5, nudge ±2.5 (Shift+arrow ±10). Gradient sweeps black→vibrant→white in oklch space using `oklchToHex` computed keyframes
+  - **C (Absolute Chroma)** 0–0.4, step 0.002, nudge ±0.01 (Shift+arrow ±0.05). Gradient sweeps gray→max-chroma at the current L/H so the strip shows the real effect
+  - **H (Hue angle)** 0–360°, step 1, nudge ±5° (Shift+arrow ±15°). Gradient is a perceptual hue wheel computed via 7 oklch stops at the current L/C
+  - An "oklch" divider label separates the new sliders from the HSL set above
+- **`oklchToRgb` / `oklchToHex` added to `utils.ts`** — full oklch→sRGB inverse pipeline:
+  - oklch L/C/H → OKLab (a = C cos H, b = C sin H) → LMS' (M2 inverse) → LMS (cube) → linear sRGB (M1 inverse) → sRGB (gamma compress, linear clamped to [0,1] before compress for clean gamut clipping)
+  - Uses Björn Ottosson's exact published matrices — same as CSS Color 4 / browser native oklch()
+- **Full bidirectional sync** — all editing paths now keep HSL, oklch, and hex in lockstep:
+  - HSL slider move → recomputes oklch from new hex
+  - Oklch slider move → recomputes HSL from new hex
+  - `applyHex` (native picker, hex input) → updates both HSL and oklch state
+- Production build: clean Turbopack compile, zero TypeScript errors, 5 routes passing
+
+### Key decisions
+- **Gamut clipping: clamp linear sRGB before gamma compress** — out-of-gamut oklch colors (high C at extreme L) produce linear sRGB values outside [0,1]; clamping at the linear stage before gamma compression gives neutral clipping with minimal hue shift, which is the conventional approach
+- **Gradient keyframes use minimum C/L floors** — when the user drags C to near-zero the gradient strip would collapse to grays; a floor of C=0.12, L∈[32,68] ensures the gradient stays readable/informative regardless of current values
+- **oklchState is authoritative during oklch edits** — mirroring how `hsl` state works for HSL edits: the raw oklch values (high precision) are stored in state rather than re-derived from hex each frame, so dragging doesn't accumulate rounding drift through the hex conversion roundtrip
+
+### What's next (Session 93)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
+- **Cohesion score shareable link** — "Share report" button on the cohesion modal encodes the result in a URL parameter
+- **Oklch gamut indicator** — when dragging C up, show a subtle pill warning if the current oklch values are out-of-sRGB-gamut (so creators know the displayed color has been clipped)
