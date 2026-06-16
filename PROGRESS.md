@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-16 — Session 94: Cohesion Report Shareable Link
+
+### What was done
+- **Cohesion report shareable link** — a Share button (Share2 icon → Check on copy) appears in the CohesionModal title row whenever a collection has ≥2 palettes. Clicking it:
+  - Serializes the full analysis (overall score, hue/saturation/lightness sub-scores, label, descriptions, outlier name, all palette names + hex strips) into a compact JSON object
+  - Base64url-encodes it (`btoa(encodeURIComponent(...))`) for UTF-8 safety
+  - Copies `{origin}/c?r={encoded}` to clipboard and shows a 2-second Check confirmation
+- **New `/c` route** (`src/app/c/page.tsx`) — server component that reads the `r` param, generates SEO metadata (collection name + score in `<meta description>`), and passes the raw encoded string to `SharedCohesionView`
+- **`SharedCohesionView.tsx`** — standalone read-only report page:
+  - Composite header color bar assembled from all palette swatches (same visual idiom as ExportModal / CohesionModal header)
+  - Big animated score circle + label
+  - Animated breakdown bars (Hue Harmony / Saturation / Lightness)
+  - Palette strip grid with outlier row highlighted in rose
+  - AlertTriangle outlier callout with palette name
+  - "Open Palette →" footer CTA
+  - Graceful error state if the URL param is missing or malformed
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes (now including `/c`)
+
+### Key decisions
+- **Base64url-encoded JSON over query params** — the existing `/p/` page uses flat query params (hex list, name) which works for a single palette; a cohesion report carries nested data (multiple palettes × multiple scores) which is unwieldy as params but trivially clean as base64 JSON
+- **Descriptions embedded in payload** — `hueDesc`/`satDesc`/`lightDesc` are computed from the analysis values and serialized; the shared page doesn't need to re-derive them, which keeps `SharedCohesionView` a pure read/render component with no analysis logic
+- **Share button hidden for <2 palettes** — sharing an empty or single-palette "report" would be misleading; the button only appears when an actual analysis is available
+- **`window.location.origin` for the base URL** — works for both local dev (`http://localhost:3000`) and production without needing a hardcoded env var
+
+### What's next (Session 95)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files
+- **Oklch bulk gamut sweep on PaletteCard** — "X of N colors out-of-sRGB-gamut" summary badge when one or more swatches are gamut-clipped
+- **Cohesion score history** — track cohesion scores over time in localStorage so creators can see if their collection is converging or diverging across sessions
+
+---
+
 ## 2026-06-15 — Session 90: Bulk Freeze/Unfreeze in Multi-Select Bar
 
 ### What was done
