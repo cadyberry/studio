@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, AlertTriangle } from "lucide-react";
+import { X, AlertTriangle, Share2, Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette, Collection } from "@/types";
 import { hexToRgb, rgbToHsl } from "@/lib/utils";
@@ -203,10 +204,65 @@ function PaletteStrip({
 }
 
 export default function CohesionModal({ collection, palettes, onClose, onEditPalette }: CohesionModalProps) {
+  const [copied, setCopied] = useState(false);
+
   if (!collection) return null;
 
   const analysis = analyzeCollectionCohesion(palettes);
   const mainColor = scoreColor(analysis.overall);
+
+  function buildShareUrl(): string {
+    const outlierPalette =
+      analysis.outlierIndex !== null && palettes[analysis.outlierIndex]
+        ? palettes[analysis.outlierIndex].name
+        : null;
+
+    const hueDesc =
+      analysis.hueSpread <= 25
+        ? `${hueName(analysis.hueMean)} family`
+        : analysis.hueSpread <= 65
+        ? `${hueName(analysis.hueMean)}-leaning`
+        : "Broad hue range";
+
+    const satDesc =
+      analysis.satMean > 65 ? "Vivid tones" :
+      analysis.satMean > 35 ? "Moderate tones" : "Muted tones";
+
+    const lightDesc =
+      analysis.lightness >= 75 ? "Consistent depth" :
+      analysis.lightness >= 50 ? "Some variation" : "High contrast mix";
+
+    const payload = {
+      v: 1,
+      name: collection!.name,
+      overall: analysis.overall,
+      hue: analysis.hue,
+      sat: analysis.saturation,
+      light: analysis.lightness,
+      label: analysis.label,
+      hueMean: analysis.hueMean,
+      hueSpread: analysis.hueSpread,
+      satMean: analysis.satMean,
+      hueDesc,
+      satDesc,
+      lightDesc,
+      outlier: outlierPalette,
+      palettes: palettes.map((p) => ({
+        n: p.name,
+        c: p.colors.map((c) => c.hex.replace("#", "")),
+      })),
+    };
+    const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+    return `${window.location.origin}/c?r=${encoded}`;
+  }
+
+  function handleShare() {
+    const url = buildShareUrl();
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   const hueDesc =
     analysis.hueSpread <= 25
@@ -263,9 +319,22 @@ export default function CohesionModal({ collection, palettes, onClose, onEditPal
                   {palettes.length} palette{palettes.length !== 1 ? "s" : ""} — brand cohesion analysis
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X size={14} />
-              </Button>
+              <div className="flex items-center gap-1">
+                {palettes.length >= 2 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShare}
+                    title="Copy shareable link to this report"
+                    className={copied ? "text-emerald-600" : ""}
+                  >
+                    {copied ? <Check size={14} /> : <Share2 size={14} />}
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={onClose}>
+                  <X size={14} />
+                </Button>
+              </div>
             </div>
 
             {palettes.length === 0 ? (
