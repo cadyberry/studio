@@ -2527,3 +2527,25 @@
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
 - **Cohesion score shareable link** — "Share report" button on the cohesion modal encodes the result in a URL parameter
 - **Oklch gamut indicator** — when dragging C up, show a subtle pill warning if the current oklch values are out-of-sRGB-gamut (so creators know the displayed color has been clipped)
+
+---
+
+## 2026-06-16 — Session 93: Oklch Out-of-Gamut Indicator
+
+### What was done
+- **Oklch gamut clipping indicator** in SwatchEditor — an amber "⚠ gamut" pill appears inline with the "oklch" section divider whenever the current L/C/H values fall outside the sRGB gamut
+  - The pill shows on hover tooltip: "This oklch color falls outside sRGB gamut — the displayed hex is the nearest clipped color. Reduce chroma (C) to bring it in-gamut."
+  - Implemented via a new `isOklchOutOfSrgbGamut(l, c, h): boolean` export in `utils.ts` — runs the full oklch→OKLab→LMS→linear-sRGB pipeline without clamping, then checks if any channel is outside `[-eps, 1+eps]`; `eps=0.0005` prevents false positives from floating-point noise at in-gamut boundaries
+  - The pill is hidden at rest (conditionally rendered with `{outOfGamut && ...}`), so the oklch section stays clean when editing in-gamut colors
+  - Styled as `bg-amber-100 text-amber-700` (with dark-mode variants) — matches the "caution" tier used elsewhere in the contrast-ratio displays; visually consistent without being alarming
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Inline with the divider label, not below the sliders** — the divider is the section header; the gamut indicator belongs there rather than as a floating banner, keeping it spatially associated with the oklch context without interrupting the slider rows
+- **`isOklchOutOfSrgbGamut` as a separate export** — the existing `oklchToRgb` clamps before returning, so gamut detection needs to run the inverse pipeline independently. Extracting it as a named utility keeps SwatchEditor declarative and lets future components (e.g. batch palette analysis) reuse the check
+- **eps=0.0005** — sRGB channels at exactly 0 or 1 round-trip through oklch with ~0.0001 error; the epsilon absorbs that noise without permitting meaningful out-of-gamut values to slip through
+
+### What's next (Session 94)
+- **Cohesion score shareable link** — "Share report" button on the CohesionModal encodes the score + per-axis breakdown in a URL parameter for easy handoff
+- **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use
+- **Oklch bulk gamut sweep** — a small "X of N colors are out-of-sRGB-gamut" summary on PaletteCard when one or more swatches are gamut-clipped
