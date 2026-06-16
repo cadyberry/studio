@@ -14,6 +14,7 @@ import {
   getContrastRatio,
   hexToOklch,
   oklchToHex,
+  isOklchOutOfSrgbGamut,
   getColorNameSuggestions,
   type OklchValues,
 } from "@/lib/utils";
@@ -151,6 +152,8 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const oklchLGrad = `linear-gradient(to right, ${[0, 33, 67, 100].map((l) => oklchToHex(l, gradC, oklchState.h)).join(", ")})`;
   const oklchCGrad = `linear-gradient(to right, ${oklchToHex(gradL, 0, oklchState.h)}, ${oklchToHex(gradL, 0.4, oklchState.h)})`;
   const oklchHGrad = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360].map((h) => oklchToHex(gradL, gradC, h)).join(", ")})`;
+
+  const outOfGamut = isOklchOutOfSrgbGamut(oklchState.l, oklchState.c, oklchState.h);
 
   const oklchSliders = [
     {
@@ -397,6 +400,14 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 >
                   oklch
                 </span>
+                {outOfGamut && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded select-none bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                    title="This oklch color falls outside sRGB gamut — the displayed hex is the nearest clipped color. Reduce chroma (C) to bring it in-gamut."
+                  >
+                    ⚠ gamut
+                  </span>
+                )}
                 <div className="flex-1 h-px bg-[var(--border)]" />
               </div>
               {oklchSliders.map(({ key, label, value, max, step, unit, gradient, display, displayW, nudgeStep, nudgeLarge, title }) => (
