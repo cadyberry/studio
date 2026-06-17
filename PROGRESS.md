@@ -2580,3 +2580,27 @@
 - **Cohesion score shareable link** — "Share report" button on the CohesionModal encodes the score + per-axis breakdown in a URL parameter for easy handoff
 - **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use
 - **Oklch bulk gamut sweep** — a small "X of N colors are out-of-sRGB-gamut" summary on PaletteCard when one or more swatches are gamut-clipped
+
+---
+
+## 2026-06-17 — Session 94: Oklch Bulk Gamut Sweep Badge on PaletteCard
+
+### What was done
+- **"X clipped" gamut badge on PaletteCard** — when one or more swatches in a palette have oklch values that fall outside the sRGB gamut, an amber badge now appears in the palette card's metadata strip
+  - Badge text: `N clipped` (e.g. "2 clipped") — tabular-nums for clean alignment alongside the other metric badges
+  - Tooltip: `"X of N colors fall outside sRGB gamut — displayed as nearest clipped color"` — gives full context without cluttering the card face
+  - Only rendered when `gamutClippedCount > 0`; in-gamut palettes are unaffected — the badge strip stays clean for the common case
+  - Positioned after the mood badge and before the ΔE match badge, as a colorimetric data point alongside mood
+  - Styled `bg-amber-100 text-amber-700` (dark: `bg-amber-900/30 text-amber-400`) — matches the gamut warning style already established in SwatchEditor
+- Computation: `palette.colors.filter(c => { const ok = hexToOklch(c.hex); return ok ? isOklchOutOfSrgbGamut(ok.l, ok.c, ok.h) : false }).length` — reuses the `hexToOklch` + `isOklchOutOfSrgbGamut` pipeline from `utils.ts` without new math
+- Production build: clean Turbopack compile, zero TypeScript errors, 6 routes passing
+
+### Key decisions
+- **PaletteCard as the discovery surface** — the per-swatch indicator in SwatchEditor already shows gamut clipping during editing; the PaletteCard badge makes gamut issues visible at a glance in the library view so creators can find and address them without opening each palette
+- **No threshold filtering** — the badge appears for even a single clipped swatch; gamut clipping is always meaningful for a print-on-demand creator who cares about accurate color representation
+- **Reuse existing utils, no new math** — `hexToOklch` + `isOklchOutOfSrgbGamut` are both already exported from `utils.ts`; this is purely a UI wiring change
+
+### What's next (Session 95)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
+- **Palette sort by gamut-clipped count** — add a "gamut" sort option to the library sort menu so creators can surface all affected palettes at once
+- **Cohesion share: collection name in page title** — the `/c` shared report page currently shows a generic title; use the `name` field from the share payload to show the collection name in the `<title>` tag
