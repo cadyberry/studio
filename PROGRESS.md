@@ -2604,3 +2604,25 @@
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
 - **Palette sort by gamut-clipped count** — add a "gamut" sort option to the library sort menu so creators can surface all affected palettes at once
 - **Cohesion share: collection name in page title** — the `/c` shared report page currently shows a generic title; use the `name` field from the share payload to show the collection name in the `<title>` tag
+
+---
+
+## 2026-06-17 — Session 95: Gamut-Clipped Sort Option
+
+### What was done
+- **"Most gamut-clipped" sort option in the library sort dropdown** — a new `"most-clipped"` sort option surfaces palettes with the most out-of-sRGB-gamut colors first, so creators can find and address problem palettes at a glance without scanning the entire library
+  - Added `"most-clipped"` to the `sortBy` type union in `page.tsx`
+  - Added `paletteGamutClippedCount` useCallback — filters `palette.colors` using the same `hexToOklch` + `isOklchOutOfSrgbGamut` pipeline already used in PaletteCard and SwatchEditor
+  - Sort case: `paletteGamutClippedCount(b) - paletteGamutClippedCount(a)` (most clipped first)
+  - Dropdown option: "Most gamut-clipped" — appended after "Darkest first" in the sort select
+  - Imported `hexToOklch` and `isOklchOutOfSrgbGamut` from `@/lib/utils` (were not yet imported in page.tsx)
+  - No new math or components — purely wires existing utility functions into the sort infrastructure
+
+### Key decisions
+- **`useCallback` with empty deps** — `paletteGamutClippedCount` doesn't close over any state (unlike `paletteMeanLightness`); it's stable across renders and won't trigger needless resort recalculations
+- **"Most gamut-clipped" label** — mirrors the existing "Most colors" / "Most annotated" phrasing pattern; "Most" signals descending sort, "gamut-clipped" uses the same term as the badge on PaletteCard so the vocabulary is consistent across the UI
+
+### What's next (Session 96)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
+- **Cohesion score shareable link** — "Share report" button on CohesionModal encodes the score + per-axis breakdown in a URL parameter
+- **Cohesion share: collection name in page title** — the `/c` shared report page currently shows a generic title; use the `name` field from the share payload in the `<title>` tag
