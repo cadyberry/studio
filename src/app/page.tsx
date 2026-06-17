@@ -18,7 +18,7 @@ import ImportModal from "@/components/palette/ImportModal";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
-import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, type PaletteMood } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch } from "@/types";
 
@@ -110,7 +110,7 @@ export default function Home() {
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped">("newest");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
     if (p.colors.length === 0) return 0;
@@ -121,6 +121,9 @@ export default function Home() {
     }, 0);
     return total / p.colors.length;
   }, []);
+  const paletteGamutClippedCount = useCallback((p: Palette): number =>
+    p.colors.filter((c) => { const ok = hexToOklch(c.hex); return ok ? isOklchOutOfSrgbGamut(ok.l, ok.c, ok.h) : false; }).length,
+  []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -346,6 +349,7 @@ export default function Home() {
           case "most-notes": return (b.notes?.length ?? 0) - (a.notes?.length ?? 0);
           case "light-first": return paletteMeanLightness(b) - paletteMeanLightness(a);
           case "dark-first": return paletteMeanLightness(a) - paletteMeanLightness(b);
+          case "most-clipped": return paletteGamutClippedCount(b) - paletteGamutClippedCount(a);
         }
       });
 
@@ -1029,6 +1033,7 @@ export default function Home() {
                           <option value="most-notes">Most annotated</option>
                           <option value="light-first">Lightest first</option>
                           <option value="dark-first">Darkest first</option>
+                          <option value="most-clipped">Most gamut-clipped</option>
                         </select>
                       </div>
                     </>
