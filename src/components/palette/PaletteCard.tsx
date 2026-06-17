@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, type PaletteMood } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, type PaletteMood } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -369,6 +369,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     if (ls.length === 0) return null;
     return { min: Math.round(Math.min(...ls)), max: Math.round(Math.max(...ls)) };
   })();
+
+  // Count swatches whose oklch values fall outside the sRGB gamut (clipped in display)
+  const gamutClippedCount = palette.colors.filter((c) => {
+    const ok = hexToOklch(c.hex);
+    return ok ? isOklchOutOfSrgbGamut(ok.l, ok.c, ok.h) : false;
+  }).length;
 
   // Tag autocomplete: existing library tags that match current input, not already on this palette
   const currentTags = palette.tags ?? [];
@@ -808,6 +814,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             >
               {moodStyle.label}
             </span>
+            {gamutClippedCount > 0 && (
+              <span
+                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 tabular-nums"
+                title={`${gamutClippedCount} of ${palette.colors.length} color${palette.colors.length !== 1 ? "s" : ""} fall outside sRGB gamut — displayed as nearest clipped color`}
+              >
+                {gamutClippedCount} clipped
+              </span>
+            )}
             {colorMatchHex && bestMatchIndex && (() => {
               const tier = getMatchTier(bestMatchIndex.dE);
               return (
