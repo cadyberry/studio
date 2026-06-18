@@ -16,7 +16,9 @@ import {
   oklchToHex,
   isOklchOutOfSrgbGamut,
   getColorNameSuggestions,
+  hexToCmyk,
   type OklchValues,
+  type CmykValues,
 } from "@/lib/utils";
 
 interface SwatchEditorProps {
@@ -154,6 +156,12 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const oklchHGrad = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360].map((h) => oklchToHex(gradL, gradC, h)).join(", ")})`;
 
   const outOfGamut = isOklchOutOfSrgbGamut(oklchState.l, oklchState.c, oklchState.h);
+
+  const cmyk: CmykValues | null = hexToCmyk(hex);
+  const inkCoverage = cmyk ? cmyk.c + cmyk.m + cmyk.y + cmyk.k : 0;
+  // oklch chroma is the best single proxy for print gamut risk:
+  // high C = far from gray = likely outside CMYK gamut
+  const printRisk = oklchState.c > 0.25 ? "high" : oklchState.c > 0.12 ? "moderate" : "low";
 
   const oklchSliders = [
     {
@@ -470,6 +478,92 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 </div>
               ))}
             </div>
+
+            {/* CMYK Print Reference */}
+            {cmyk && (
+              <div className="space-y-2.5">
+                {/* Divider */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                  <span
+                    className="text-[9px] font-mono font-bold text-[var(--muted)] uppercase tracking-widest select-none cursor-default"
+                    title="Approximate CMYK values for offset printing. Computed from sRGB without an ICC profile — use as a guide, not a press specification."
+                  >
+                    print
+                  </span>
+                  {printRisk === "high" && (
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded select-none bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400"
+                      title={`Oklch chroma C ${oklchState.c.toFixed(3)} — highly vivid. CMYK presses often cannot fully reproduce this saturation; expect hue and/or lightness shift in print.`}
+                    >
+                      ⚠ vivid
+                    </span>
+                  )}
+                  {printRisk === "moderate" && (
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded select-none bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                      title={`Oklch chroma C ${oklchState.c.toFixed(3)} — moderately vivid. Slight color shift is possible in print, especially on uncoated stock.`}
+                    >
+                      moderate
+                    </span>
+                  )}
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
+
+                {/* C / M / Y / K values */}
+                <div className="flex items-center">
+                  {(
+                    [
+                      { label: "C", value: cmyk.c, title: "Cyan ink percentage" },
+                      { label: "M", value: cmyk.m, title: "Magenta ink percentage" },
+                      { label: "Y", value: cmyk.y, title: "Yellow ink percentage" },
+                      { label: "K", value: cmyk.k, title: "Key (black) ink percentage" },
+                    ] as const
+                  ).map(({ label, value, title }, i, arr) => (
+                    <div
+                      key={label}
+                      className={`flex-1 flex flex-col items-center gap-0.5 ${i < arr.length - 1 ? "border-r border-[var(--border)]" : ""}`}
+                      title={title}
+                    >
+                      <span className="text-[9px] font-mono font-bold text-[var(--muted)]">{label}</span>
+                      <span className="text-[11px] font-mono tabular-nums font-semibold">{value}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total Area Coverage bar */}
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[9px] font-mono font-bold text-[var(--muted)] shrink-0 select-none"
+                    title="Total Area Coverage (TAC) = C+M+Y+K. Offset printing typically caps TAC at 300% to prevent ink smearing and slow drying."
+                  >
+                    TAC
+                  </span>
+                  <div className="flex-1 relative h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(inkCoverage / 300) * 100}%`,
+                        backgroundColor:
+                          inkCoverage > 280 ? "#f43f5e" :
+                          inkCoverage > 220 ? "#f59e0b" :
+                          "#10b981",
+                      }}
+                    />
+                  </div>
+                  <span
+                    className={`text-[10px] font-mono tabular-nums shrink-0 ${
+                      inkCoverage > 280 ? "text-rose-600 dark:text-rose-400" :
+                      inkCoverage > 220 ? "text-amber-600 dark:text-amber-400" :
+                      "text-[var(--muted)]"
+                    }`}
+                    title={`Total area coverage: ${inkCoverage}% (C+M+Y+K). Over 300% risks wet trapping on offset press.`}
+                  >
+                    {inkCoverage}%
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Color name */}
             <div>

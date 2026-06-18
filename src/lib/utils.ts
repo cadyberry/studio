@@ -276,6 +276,12 @@ export function deltaE(hex1: string, hex2: string): number {
   return Math.sqrt((lab1.L - lab2.L) ** 2 + (lab1.a - lab2.a) ** 2 + (lab1.b - lab2.b) ** 2);
 }
 
+export function hexToCmyk(hex: string): CmykValues | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  return rgbToCmyk(rgb.r, rgb.g, rgb.b);
+}
+
 export interface PrintSimResult {
   printHex: string;
   cmyk: CmykValues;
