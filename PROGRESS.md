@@ -2651,3 +2651,28 @@
 - **Palette-level print summary on PaletteCard** — a subtle badge showing how many swatches in a palette have "vivid" or "moderate" print risk, mirroring the gamut-clipped badge pattern
 - **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use
 - **Export with CMYK values** — add CMYK columns to the CSV export format so creators have print-ready data alongside hex codes
+
+---
+
+## 2026-06-18 — Session 97: Palette Print Risk Badge on PaletteCard
+
+### What was done
+- **"N print risk" badge on PaletteCard** — a severity-coded badge now appears in the palette metadata strip when one or more swatches carry CMYK print risk, surfacing problem palettes at a glance in the library view
+  - **Vivid risk** (oklch C > 0.25): rose badge — `bg-rose-100 text-rose-700` (dark: `bg-rose-900/30 text-rose-400`). These colors may not reproduce at full saturation on CMYK presses
+  - **Moderate risk** (oklch C 0.12–0.25): orange badge — `bg-orange-100 text-orange-700` (dark: `bg-orange-900/30 text-orange-400`). Slight color shift possible in print
+  - **Safe palettes** (all swatches C ≤ 0.12): no badge — the metadata strip stays clean for the common case
+  - Badge shows total count across both severity tiers; severity color reflects the worst case (rose if any vivid, orange if only moderate)
+  - Tooltip gives full context: count, severity explanation, oklch chroma threshold, and practical print implication ("press may not reproduce at full saturation" vs "slight shift possible")
+  - Positioned after the gamut-clipped badge in the metadata strip — colorimetric data points grouped together
+- Computation: `palette.colors.reduce(...)` over `hexToOklch(c.hex)` — reuses the `hexToOklch` pipeline already imported in PaletteCard, no new math or imports required
+- Production build: clean Turbopack compile, zero TypeScript errors, 6 routes passing
+
+### Key decisions
+- **Single badge combining vivid + moderate** (not two separate badges) — keeps the metadata strip clean; the tooltip provides the breakdown when the creator wants detail; the severity color tells the quick story at a glance
+- **Orange for moderate, rose for vivid** — differentiates from the amber gamut-clipped badge (similar concern but distinct concept); rose/orange progression echoes the TAC bar color coding established in the CMYK panel (amber → rose with increasing risk), adjusted to avoid collision with the gamut badge
+- **Threshold mirrors SwatchEditor exactly** — C > 0.25 / C > 0.12 are the same thresholds used in the per-swatch print panel, so creators see consistent vocabulary between the library view and the editor
+
+### What's next (Session 98)
+- **Export with CMYK values** — add C/M/Y/K columns to the CSV export format so creators have print-ready data alongside hex codes
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS for sites that split tokens across files
+- **Palette sort by print risk count** — add a "most print risk" sort option to the library sort menu so creators can surface all at-risk palettes at once
