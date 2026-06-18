@@ -2626,3 +2626,28 @@
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS files for sites that split tokens across imported files
 - **Cohesion score shareable link** — "Share report" button on CohesionModal encodes the score + per-axis breakdown in a URL parameter
 - **Cohesion share: collection name in page title** — the `/c` shared report page currently shows a generic title; use the `name` field from the share payload in the `<title>` tag
+
+---
+
+## 2026-06-18 — Session 96: CMYK Print Reference Panel in SwatchEditor
+
+### What was done
+- **CMYK print reference panel** added to SwatchEditor — below the oklch sliders, a new "print" section surfaces color-in-print data directly where creators edit swatches:
+  - **C / M / Y / K values** displayed as four equal-width columns with percentage values. Computed via a new `hexToCmyk()` export in `utils.ts` (thin wrapper on the existing `rgbToCmyk`). Updates live on every slider drag, hex input, and native picker change.
+  - **Total Area Coverage (TAC) bar** — a progress bar showing C+M+Y+K as a fraction of 300% (the offset printing industry standard cap). Color-coded: green below 220%, amber 220–280%, rose at 280%+. Annotated with the raw percentage alongside it. Tooltip explains TAC and why 300% is the ceiling.
+  - **Vibrancy risk badge** driven by oklch chroma (`oklchState.c`) as a print gamut proxy — high oklch chroma reliably predicts that a color is at or near the edge of CMYK gamut:
+    - `C > 0.25` → rose "⚠ vivid" badge (very vivid — CMYK presses may not reproduce at full saturation)
+    - `C > 0.12` → amber "moderate" badge (slight shift possible)
+    - `C ≤ 0.12` → no badge (muted tones, safe for print)
+  - Section is hidden if `hexToCmyk` returns null (malformed hex), keeping the UI clean
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing
+
+### Key decisions
+- **oklch chroma as gamut proxy, not roundtrip ΔE** — the existing `simulateCmykPrint` function computes a sRGB→CMYK→sRGB roundtrip, but this roundtrip is nearly lossless (algebraically invertible, ΔE ≈ 0 for almost all colors). Real print gamut mismatch comes from the press not reproducing high-chroma sRGB colors, which requires ICC profiles to model accurately. oklch chroma (C) is the best single-number proxy available without ICC profiles: it's perceptually uniform, so C=0.25 signals the same vibrancy risk regardless of hue.
+- **TAC bar max at 300%** — our `applyInkLimit` caps at 300%; scaling the bar to 300% means the bar fills to 100% only at the cap, giving an intuitive visual of how much "headroom" is left
+- **hexToCmyk exported from utils** — the CMYK formula was already in utils.ts (`rgbToCmyk`); `hexToCmyk` is a 4-line wrapper so the component doesn't need to call `hexToRgb` separately
+
+### What's next (Session 97)
+- **Palette-level print summary on PaletteCard** — a subtle badge showing how many swatches in a palette have "vivid" or "moderate" print risk, mirroring the gamut-clipped badge pattern
+- **Color search history** — recent hex searches stored in localStorage; a small dropdown below the color search input for quick re-use
+- **Export with CMYK values** — add CMYK columns to the CSV export format so creators have print-ready data alongside hex codes
