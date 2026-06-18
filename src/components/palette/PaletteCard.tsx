@@ -376,6 +376,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     return ok ? isOklchOutOfSrgbGamut(ok.l, ok.c, ok.h) : false;
   }).length;
 
+  // Print risk: swatches with oklch chroma high enough to risk CMYK gamut compression
+  // Mirrors the per-swatch thresholds in SwatchEditor's print panel
+  const printRisk = palette.colors.reduce(
+    (acc, c) => {
+      const ok = hexToOklch(c.hex);
+      if (!ok) return acc;
+      if (ok.c > 0.25) return { vivid: acc.vivid + 1, moderate: acc.moderate };
+      if (ok.c > 0.12) return { vivid: acc.vivid, moderate: acc.moderate + 1 };
+      return acc;
+    },
+    { vivid: 0, moderate: 0 }
+  );
+
   // Tag autocomplete: existing library tags that match current input, not already on this palette
   const currentTags = palette.tags ?? [];
   const suggestions =
@@ -820,6 +833,22 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 title={`${gamutClippedCount} of ${palette.colors.length} color${palette.colors.length !== 1 ? "s" : ""} fall outside sRGB gamut — displayed as nearest clipped color`}
               >
                 {gamutClippedCount} clipped
+              </span>
+            )}
+            {(printRisk.vivid + printRisk.moderate > 0) && (
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums ${
+                  printRisk.vivid > 0
+                    ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                    : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                }`}
+                title={`${printRisk.vivid + printRisk.moderate} color${printRisk.vivid + printRisk.moderate !== 1 ? "s" : ""} may shift in CMYK print${
+                  printRisk.vivid > 0
+                    ? ` — ${printRisk.vivid} highly vivid (oklch C > 0.25): press may not reproduce at full saturation`
+                    : " — moderate saturation (oklch C 0.12–0.25): slight shift possible"
+                }`}
+              >
+                {printRisk.vivid + printRisk.moderate} print risk
               </span>
             )}
             {colorMatchHex && bestMatchIndex && (() => {
