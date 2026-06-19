@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, AlertTriangle, Share2, Check } from "lucide-react";
+import { X, AlertTriangle, Share2, Check, TrendingUp } from "lucide-react";
 import Button from "@/components/ui/Button";
-import type { Palette, Collection } from "@/types";
+import type { Palette, Collection, CohesionRecord } from "@/types";
 import { hexToRgb, rgbToHsl } from "@/lib/utils";
+import { usePaletteStore } from "@/store/paletteStore";
 
 interface CohesionModalProps {
   collection: Collection | null;
@@ -203,13 +204,100 @@ function PaletteStrip({
   );
 }
 
+function formatSparkDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function ScoreSparkline({ history }: { history: CohesionRecord[] }) {
+  const W = 240, H = 44;
+  const xPad = 6, yPad = 8;
+
+  const pts = history.map((r, i) => ({
+    x: xPad + (i / Math.max(history.length - 1, 1)) * (W - xPad * 2),
+    y: yPad + ((100 - r.score) / 100) * (H - yPad * 2),
+    ...r,
+  }));
+
+  const polyline = pts.map((p) => `${p.x},${p.y}`).join(" ");
+  const fillD = `M${pts[0].x},${pts[0].y} ` +
+    pts.slice(1).map((p) => `L${p.x},${p.y}`).join(" ") +
+    ` L${pts[pts.length - 1].x},${H} L${pts[0].x},${H} Z`;
+
+  const last = pts[pts.length - 1];
+  const first = pts[0];
+  const color = scoreColor(last.score);
+  const trend = last.score - first.score;
+
+  return (
+    <div>
+      <svg
+        width="100%"
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        className="overflow-visible"
+      >
+        <defs>
+          <linearGradient id="ch-sparkfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+        <path d={fillD} fill="url(#ch-sparkfill)" />
+        <polyline
+          points={polyline}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {pts.map((p, i) => (
+          <circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r={i === pts.length - 1 ? 3 : 1.5}
+            fill={i === pts.length - 1 ? color : scoreColor(p.score)}
+            opacity={i === pts.length - 1 ? 1 : 0.6}
+          >
+            <title>{`${p.score} — ${formatSparkDate(p.date)}`}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="flex justify-between items-center text-[9px] text-[var(--muted)] mt-0.5 px-0.5">
+        <span>{formatSparkDate(history[0].date)}</span>
+        <span
+          className="font-semibold"
+          style={{ color: trend > 0 ? "#10b981" : trend < 0 ? "#f43f5e" : "var(--muted)" }}
+        >
+          {trend > 0 ? `+${trend}` : trend < 0 ? `${trend}` : "—"} pts
+        </span>
+        <span>{formatSparkDate(history[history.length - 1].date)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function CohesionModal({ collection, palettes, onClose, onEditPalette }: CohesionModalProps) {
   const [copied, setCopied] = useState(false);
+  const { recordCohesionScore, getCohesionHistory } = usePaletteStore();
 
   if (!collection) return null;
 
   const analysis = analyzeCollectionCohesion(palettes);
   const mainColor = scoreColor(analysis.overall);
+
+  // Record score on modal open (fires once, idempotent for same-day same-score)
+  useEffect(() => {
+    if (palettes.length >= 2) {
+      recordCohesionScore(collection.id, analysis.overall, analysis.label);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const history = collection ? getCohesionHistory(collection.id) : [];
 
   function buildShareUrl(): string {
     const outlierPalette =
@@ -430,6 +518,18 @@ export default function CohesionModal({ collection, palettes, onClose, onEditPal
                       has a notably different hue and saturation profile from the rest of this
                       collection. Consider adjusting it or moving it to a separate collection.
                     </p>
+                  </div>
+                )}
+
+                {/* Score history sparkline */}
+                {history.length >= 2 && (
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-2 flex items-center gap-1.5">
+                      <TrendingUp size={11} />
+                      Score History
+                      <span className="text-[9px] font-normal normal-case">({history.length} sessions)</span>
+                    </div>
+                    <ScoreSparkline history={history} />
                   </div>
                 )}
 

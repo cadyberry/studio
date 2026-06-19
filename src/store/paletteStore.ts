@@ -2,12 +2,16 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Palette, Collection } from "@/types";
+import type { Palette, Collection, CohesionRecord } from "@/types";
 import { generateId } from "@/lib/utils";
 
 interface PaletteStore {
   palettes: Palette[];
   collections: Collection[];
+  cohesionHistory: Record<string, CohesionRecord[]>;
+
+  recordCohesionScore: (collectionId: string, score: number, label: CohesionRecord["label"]) => void;
+  getCohesionHistory: (collectionId: string) => CohesionRecord[];
 
   addPalette: (palette: Omit<Palette, "id" | "createdAt" | "updatedAt">) => Palette;
   updatePalette: (id: string, updates: Partial<Palette>) => void;
@@ -29,6 +33,22 @@ export const usePaletteStore = create<PaletteStore>()(
     (set, get) => ({
       palettes: [],
       collections: [],
+      cohesionHistory: {},
+
+      recordCohesionScore: (collectionId, score, label) => {
+        const now = new Date().toISOString();
+        const today = now.slice(0, 10); // "YYYY-MM-DD"
+        const history = get().cohesionHistory[collectionId] ?? [];
+        const last = history[history.length - 1];
+        // Skip if same score already recorded today
+        if (last && last.date.slice(0, 10) === today && last.score === score) return;
+        const next = [...history, { date: now, score, label }].slice(-60);
+        set((s) => ({ cohesionHistory: { ...s.cohesionHistory, [collectionId]: next } }));
+      },
+
+      getCohesionHistory: (collectionId) => {
+        return get().cohesionHistory[collectionId] ?? [];
+      },
 
       addPalette: (palette) => {
         const now = new Date().toISOString();

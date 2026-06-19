@@ -26,3 +26,9 @@ export interface Collection {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CohesionRecord {
+  date: string; // ISO timestamp
+  score: number;
+  label: "Fragmented" | "Developing" | "Cohesive" | "Unified";
+}
