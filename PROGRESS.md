@@ -2676,3 +2676,27 @@
 - **Export with CMYK values** — add C/M/Y/K columns to the CSV export format so creators have print-ready data alongside hex codes
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS for sites that split tokens across files
 - **Palette sort by print risk count** — add a "most print risk" sort option to the library sort menu so creators can surface all at-risk palettes at once
+
+---
+
+## 2026-06-19 — Session 98: CSV Export with Full Color Data
+
+### What was done
+- **CSV export** added to the Export modal — "Download CSV" in the Download section, producing a spreadsheet with every color science value for each swatch:
+  - Columns: `name, hex, r, g, b, h, s, l, c%, m%, y%, k%, oklch_l, oklch_c, oklch_h`
+  - oklch values formatted to 3/4/1 decimal places respectively — enough precision for color-critical work without noise
+  - Swatch names are CSV-quoted with internal `"` escaped as `""` (RFC 4180 compliant)
+  - Filename: `<palette-name>-palette.csv`
+- Added `exportAsCsv` to `exportPalette.ts` — imports `rgbToHsl` and `hexToOklch` (newly added to the existing import line); uses `Blob` + object URL pattern matching the batch zip export
+- ExportModal now imports `FileText` from lucide-react and `exportAsCsv`; new action appended to the end of the Download section
+- Production build: clean Turbopack compile, zero TypeScript errors, 6 routes passing
+
+### Key decisions
+- **All color spaces in one file** — hex, RGB, HSL, CMYK, oklch — so a creator opening the CSV in a spreadsheet has everything for print specs, design tokens, and perceptual analysis without cross-referencing multiple exports
+- **CSV last in the Download section** (after the mood board variants) — it's a data export, not a visual artifact; the PNG/mood board downloads belong first since they're more frequently used for sharing and presentation
+- **`oklch_l/c/h` (underscores)** not `oklch-l` — hyphens break column names in some spreadsheet formula parsers; underscores are universally safe
+
+### What's next (Session 99)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS for sites that split tokens across files
+- **Palette sort by print risk count** — add a "most print risk" sort option to the library sort menu so creators can surface all at-risk palettes at once
+- **JSON export CMYK + oklch fields** — same upgrade as CSV but for the JSON copy action (`getJsonExport`), so the structured data export matches the CSV's completeness
