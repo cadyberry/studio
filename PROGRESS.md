@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-19 — Session 95: Cohesion Score History + Sparkline
+
+### What was done
+- **Cohesion score history** — every time Cady opens the Cohesion modal for a collection with ≥2 palettes, the current score is automatically recorded to localStorage. Same-day duplicate scores are deduplicated; history caps at 60 entries per collection.
+- **`CohesionRecord` type** added to `types/index.ts` (`{ date, score, label }`)
+- **Store additions** (`paletteStore.ts`):
+  - `cohesionHistory: Record<string, CohesionRecord[]>` — persisted in localStorage under the existing key
+  - `recordCohesionScore(collectionId, score, label)` — idempotent append with dedup
+  - `getCohesionHistory(collectionId)` — read selector
+- **`ScoreSparkline` component** (inside `CohesionModal.tsx`):
+  - SVG polyline with gradient area fill, color-coded per score band (green/blue/amber/rose)
+  - A filled dot on the most recent session (larger), hollow dots on prior sessions
+  - `<title>` tooltip on every dot showing score + date
+  - Trend delta line (`+N` / `-N pts`) between oldest and newest recordings
+  - Only rendered when ≥2 history entries exist
+- **Recording trigger**: `useEffect([], [])` in the main modal body — fires exactly once per open, after render, safe from SSR
+- Production build: clean Turbopack compile, zero TypeScript errors, 6 routes passing
+
+### Key decisions
+- **Auto-record vs manual** — recording on open (not on a "Save" click) means history builds passively as Cady naturally checks her collections; no extra action required
+- **60-entry cap** — enough for a year of weekly checks without bloating localStorage; oldest entries drop first
+- **Same-day dedup** — if she opens the modal twice in one day with the same score, only one entry is written; if the score changed (she added/removed palettes), a new entry IS written so the history reflects real changes
+- **Sparkline hidden until 2+ sessions** — a single-point history is meaningless as a trend; the section appears only once data is meaningful
+
+### What's next (Session 96)
+- **Oklch bulk gamut sweep badge** — "X of N out-of-gamut" summary pill on PaletteCard when any swatches exceed sRGB boundaries; uses the existing `isOklchOutOfSrgbGamut` util already imported in page.tsx
+- **Tag rename** — global rename of a tag from the sidebar tag inventory (all palettes updated in one action); currently there is no way to rename a tag without editing each palette
+- **Cohesion score history: collection tooltip** — on hover of the cohesion score badge in the sidebar, show a mini sparkline preview without opening the full modal
+
+---
+
 ## 2026-06-16 — Session 94: Cohesion Report Shareable Link
 
 ### What was done
