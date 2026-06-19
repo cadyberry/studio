@@ -1,7 +1,7 @@
 "use client";
 
 import type { Palette } from "@/types";
-import { hexToRgb, rgbToCmyk, simulateCmykPrint, getPaletteMood } from "./utils";
+import { hexToRgb, rgbToHsl, rgbToCmyk, hexToOklch, simulateCmykPrint, getPaletteMood } from "./utils";
 
 const MOOD_DOTS: Record<string, string> = {
   warm: "#f59e0b",
@@ -338,6 +338,45 @@ export function copyCmykList(palette: Palette): void {
     })
     .join("\n");
   navigator.clipboard.writeText(lines);
+}
+
+export function exportAsCsv(palette: Palette): void {
+  const headers = ["name", "hex", "r", "g", "b", "h", "s", "l", "c%", "m%", "y%", "k%", "oklch_l", "oklch_c", "oklch_h"];
+
+  const rows = palette.colors.map((color) => {
+    const rgb = hexToRgb(color.hex);
+    const hsl = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b) : null;
+    const cmyk = rgb ? rgbToCmyk(rgb.r, rgb.g, rgb.b) : null;
+    const oklch = hexToOklch(color.hex);
+    const name = color.name ? `"${color.name.replace(/"/g, '""')}"` : "";
+
+    return [
+      name,
+      color.hex.toUpperCase(),
+      rgb ? rgb.r : "",
+      rgb ? rgb.g : "",
+      rgb ? rgb.b : "",
+      hsl ? Math.round(hsl.h) : "",
+      hsl ? Math.round(hsl.s) : "",
+      hsl ? Math.round(hsl.l) : "",
+      cmyk ? cmyk.c : "",
+      cmyk ? cmyk.m : "",
+      cmyk ? cmyk.y : "",
+      cmyk ? cmyk.k : "",
+      oklch ? oklch.l.toFixed(3) : "",
+      oklch ? oklch.c.toFixed(4) : "",
+      oklch ? oklch.h.toFixed(1) : "",
+    ].join(",");
+  });
+
+  const csv = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-palette.csv`;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export function getJsonExport(palette: Palette): string {

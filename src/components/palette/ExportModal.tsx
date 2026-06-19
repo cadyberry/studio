@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone } from "lucide-react";
-import { exportAsPngStrip, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone } from "lucide-react";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -71,6 +71,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "Portrait format on near-black — for dark palettes shared as Stories",
       icon: Smartphone,
       onClick: () => { exportAsDarkPortraitMoodBoard(palette); },
+    },
+    {
+      key: "csv",
+      label: "Download CSV",
+      desc: "Hex · RGB · HSL · CMYK · oklch — print-ready spreadsheet",
+      icon: FileText,
+      onClick: () => { exportAsCsv(palette); },
     },
   ];
 
