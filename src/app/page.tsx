@@ -127,6 +127,9 @@ export default function Home() {
   const palettePrintRiskCount = useCallback((p: Palette): number =>
     p.colors.reduce((n, c) => { const ok = hexToOklch(c.hex); return ok && ok.c > 0.12 ? n + 1 : n; }, 0),
   []);
+  const palettePrintRiskAny = useCallback((p: Palette): boolean =>
+    p.colors.some(c => { const ok = hexToOklch(c.hex); return ok ? ok.c > 0.12 : false; }),
+  []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -138,6 +141,7 @@ export default function Home() {
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
+  const [printReadyOnly, setPrintReadyOnly] = useState(false);
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showHelp, setShowHelp] = useState(false);
@@ -334,7 +338,10 @@ export default function Home() {
   const anyFrozen = palettes.some((p) => p.frozen);
   const frozenInView = countFiltered.filter((p) => p.frozen).length;
 
-  const filtered = activeFreezeFilter === "locked" ? countFiltered.filter((p) => p.frozen) : countFiltered;
+  const freezeFiltered = activeFreezeFilter === "locked" ? countFiltered.filter((p) => p.frozen) : countFiltered;
+  const anyPrintRisk = countFiltered.some((p) => palettePrintRiskAny(p));
+  const printSafeCount = freezeFiltered.filter((p) => !palettePrintRiskAny(p)).length;
+  const filtered = printReadyOnly ? freezeFiltered.filter((p) => !palettePrintRiskAny(p)) : freezeFiltered;
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -1347,7 +1354,7 @@ export default function Home() {
 
             {/* Mood + Locked filter pills — hidden when color search is active (inline strip handles it) */}
             <AnimatePresence>
-              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen) && (
+              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -1418,6 +1425,26 @@ export default function Home() {
                           <Lock size={9} className="flex-shrink-0" />
                           Locked
                           <span className="text-[10px] opacity-60">{frozenInView}</span>
+                        </button>
+                      </>
+                    )}
+                    {anyPrintRisk && (
+                      <>
+                        {(moodCounts.size >= 2 || anyFrozen) && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                        <button
+                          onClick={() => setPrintReadyOnly(!printReadyOnly)}
+                          title={printReadyOnly ? "Show all palettes" : "Show only print-safe palettes (all swatches safe for CMYK)"}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            printReadyOnly
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-300 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700"
+                              : "bg-[var(--surface)] text-emerald-600 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50 dark:text-emerald-500 dark:border-emerald-800/60 dark:hover:bg-emerald-950/20"
+                          }`}
+                        >
+                          <CheckCircle2 size={9} className="flex-shrink-0" />
+                          Print-safe
+                          {printReadyOnly && <span className="text-[10px] opacity-60">{printSafeCount}</span>}
                         </button>
                       </>
                     )}
@@ -1649,6 +1676,16 @@ export default function Home() {
                       <X size={10} className="shrink-0" />
                     </button>
                   )}
+                  {printReadyOnly && (
+                    <button
+                      onClick={() => setPrintReadyOnly(false)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <CheckCircle2 size={10} className="shrink-0 text-emerald-500" />
+                      Print-safe only
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
                 </div>
 
                 <Button
@@ -1660,6 +1697,7 @@ export default function Home() {
                     setActiveMood("all");
                     setActiveFreezeFilter("all");
                     setActiveColorCount("all");
+                    setPrintReadyOnly(false);
                     setColorSearchActive(false);
                     setColorSearchHex("");
                   }}
