@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-06-20 — Session 100: Print-Safe Quick Filter
+
+### What was done
+- **"Print-safe" filter pill** added to the library's mood/locked filter strip — a single click hides every palette where any swatch carries CMYK print risk (oklch C > 0.12), leaving only palettes that are safe for press reproduction
+  - Pill appears only when the current view contains at least one print-risk palette (conditional render, no clutter for all-safe libraries)
+  - Active state: emerald pill, shows the count of safe palettes in the current view (e.g. "Print-safe 12")
+  - Inactive state: emerald outline pill consistent with the Locked/mood pill styling vocabulary
+  - Tooltip: "Show only print-safe palettes (all swatches safe for CMYK)" / "Show all palettes" on deactivate
+  - Wired into the "Clear all filters" button and the empty-state dismissal chip list
+  - Filter slot: `freezeFiltered → printFiltered → filtered → sorted` — applied after the freeze filter, before sort, consistent with other filter layers
+- New `palettePrintRiskAny` useCallback — `p.colors.some(c => hexToOklch(c.hex)?.c > 0.12)` — reuses the `hexToOklch` pipeline already imported, no new math
+- `anyPrintRisk`, `printSafeCount` derived values for pill visibility and active-state count display
+- Production build: clean Turbopack compile, zero TypeScript errors, 6 routes passing
+
+### Key decisions
+- **Show pill only when there's something to filter** — if no palette in the current view has print risk, the pill would be a no-op; hiding it keeps the filter strip clean for all-safe libraries (e.g. a collection of muted, earthy tones)
+- **Count shown only when active** — inactive pill shows just the label (consistent with the Locked pill); active pill shows the safe count so the creator immediately sees "how many are left" without needing to count cards
+- **oklch C > 0.12 as the threshold** — matches the existing PaletteCard print risk badge and SwatchEditor print panel exactly; single vocabulary across library view, card metadata, and editor
+
+### What's next (Session 101)
+- **Cohesion score shareable link** — "Share report" button on CohesionModal encodes the score + per-axis breakdown in a URL parameter
+- **Palette sort by cohesion score** — sort by the collection's cohesion score so Cady can rank collections by brand cohesion at a glance
+- **"Print-safe" collection badge** — if every palette in a collection passes the print-safe check, show a small emerald checkmark on the collection in the sidebar
+
+---
+
 ## 2026-06-19 — Session 95: Cohesion Score History + Sparkline
 
 ### What was done
