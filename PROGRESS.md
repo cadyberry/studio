@@ -2731,3 +2731,32 @@
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS for sites that split tokens across files
 - **Palette sort by print risk count** — add a "most print risk" sort option to the library sort menu so creators can surface all at-risk palettes at once
 - **JSON export CMYK + oklch fields** — same upgrade as CSV but for the JSON copy action (`getJsonExport`), so the structured data export matches the CSV's completeness
+
+---
+
+## 2026-06-20 — Session 99: JSON Full-Color Export + "Most Print Risk" Sort
+
+### What was done
+- **JSON export upgraded to full color data** — `getJsonExport` in `exportPalette.ts` now emits all color spaces alongside each swatch, matching the completeness of the CSV export added last session:
+  - `rgb` — unchanged, already present
+  - `hsl` — `{h, s, l}` as rounded integers (degrees / percent)
+  - `cmyk` — `{c, m, y, k}` as integers (percent), via existing `rgbToCmyk`
+  - `oklch` — `{l, c, h}` as floats (3/4/1 decimal places), via existing `hexToOklch`
+  - All four color-space objects are `null` when the hex is malformed, keeping the output schema consistent
+  - The "Copy JSON" action in ExportModal picks up the upgrade automatically — no component changes needed
+- **"Most print risk" sort option** added to the library sort dropdown — surfaces palettes with the most at-risk swatches (oklch C > 0.12) first, letting creators find problem palettes at a glance
+  - Added `"most-print-risk"` to the `sortBy` type union
+  - `palettePrintRiskCount` useCallback: counts swatches where `hexToOklch(hex).c > 0.12` (the C > 0.12 threshold shared with PaletteCard's print risk badge and SwatchEditor's print panel)
+  - Sort case: descending count (most risk first)
+  - Dropdown option: "Most print risk" — appended after "Most gamut-clipped", grouping colorimetric sort options together
+  - No new imports — reuses `hexToOklch` already imported in `page.tsx`
+
+### Key decisions
+- **`palettePrintRiskCount` uses C > 0.12 (combined threshold)** — counts both vivid and moderate risk together, matching what the badge on PaletteCard shows as "N print risk"; sorting by the same number the badge displays keeps the library view coherent
+- **HSL as integers** in JSON — matches how HSL is conventionally displayed (CSS `hsl()` uses degrees/percent with no decimal); CMYK is also already integers from `rgbToCmyk`
+- **oklch precision 3/4/1** — same as the CSV export and SwatchEditor display; consistent precision across all export formats
+
+### What's next (Session 100)
+- **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS for sites that split tokens across imported files
+- **Color search history** — recent hex color searches stored in localStorage; a dropdown below the color search input for quick re-use
+- **Palette "Print-ready" quick filter** — a toggle in the filter bar that hides all palettes with any print risk swatches, so creators can instantly see their safe-for-print palettes only
