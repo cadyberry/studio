@@ -110,7 +110,7 @@ export default function Home() {
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk">("newest");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
     if (p.colors.length === 0) return 0;
@@ -123,6 +123,9 @@ export default function Home() {
   }, []);
   const paletteGamutClippedCount = useCallback((p: Palette): number =>
     p.colors.filter((c) => { const ok = hexToOklch(c.hex); return ok ? isOklchOutOfSrgbGamut(ok.l, ok.c, ok.h) : false; }).length,
+  []);
+  const palettePrintRiskCount = useCallback((p: Palette): number =>
+    p.colors.reduce((n, c) => { const ok = hexToOklch(c.hex); return ok && ok.c > 0.12 ? n + 1 : n; }, 0),
   []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -350,6 +353,7 @@ export default function Home() {
           case "light-first": return paletteMeanLightness(b) - paletteMeanLightness(a);
           case "dark-first": return paletteMeanLightness(a) - paletteMeanLightness(b);
           case "most-clipped": return paletteGamutClippedCount(b) - paletteGamutClippedCount(a);
+          case "most-print-risk": return palettePrintRiskCount(b) - palettePrintRiskCount(a);
         }
       });
 
@@ -1034,6 +1038,7 @@ export default function Home() {
                           <option value="light-first">Lightest first</option>
                           <option value="dark-first">Darkest first</option>
                           <option value="most-clipped">Most gamut-clipped</option>
+                          <option value="most-print-risk">Most print risk</option>
                         </select>
                       </div>
                     </>

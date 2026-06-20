@@ -385,7 +385,17 @@ export function getJsonExport(palette: Palette): string {
       name: palette.name,
       colors: palette.colors.map((c) => {
         const rgb = hexToRgb(c.hex);
-        return { hex: c.hex, ...(c.name ? { name: c.name } : {}), rgb };
+        const hsl = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b) : null;
+        const cmyk = rgb ? rgbToCmyk(rgb.r, rgb.g, rgb.b) : null;
+        const oklch = hexToOklch(c.hex);
+        return {
+          hex: c.hex,
+          ...(c.name ? { name: c.name } : {}),
+          rgb,
+          hsl: hsl ? { h: Math.round(hsl.h), s: Math.round(hsl.s), l: Math.round(hsl.l) } : null,
+          cmyk,
+          oklch: oklch ? { l: parseFloat(oklch.l.toFixed(3)), c: parseFloat(oklch.c.toFixed(4)), h: parseFloat(oklch.h.toFixed(1)) } : null,
+        };
       }),
     },
     null,
