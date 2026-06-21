@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-06-21 — Session 102: Collection Sort by Cohesion Score
+
+### What was done
+- **Collection sort control in sidebar** — a compact `<select>` added to the "Collections" header row lets Cady sort her collection list four ways:
+  - **Added** (default) — creation order, same as before, no disruption to existing workflow
+  - **Most cohesive** — descending `computeCohesionScore`; collections with ≥2 palettes are ranked, collections with <2 palettes (score undefined, treated as -1) sink to the bottom
+  - **A → Z** — `localeCompare` alphabetical sort
+  - **Most palettes** — descending palette count
+- `sortedActiveCollections` computed with `useMemo` — depends on `[activeCollections, collectionSortBy, palettes]`; stable reference when inputs don't change, avoids unnecessary re-renders
+- The sidebar list renders from `sortedActiveCollections` instead of `activeCollections`; all hover panels, cohesion scores, and badges work identically — it's a pure sort
+- Added `useMemo` to the React import
+- Production build: clean Turbopack compile, zero TypeScript errors, 6 routes passing
+
+### Key decisions
+- **"Added" label for default** — more descriptive than "Default" or "—"; matches how the palette sort dropdown labels the baseline state; reminds the user what the unsorted order is
+- **Collections with no cohesion score sort below all scored ones** — score -1 for collections with <2 palettes; they didn't earn a rank and shouldn't occupy prime position
+- **`useMemo` not `useCallback`** — the output is an array value, not a function; `useMemo` is the right primitive
+- **Compact `<select>` in header row, not a modal** — the collection list is already compact; a modal sort picker would be disproportionate; a tiny unstyled select in the row header is consistent with how the palette sort works in the main area
+
+### What's next (Session 103)
+- **Color search history persistence** — verify `colorSearchHistory` writes to localStorage on change and loads on mount; add a minimal recently-searched dropdown below the color search input
+- **Cohesion score shareable link** — "Share report" button on CohesionModal encodes the score + per-axis breakdown in a URL for easy handoff (long-standing backlog item)
+- **Palette compare: color math summary** — in the CompareModal, show ΔE distance and a descriptive label ("near-identical", "similar", "distinct") between each pair of swatches across the two palettes
+
+---
+
 ## 2026-06-21 — Session 101: Print-Safe Collection Badge in Sidebar
 
 ### What was done
