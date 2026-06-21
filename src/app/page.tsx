@@ -705,9 +705,18 @@ export default function Home() {
                     const isActive = activeCollection === c.id;
                     const isRenaming = renamingCollectionId === c.id;
                     const isFlashing = flashedCollectionId === c.id;
+                    const collectionPrintSafe = count > 0 && swatchCount > 0 && collectionPalettes.every(p => !palettePrintRiskAny(p));
 
                     const scoreAndCount = (
                       <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                        {collectionPrintSafe && (
+                          <span title="All palettes in this collection are print-safe (no CMYK gamut risk)" className="flex items-center">
+                            <CheckCircle2
+                              size={9}
+                              className={`flex-shrink-0 ${isActive ? "opacity-60" : "text-emerald-500 dark:text-emerald-400"}`}
+                            />
+                          </span>
+                        )}
                         {cohesionScore !== null && (
                           <span
                             className="text-[9px] font-bold tabular-nums leading-none"
@@ -908,12 +917,25 @@ export default function Home() {
                                   </p>
                                 )}
                               </div>
-                              {cohesionScore !== null && (
-                                <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
-                                  <span className="text-[9px] text-[var(--muted)]">Cohesion</span>
-                                  <span className="text-[10px] font-bold tabular-nums" style={{ color: scoreColor ?? "var(--muted)" }}>
-                                    {cohesionScore}/100
-                                  </span>
+                              {(cohesionScore !== null || collectionPrintSafe) && (
+                                <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
+                                  {cohesionScore !== null && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] text-[var(--muted)]">Cohesion</span>
+                                      <span className="text-[10px] font-bold tabular-nums" style={{ color: scoreColor ?? "var(--muted)" }}>
+                                        {cohesionScore}/100
+                                      </span>
+                                    </div>
+                                  )}
+                                  {collectionPrintSafe && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] text-[var(--muted)]">Print-safe</span>
+                                      <span className="flex items-center gap-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        <CheckCircle2 size={9} />
+                                        All safe
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
