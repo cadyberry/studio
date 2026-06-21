@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-21 — Session 101: Print-Safe Collection Badge in Sidebar
+
+### What was done
+- **Print-safe badge on sidebar collection items** — collections where every palette passes the CMYK print-safe check (oklch C ≤ 0.12 for all swatches) now show a small emerald `CheckCircle2` icon next to the cohesion score in the sidebar, giving Cady an instant read on which collections are fully press-ready without opening each one
+  - Badge appears only when `count > 0 && swatchCount > 0` — hides for empty collections where the check is meaningless
+  - Active state (collection is selected): badge inherits the accent text color at 60% opacity, consistent with how the cohesion score behaves when a collection is selected
+  - Inactive state: emerald-500 (light) / emerald-400 (dark), matching the "Print-safe" pill vocabulary established in session 100
+  - Tooltip on the badge's `<span>` wrapper: "All palettes in this collection are print-safe (no CMYK gamut risk)"
+- **Print-safe row in expanded collection panel** — the hover-expanded detail panel (which shows palette previews and cohesion score) now also shows a "Print-safe: ✓ All safe" row when `collectionPrintSafe` is true, grouped with the cohesion score under the same border-top divider
+  - The section guard was broadened: `{cohesionScore !== null || collectionPrintSafe}` — so a collection with no cohesion score (< 2 palettes) but all print-safe swatches still shows the panel
+- `collectionPrintSafe` derived value: `count > 0 && swatchCount > 0 && collectionPalettes.every(p => !palettePrintRiskAny(p))` — pure client-side, reuses the `palettePrintRiskAny` useCallback and `hexToOklch` pipeline, no new math or imports
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing
+
+### Key decisions
+- **Badge only for the all-safe case** — not showing a "N at risk" counter on risky collections in the sidebar (the per-palette print risk badges on PaletteCard already surface that); the sidebar badge is a positive confirmation signal only, keeping the sidebar scannable
+- **Emerald as the print-safe color** — matches the "Print-safe" filter pill from session 100 exactly; emerald = safe, consistent vocabulary across the app
+- **Title on wrapper `<span>` not on the icon** — lucide-react v1.x does not expose `title` as a prop on SVG components; wrapping in a span with `title` is the correct pattern used throughout the file
+
+### What's next (Session 102)
+- **Palette sort by cohesion score** — add a "Most cohesive" sort option that ranks collections by cohesion score in the sidebar (or surfaces the cohesion score rank in the sort dropdown for palettes within a collection)
+- **Color search history persistence** — verify that `colorSearchHistory` properly persists across page reloads via localStorage (load on mount, save on change)
+- **`/palette/:id` shareable page** — a public-facing read-only view for a single palette (hex grid, color data) encoded in the URL like the cohesion report page
+
+---
+
 ## 2026-06-20 — Session 100: Print-Safe Quick Filter
 
 ### What was done
