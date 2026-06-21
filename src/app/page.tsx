@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type JSX } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
@@ -111,6 +111,7 @@ export default function Home() {
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk">("newest");
+  const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
     if (p.colors.length === 0) return 0;
@@ -248,6 +249,25 @@ export default function Home() {
   const activeCollectionInfo = activeCollection !== "all" ? (collections.find((c) => c.id === activeCollection) ?? null) : null;
   const activeCollections = collections.filter((c) => !c.archived);
   const archivedCollections = collections.filter((c) => c.archived);
+  const sortedActiveCollections = useMemo(() => {
+    if (collectionSortBy === "default") return activeCollections;
+    return [...activeCollections].sort((a, b) => {
+      if (collectionSortBy === "name-asc") return a.name.localeCompare(b.name);
+      if (collectionSortBy === "count-desc") {
+        const ca = palettes.filter((p) => p.collectionId === a.id).length;
+        const cb = palettes.filter((p) => p.collectionId === b.id).length;
+        return cb - ca;
+      }
+      if (collectionSortBy === "cohesion-desc") {
+        const pa = palettes.filter((p) => p.collectionId === a.id);
+        const pb = palettes.filter((p) => p.collectionId === b.id);
+        const sa = pa.length >= 2 ? computeCohesionScore(pa) : -1;
+        const sb = pb.length >= 2 ? computeCohesionScore(pb) : -1;
+        return sb - sa;
+      }
+      return 0;
+    });
+  }, [activeCollections, collectionSortBy, palettes]);
   const activeCollectionCount = activeCollectionInfo ? palettes.filter((p) => p.collectionId === activeCollection).length : 0;
 
   // Library stats (sidebar widget)
@@ -676,9 +696,22 @@ export default function Home() {
             {/* Collections sidebar */}
             {collections.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-3">
-                  Collections
-                </h2>
+                <div className="flex items-center gap-2 mb-3">
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+                    Collections
+                  </h2>
+                  <select
+                    value={collectionSortBy}
+                    onChange={(e) => setCollectionSortBy(e.target.value as typeof collectionSortBy)}
+                    title="Sort collections"
+                    className="ml-auto text-[9px] font-medium bg-transparent text-[var(--muted)] hover:text-[var(--foreground)] border-0 outline-none cursor-pointer transition-colors py-0 pr-0 appearance-none"
+                  >
+                    <option value="default">Added</option>
+                    <option value="cohesion-desc">Most cohesive</option>
+                    <option value="name-asc">A → Z</option>
+                    <option value="count-desc">Most palettes</option>
+                  </select>
+                </div>
                 <div className="space-y-1">
                   <button
                     onClick={() => setActiveCollection("all")}
@@ -692,7 +725,7 @@ export default function Home() {
                     All palettes
                     <span className="ml-auto text-xs opacity-60">{palettes.length}</span>
                   </button>
-                  {activeCollections.map((c) => {
+                  {sortedActiveCollections.map((c) => {
                     const collectionPalettes = palettes.filter((p) => p.collectionId === c.id);
                     const count = collectionPalettes.length;
                     const swatchCount = collectionPalettes.reduce((acc, p) => acc + p.colors.length, 0);
