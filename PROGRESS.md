@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-06-22 — Session 104: Color Browser View
+
+### What was done
+- **Color Browser view mode** — a new `Palettes / Colors` toggle in the library header switches from the palette grid to a hue-organized swatch index
+  - Toggle renders as a compact two-button group next to the "Library" heading
+  - `colorIndex` useMemo collects every unique hex from the currently-filtered palettes, deduplicates by hex value, and records which palette(s) share each swatch
+  - Hue sorting: oklch `h` angle used to sort chromatics; a separate neutrals pass uses RGB range (`max − min < 28`) to separate greys/blacks/whites before the hue bands see them
+  - Nine hue bands: Reds · Oranges · Yellows · Yellow-Greens · Greens · Cyans · Blues · Purples · Pinks — only non-empty bands render
+  - Neutrals group at the bottom sorted by lightness (dark → light)
+  - Each swatch: 40×40 responsive grid (`auto-fill minmax(40px,1fr)`), hover shows hex + copy button, multi-palette badge shows count when shared across palettes
+  - Click on a swatch: switches back to Palettes view and activates color search for that hex — the palette list immediately sorts by ΔE closest match
+  - `ColorBrowser` extracted as its own component (`src/components/palette/ColorBrowser.tsx`) to keep page.tsx clean
+- Zero TypeScript errors, clean Turbopack build, 6 routes passing
+
+### Key decisions
+- **RGB range heuristic for neutrals** — oklch chroma would be ideal but requires the full conversion pipeline per swatch; RGB `max − min < 28` is fast, accurate for true greys, and avoids importing more math. Slight edge colors (e.g. very muted lavenders) may land in chromatics — acceptable for a browse tool
+- **Auto-fill minmax(40px, 1fr) grid** — swatches naturally pack as many per row as the container allows, no fixed column count; works cleanly at all widths and for both large and tiny palettes
+- **Click → color search instead of modal** — rather than opening a detail panel, clicking a color flows the user right into the existing ΔE-sorted palette view, which is already rich and familiar; no extra UI surface needed
+- **Toggle persists no URL state** — view mode is ephemeral session state, not a URL param; the Colors view is a browsing tool, not a sharable destination
+
+### What's next (Session 105)
+- **Palette variation generator** — given a palette, produce 4 auto-derived variants: lighter, darker, muted, saturated; each shown as a mini palette strip with a "Fork to library" button; useful for creating product color variations
+- **Swatch name bulk-apply via Claude API** — "Name all swatches with AI" button that calls the API and suggests a creative name for each hex in a palette (e.g. "Dusty Mauve", "Forest Teal")
+- **Color Browser: swatch detail tooltip** — on hover, show the palette names as a stacked mini list with palette color strips so the user can see context without leaving the Colors view
+
+---
+
 ## 2026-06-22 — Session 103: AI Palette Naming in Rename Dialog
 
 ### What was done
