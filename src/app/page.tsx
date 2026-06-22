@@ -18,6 +18,7 @@ import ImportModal from "@/components/palette/ImportModal";
 import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
+import ColorBrowser from "@/components/palette/ColorBrowser";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch } from "@/types";
@@ -155,6 +156,7 @@ export default function Home() {
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [bulkTagInput, setBulkTagInput] = useState("");
   const bulkTagInputRef = useRef<HTMLInputElement>(null);
+  const [viewMode, setViewMode] = useState<"palettes" | "colors">("palettes");
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -408,6 +410,34 @@ export default function Home() {
     }
     return [...pinnedItems, ...rest];
   })();
+
+  // Color Browser: all unique hex values from currently-filtered palettes, sorted by oklch hue
+  const colorIndex = useMemo(() => {
+    const map = new Map<string, { hex: string; paletteIds: string[]; paletteNames: string[]; hue: number; lightness: number }>();
+    filtered.forEach((palette) => {
+      palette.colors.forEach((c) => {
+        const hex = c.hex.toLowerCase();
+        const oklch = hexToOklch(hex);
+        const hue = oklch ? oklch.h : 0;
+        const lightness = oklch ? oklch.l : 0.5;
+        const existing = map.get(hex);
+        if (existing) {
+          if (!existing.paletteIds.includes(palette.id)) {
+            existing.paletteIds.push(palette.id);
+            existing.paletteNames.push(palette.name);
+          }
+        } else {
+          map.set(hex, { hex, paletteIds: [palette.id], paletteNames: [palette.name], hue, lightness });
+        }
+      });
+    });
+    return [...map.values()].sort((a, b) => {
+      const ah = ((a.hue % 360) + 360) % 360;
+      const bh = ((b.hue % 360) + 360) % 360;
+      if (Math.abs(ah - bh) > 1) return ah - bh;
+      return a.lightness - b.lightness;
+    });
+  }, [filtered]);
 
   const handleSetCover = (palette: Palette) => {
     if (activeCollection === "all") return;
@@ -1047,6 +1077,36 @@ export default function Home() {
                 <span className="text-[11px] text-[var(--muted)] font-normal normal-case tracking-normal shrink-0 truncate max-w-[140px]">
                   — {activeCollectionInfo.name} · {activeCollectionCount}
                 </span>
+              )}
+              {/* View mode toggle */}
+              {palettes.length > 0 && (
+                <div className="flex items-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] overflow-hidden shrink-0 mr-auto">
+                  <button
+                    onClick={() => setViewMode("palettes")}
+                    className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      viewMode === "palettes"
+                        ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                    }`}
+                    title="Palette view"
+                  >
+                    Palettes
+                  </button>
+                  <button
+                    onClick={() => setViewMode("colors")}
+                    className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      viewMode === "colors"
+                        ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                    }`}
+                    title="Browse all colors by hue"
+                  >
+                    Colors
+                    {viewMode === "colors" && colorIndex.length > 0 && (
+                      <span className="ml-1 opacity-70">{colorIndex.length}</span>
+                    )}
+                  </button>
+                </div>
               )}
               {palettes.length > 0 && (
                 <>
@@ -1762,6 +1822,15 @@ export default function Home() {
                   Clear all filters
                 </Button>
               </motion.div>
+            ) : viewMode === "colors" ? (
+              <ColorBrowser
+                colorIndex={colorIndex}
+                onSelectColor={(hex) => {
+                  setViewMode("palettes");
+                  setColorSearchActive(true);
+                  setColorSearchHex(hex);
+                }}
+              />
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence mode="popLayout">
