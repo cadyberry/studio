@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-22 — Session 103: AI Palette Naming in Rename Dialog
+
+### What was done
+- **AI name suggestions wired into RenameModal** — the rename dialog now has a "Suggest names with AI" affordance that calls the existing `/api/name-palette` route and renders 3 clickable name chips; clicking a chip populates the input so the user can accept or tweak before saving
+  - Suggestions appear as rounded pill buttons below the text input, each with hover accent color
+  - Loading state shows a spinner + "Generating names…" label while the API call is in-flight
+  - After suggestions load, re-clicking a suggestion again sets the input value (idempotent)
+  - Error handling is silent — a failed API call simply leaves suggestions empty; the user can retry by clicking "Suggest names with AI" again (the link re-appears after clearing)
+  - `setSuggestions([])` on palette change so a fresh open always starts clean
+- **Switched `/api/name-palette` from `claude-opus-4-7` to `claude-haiku-4-5`** — this is a low-complexity naming task; Haiku is faster and cheaper with identical quality for short creative names; `output_config: { effort: "low" }` removed (not a valid Haiku param)
+- No new dependencies — uses existing `Sparkles` and `Loader2` from `lucide-react`, plus native `fetch`
+
+### Key decisions
+- **"Suggest names with AI" text link, not a button** — keeps the modal visually minimal; the link reads as optional enrichment rather than a required action, matching the palette's creative workflow
+- **3 chip pills, not a dropdown** — the suggestions are short (1–4 words each); pills make all three visible at a glance with a single tap; a dropdown would add unnecessary friction for 3 items
+- **Silent error handling** — AI suggestions are a convenience, not a critical path; surfacing an error toast for a name-suggestion failure would be disproportionate; the affordance simply stays idle
+- **Re-clicking a chip re-sets the input** — lets the user toggle between suggestions without clearing and retyping; particularly useful when a previous suggestion was partially edited
+
+### What's next (Session 104)
+- **Export palette as PNG/SVG swatch sheet** — a small "Export" button on PaletteCard or in the palette detail view that generates a downloadable image of the color swatches with hex values
+- **Palette tags** — lightweight freeform tags on palettes (e.g. "warm", "spring", "vintage") that appear in a tag strip below the color grid and filter the library view
+- **Batch delete / multi-select** — checkbox mode on PaletteCard for selecting multiple palettes and deleting or moving them to a collection in one action
+
+---
+
 ## 2026-06-21 — Session 102: Collection Sort by Cohesion Score
 
 ### What was done
