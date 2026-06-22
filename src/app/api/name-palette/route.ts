@@ -22,9 +22,8 @@ export async function POST(request: Request) {
   const colorList = colors.join(", ");
 
   const message = await client.messages.create({
-    model: "claude-opus-4-7",
+    model: "claude-haiku-4-5",
     max_tokens: 128,
-    output_config: { effort: "low" },
     messages: [
       {
         role: "user",
