@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-06-23 — Session 106: AI Swatch Naming (Bulk)
+
+### What was done
+- **"Name all swatches with AI" button** — a `Tags` icon button in the PaletteCard toolbar calls a new `/api/name-swatches` route, receives one creative paint-style name per swatch, and writes them all to the palette in one action
+  - Button states: idle (Tags icon) → loading (spinner) → done (green ✓ for 2s) → error (rose, auto-resets)
+  - Names written via `updatePalette(id, { colors: [..., name: aiName] })` — standard store update, persisted to localStorage instantly
+  - Positioned next to the existing palette-level Wand2 naming button — complementary tools, one click each
+- **New `/api/name-swatches` route** — Haiku-4-5, prompted to produce Pantone/artist-paint style names (2–3 words, poetic, specific: "Dusty Mauve", "Forest Teal", "Warm Parchment")
+  - Accepts `{ colors: string[] }`, returns `{ names: string[] }` — one name per hex, in order
+  - Strips any line numbering that slips through; slices to `colors.length` so a short response never mismatigns
+- **Swatch name labels on strip** — when a swatch has a `.name` field, a small pill label appears at the bottom of the swatch persistently; on hover the label fades out and the hex code appears (same transition as before). Works in both frozen and unfrozen (drag-to-reorder) modes.
+  - Label styled with a translucent background matched to the swatch's contrast direction so it's legible on any color
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Per-swatch names vs palette-level names** — the Wand2 button already names the palette; the Tags button names each individual swatch; the two work together (use Wand2 first, then Tags) without competing
+- **Name-on-rest, hex-on-hover** — inverts the existing opacity pattern so swatch names are always visible without the user needing to hover; hex is surfaced on hover when you need the exact code for copy/paste
+- **Haiku-4-5 for speed** — swatch naming is a creative but low-complexity task (N × "paint name"); Haiku returns results fast enough that the spinner is barely visible for typical palette sizes (5–8 swatches)
+
+### What's next (Session 107)
+- **Color Browser: swatch detail tooltip on hover** — in Colors view, hover shows a mini panel listing all palette names that contain that hex, with their color strips
+- **Variation sort option** — "Most varied" sort ranks palettes by oklch L range spread, surfacing palettes best suited for light/dark variant generation
+- **Swatch name display in SwatchEditor** — show and allow editing the swatch name in the editor panel alongside hex/HSL/oklch values
+
+---
+
 ## 2026-06-23 — Session 105: Palette Variation Generator
 
 ### What was done
