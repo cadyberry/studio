@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -139,6 +139,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [suggestionIdx, setSuggestionIdx] = useState(-1);
   const [variationsOpen, setVariationsOpen] = useState(false);
   const [forkedVariant, setForkedVariant] = useState<PaletteVariant | null>(null);
+  const [swatchNaming, setSwatchNaming] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -448,6 +449,30 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setTimeout(() => setForkedVariant(null), 1500);
   };
 
+  const handleNameSwatches = async () => {
+    setSwatchNaming("loading");
+    try {
+      const res = await fetch("/api/name-swatches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ colors: palette.colors.map((c) => c.hex) }),
+      });
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      if (!data.names?.length) throw new Error("No names returned");
+      const updatedColors = palette.colors.map((c, i) => ({
+        ...c,
+        name: data.names[i] ?? c.name,
+      }));
+      updatePalette(palette.id, { colors: updatedColors });
+      setSwatchNaming("done");
+      setTimeout(() => setSwatchNaming("idle"), 2000);
+    } catch {
+      setSwatchNaming("error");
+      setTimeout(() => setSwatchNaming("idle"), 2000);
+    }
+  };
+
   const handleDelete = () => {
     if (confirming) {
       deletePalette(palette.id);
@@ -541,6 +566,21 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       </div>
                     </motion.div>
                   )}
+                  {color.name && (
+                    <div
+                      className="absolute inset-x-0 bottom-0 flex items-end justify-center pb-1.5 group-hover/swatch:opacity-0 transition-opacity pointer-events-none"
+                      style={{ color: getContrastColor(color.hex) }}
+                    >
+                      <span
+                        className="text-[8px] font-semibold leading-none truncate max-w-[90%] text-center px-1 py-px rounded-[2px]"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.28)" : "rgba(255,255,255,0.38)",
+                        }}
+                      >
+                        {color.name}
+                      </span>
+                    </div>
+                  )}
                   <div
                     className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
                     style={{ color: getContrastColor(color.hex) }}
@@ -629,6 +669,21 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                         <Check size={9} />
                       </div>
                     </motion.div>
+                  )}
+                  {color.name && (
+                    <div
+                      className="absolute inset-x-0 bottom-0 flex items-end justify-center pb-1.5 group-hover/swatch:opacity-0 transition-opacity pointer-events-none"
+                      style={{ color: getContrastColor(color.hex) }}
+                    >
+                      <span
+                        className="text-[8px] font-semibold leading-none truncate max-w-[90%] text-center px-1 py-px rounded-[2px]"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.28)" : "rgba(255,255,255,0.38)",
+                        }}
+                      >
+                        {color.name}
+                      </span>
+                    </div>
                   )}
                   <div
                     className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
@@ -1014,6 +1069,28 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               <Loader2 size={13} className="animate-spin" />
             ) : (
               <Wand2 size={13} />
+            )}
+          </Button>
+          <Button
+            variant={swatchNaming === "done" ? "outline" : "ghost"}
+            size="sm"
+            onClick={handleNameSwatches}
+            disabled={swatchNaming === "loading"}
+            title={
+              swatchNaming === "done"
+                ? "Swatches named!"
+                : swatchNaming === "error"
+                ? "Naming failed — try again"
+                : "Name all swatches with AI"
+            }
+            className={swatchNaming === "done" ? "text-green-600 border-green-300 dark:text-green-400 dark:border-green-700" : swatchNaming === "error" ? "text-rose-500" : ""}
+          >
+            {swatchNaming === "loading" ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : swatchNaming === "done" ? (
+              <Check size={13} />
+            ) : (
+              <Tags size={13} />
             )}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => onHarmony(palette)} title="Harmony view">
