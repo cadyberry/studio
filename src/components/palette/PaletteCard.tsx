@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, type PaletteMood } from "@/lib/utils";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle } from "lucide-react";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -137,6 +137,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [notesValue, setNotesValue] = useState(palette.notes ?? "");
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [suggestionIdx, setSuggestionIdx] = useState(-1);
+  const [variationsOpen, setVariationsOpen] = useState(false);
+  const [forkedVariant, setForkedVariant] = useState<PaletteVariant | null>(null);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -424,6 +426,26 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     });
     setForkedHarmony(true);
     setTimeout(() => setForkedHarmony(false), 1500);
+  };
+
+  const openVariations = () => {
+    setTagging(false);
+    setTagInput("");
+    setNaming({ type: "idle" });
+    setNotesOpen(false);
+    setVariationsOpen(true);
+  };
+
+  const handleForkVariant = (variant: PaletteVariant) => {
+    const variantColors = derivePaletteVariant(palette.colors, variant);
+    addPalette({
+      name: `${palette.name} · ${PALETTE_VARIANT_LABELS[variant]}`,
+      colors: variantColors,
+      tags: ["variant"],
+      collectionId: palette.collectionId,
+    });
+    setForkedVariant(variant);
+    setTimeout(() => setForkedVariant(null), 1500);
   };
 
   const handleDelete = () => {
@@ -997,6 +1019,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           <Button variant="ghost" size="sm" onClick={() => onHarmony(palette)} title="Harmony view">
             <Eye size={13} />
           </Button>
+          <Button
+            variant={variationsOpen ? "outline" : "ghost"}
+            size="sm"
+            onClick={variationsOpen ? () => setVariationsOpen(false) : openVariations}
+            title="Generate palette variations"
+          >
+            <Shuffle size={13} />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onRename(palette)} title="Rename">
             <Edit2 size={13} />
           </Button>
@@ -1292,6 +1322,71 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             </p>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Variations overlay */}
+      <AnimatePresence>
+        {variationsOpen && (() => {
+          const VARIANTS: PaletteVariant[] = ["lighter", "darker", "muted", "saturated"];
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+            >
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                  Variations
+                </span>
+                <button
+                  onClick={() => setVariationsOpen(false)}
+                  className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {VARIANTS.map((variant) => {
+                  const variantColors = derivePaletteVariant(palette.colors, variant);
+                  const forked = forkedVariant === variant;
+                  return (
+                    <div key={variant} className="flex items-center gap-2">
+                      <span className="text-[10px] text-[var(--muted)] w-14 shrink-0 font-medium">
+                        {PALETTE_VARIANT_LABELS[variant]}
+                      </span>
+                      <div className="flex flex-1 rounded-[3px] overflow-hidden h-6 min-w-0">
+                        {variantColors.map((c, i) => (
+                          <div
+                            key={i}
+                            style={{ flex: 1, backgroundColor: c.hex }}
+                            title={c.hex}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => handleForkVariant(variant)}
+                        disabled={forked}
+                        title={forked ? "Added to library!" : `Add ${PALETTE_VARIANT_LABELS[variant]} variant to library`}
+                        className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+                          forked
+                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--accent)] hover:text-[var(--accent-fg)]"
+                        }`}
+                      >
+                        {forked ? "✓" : "Fork"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-[var(--muted)] mt-2">
+                Each variant is added to your library with a &ldquo;variant&rdquo; tag
+              </p>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Notes overlay */}

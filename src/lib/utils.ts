@@ -508,6 +508,55 @@ export function isOklchOutOfSrgbGamut(l: number, c: number, h: number): boolean 
   return rl < -eps || rl > 1 + eps || gl < -eps || gl > 1 + eps || bl < -eps || bl > 1 + eps;
 }
 
+// ─── Palette Variation Derivation ────────────────────────────────────────────
+
+export type PaletteVariant = "lighter" | "darker" | "muted" | "saturated";
+
+export const PALETTE_VARIANT_LABELS: Record<PaletteVariant, string> = {
+  lighter:   "Lighter",
+  darker:    "Darker",
+  muted:     "Muted",
+  saturated: "Vivid",
+};
+
+// Derive a single-color variant in perceptual oklch space.
+// Each transform preserves hue; only L and/or C are adjusted.
+export function deriveVariantHex(hex: string, variant: PaletteVariant): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const ok = rgbToOklch(rgb.r, rgb.g, rgb.b);
+  let { l, c, h } = ok;
+  switch (variant) {
+    case "lighter":
+      // Push 40% toward perceptual white; drop chroma slightly to keep it airy
+      l = l + (100 - l) * 0.4;
+      c = c * 0.75;
+      break;
+    case "darker":
+      // Push 40% toward perceptual black; preserve chroma for richness
+      l = Math.max(4, l - l * 0.4);
+      c = c * 0.85;
+      break;
+    case "muted":
+      // Drain chroma to ~30% — greys, earthy tones
+      c = c * 0.3;
+      break;
+    case "saturated":
+      // Boost chroma 60%, floor at 0.06 so neutrals still get a push
+      c = Math.min(0.33, Math.max(0.06, c) * 1.6);
+      break;
+  }
+  return oklchToHex(Math.max(0, Math.min(100, l)), Math.max(0, c), h);
+}
+
+// Derive an entire palette as a variant.
+export function derivePaletteVariant(
+  colors: { hex: string; name?: string }[],
+  variant: PaletteVariant
+): { hex: string; name?: string }[] {
+  return colors.map((c) => ({ ...c, hex: deriveVariantHex(c.hex, variant) }));
+}
+
 // ─── Color Name Suggestions ───────────────────────────────────────────────────
 
 // Curated set of designer-friendly color names covering the full hue/lightness
