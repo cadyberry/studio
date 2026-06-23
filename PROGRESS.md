@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-23 — Session 105: Palette Variation Generator
+
+### What was done
+- **Palette variation generator** — a "Shuffle" button (↕ icon) in the PaletteCard toolbar opens an in-card overlay showing 4 auto-derived palette variants with one-click forking to the library
+  - **4 variant types**, all computed in perceptual oklch space to ensure natural-looking results:
+    - **Lighter** — L pushed 40% toward perceptual white, C reduced to 75% (airy, pastel direction)
+    - **Darker** — L reduced by 40%, C preserved at 85% (rich, saturated darks)
+    - **Muted** — C drained to 30% (earthy, desaturated tones; great for backgrounds)
+    - **Vivid** — C boosted 60% with a floor of 0.06 so even neutrals get a pop (neons, jewel tones)
+  - Each variant row shows: label · mini swatch strip (full-width flex, h-6) · "Fork" button
+  - Fork button: `addPalette({ name: "${source} · Lighter", tags: ["variant"], collectionId: same as source })` — variant lands in the same collection as the source palette, or in Uncategorized if source is unassigned
+  - Fork feedback: button flips to green ✓ for 1.5s so the user knows it worked without leaving the card
+  - Panel dismisses via X button or clicking "Shuffle" again (toggle behavior)
+- **`deriveVariantHex` / `derivePaletteVariant`** added to `utils.ts` — pure functions, no imports beyond already-exported oklch pipeline; fully reusable for future batch analysis
+- **`PaletteVariant` type + `PALETTE_VARIANT_LABELS` map** exported from utils for consistent labeling across UI surfaces
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing
+
+### Key decisions
+- **oklch for all variant math** — HSL variants would shift perceived hue at the lightness extremes (HSL is not perceptually uniform); oklch L and C are perceptually linear, so "push L up 40%" produces a natural tint rather than a blown-out or muddy result
+- **C * 0.3 for "Muted"** (not C - 0.1) — multiplicative reduction keeps very muted colors (already low C) from going completely grey while still noticeably desaturating vivid colors; additive would over-grey the former and under-desaturate the latter
+- **Vivid floor at max(0.06, C) before boosting** — pure neutral greys (C≈0) would produce no visible change with a multiplicative boost; the floor gives them a gentle nudge into a chromatic tint, making the variation actually useful for grey palettes
+- **Forked palette inherits `collectionId`** — a variation on a palette in "Spring Drop" should land in "Spring Drop" by default; the creator can move it if needed, but auto-grouping reduces friction for building out product color families
+- **Overlay panel, not a modal** — keeps the user in context of the library view; the 4 swatches are small enough to fit within any palette card footprint; no full-screen interruption for a quick creative exploration
+
+### What's next (Session 106)
+- **Swatch name bulk-apply via Claude API** — "Name all swatches with AI" button that calls `/api/name-palette` and annotates every swatch in a palette with a creative name (e.g. "Dusty Mauve", "Forest Teal")
+- **Color Browser: swatch detail on hover** — on hover in Color Browser view, show a mini tooltip listing all palette names that contain that hex, with their color strips
+- **Variation sort option** — "Most varied" sort that ranks palettes by how spread their oklch L range is, helping find palettes that are well-suited for generating both lighter and darker variants
+
+---
+
 ## 2026-06-22 — Session 104: Color Browser View
 
 ### What was done
