@@ -149,6 +149,7 @@ export default function Home() {
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [printReadyOnly, setPrintReadyOnly] = useState(false);
+  const [highlightedPaletteId, setHighlightedPaletteId] = useState<string | null>(null);
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showHelp, setShowHelp] = useState(false);
@@ -167,6 +168,11 @@ export default function Home() {
     setActiveCollection(id);
     setFlashedCollectionId(id);
     setTimeout(() => setFlashedCollectionId(null), 820);
+  }, []);
+
+  const handleJumpToPalette = useCallback((paletteId: string) => {
+    setViewMode("palettes");
+    setHighlightedPaletteId(paletteId);
   }, []);
 
   const commitCollectionRename = useCallback(() => {
@@ -319,6 +325,17 @@ export default function Home() {
       return [validColorSearch, ...filtered].slice(0, 8);
     });
   }, [validColorSearch]);
+
+  useEffect(() => {
+    if (!highlightedPaletteId) return;
+    // Scroll to the palette card shortly after viewMode switch renders
+    const scrollTimer = setTimeout(() => {
+      document.getElementById(`pc-${highlightedPaletteId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    // Clear the highlight after the animation plays
+    const clearTimer = setTimeout(() => setHighlightedPaletteId(null), 2200);
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+  }, [highlightedPaletteId]);
 
   const baseFiltered = palettes.filter((p) => {
     const matchesCollection =
@@ -1846,6 +1863,7 @@ export default function Home() {
                   setColorSearchActive(true);
                   setColorSearchHex(hex);
                 }}
+                onJumpToPalette={handleJumpToPalette}
               />
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1858,6 +1876,7 @@ export default function Home() {
                     return (
                       <PaletteCard
                         key={palette.id}
+                        cardId={`pc-${palette.id}`}
                         palette={palette}
                         onExport={setExportTarget}
                         onRename={setRenameTarget}
@@ -1891,6 +1910,7 @@ export default function Home() {
                         activeTag={activeTag !== "all" ? activeTag : undefined}
                         onPin={(p) => togglePin(p.id)}
                         isPinned={!!palette.pinned}
+                        isHighlighted={palette.id === highlightedPaletteId}
                       />
                     );
                   })}

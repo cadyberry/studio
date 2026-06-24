@@ -22,6 +22,7 @@ interface ColorBrowserProps {
   colorIndex: ColorEntry[];
   onSelectColor: (hex: string) => void;
   paletteLookup: Map<string, PaletteStrip>;
+  onJumpToPalette?: (paletteId: string) => void;
 }
 
 const HUE_BANDS = [
@@ -44,7 +45,7 @@ function getBand(hue: number): string {
   return "Reds"; // 360 wraps to 0
 }
 
-export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup }: ColorBrowserProps) {
+export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup, onJumpToPalette }: ColorBrowserProps) {
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
 
@@ -152,22 +153,31 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup 
         {/* Palette detail panel — floats above the swatch on hover */}
         {isHovered && paletteData.length > 0 && (
           <div
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 pointer-events-none"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30"
             style={{ minWidth: 148 }}
           >
-            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] shadow-2xl p-2 space-y-1.5">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] shadow-2xl p-1.5 space-y-0.5">
               {paletteData.slice(0, 5).map((p, i) => (
-                <div key={c.paletteIds[i]} className="flex items-center gap-1.5">
+                <button
+                  key={c.paletteIds[i]}
+                  className="flex items-center gap-1.5 w-full rounded-[3px] px-1 py-0.5 hover:bg-[var(--surface-2)] transition-colors text-left"
+                  title={onJumpToPalette ? `Go to "${p.name}"` : p.name}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onJumpToPalette?.(c.paletteIds[i]);
+                  }}
+                >
                   <div className="flex rounded-[2px] overflow-hidden flex-shrink-0" style={{ width: 72, height: 10 }}>
                     {p.colors.slice(0, 8).map((col, ci) => (
                       <div key={ci} className="flex-1" style={{ backgroundColor: col.hex }} />
                     ))}
                   </div>
                   <span className="text-[9px] text-[var(--foreground)] truncate flex-1 min-w-0 leading-none">{p.name}</span>
-                </div>
+                </button>
               ))}
               {paletteData.length > 5 && (
-                <p className="text-[9px] text-[var(--muted)] text-center leading-none pt-0.5">
+                <p className="text-[9px] text-[var(--muted)] text-center leading-none py-0.5">
                   +{paletteData.length - 5} more
                 </p>
               )}
@@ -183,6 +193,8 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup 
                 }}
               />
             </div>
+            {/* Transparent gap filler — keeps pointer inside this subtree as mouse crosses mb-2 gap to swatch */}
+            <div className="absolute top-full left-0 right-0 h-2" />
           </div>
         )}
       </motion.div>

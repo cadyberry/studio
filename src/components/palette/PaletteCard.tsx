@@ -100,6 +100,8 @@ interface PaletteCardProps {
   isCompareAnchor?: boolean;
   onPin?: (palette: Palette) => void;
   isPinned?: boolean;
+  isHighlighted?: boolean;
+  cardId?: string;
 }
 
 type NamingState =
@@ -108,7 +110,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, onPin, isPinned = false }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -490,7 +492,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       exit={{ opacity: 0, scale: 0.96 }}
       onMouseEnter={() => { isHoveredRef.current = true; }}
       onMouseLeave={() => { isHoveredRef.current = false; }}
+      id={cardId}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
+        isHighlighted ? "border-sky-400 dark:border-sky-500 ring-2 ring-sky-300/70 dark:ring-sky-600/60 shadow-md" :
         isCover ? "border-amber-300 shadow-sm ring-1 ring-amber-200/60" :
         palette.frozen ? "border-indigo-200 dark:border-indigo-800/60 ring-1 ring-indigo-100/60 dark:ring-indigo-900/40" :
         isPinned ? "border-orange-200 dark:border-orange-800/60 ring-1 ring-orange-100/60 dark:ring-orange-900/30" :
