@@ -111,7 +111,7 @@ export default function Home() {
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied">("newest");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
@@ -132,6 +132,11 @@ export default function Home() {
   const palettePrintRiskAny = useCallback((p: Palette): boolean =>
     p.colors.some(c => { const ok = hexToOklch(c.hex); return ok ? ok.c > 0.12 : false; }),
   []);
+  const paletteOklchLRange = useCallback((p: Palette): number => {
+    if (p.colors.length < 2) return 0;
+    const ls = p.colors.map((c) => { const ok = hexToOklch(c.hex); return ok ? ok.l : 50; });
+    return Math.max(...ls) - Math.min(...ls);
+  }, []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -383,6 +388,7 @@ export default function Home() {
           case "dark-first": return paletteMeanLightness(a) - paletteMeanLightness(b);
           case "most-clipped": return paletteGamutClippedCount(b) - paletteGamutClippedCount(a);
           case "most-print-risk": return palettePrintRiskCount(b) - palettePrintRiskCount(a);
+          case "most-varied": return paletteOklchLRange(b) - paletteOklchLRange(a);
         }
       });
 
@@ -437,6 +443,14 @@ export default function Home() {
       if (Math.abs(ah - bh) > 1) return ah - bh;
       return a.lightness - b.lightness;
     });
+  }, [filtered]);
+
+  const paletteLookup = useMemo(() => {
+    const map = new Map<string, { name: string; colors: { hex: string }[] }>();
+    for (const p of filtered) {
+      map.set(p.id, { name: p.name, colors: p.colors });
+    }
+    return map;
   }, [filtered]);
 
   const handleSetCover = (palette: Palette) => {
@@ -1161,6 +1175,7 @@ export default function Home() {
                           <option value="dark-first">Darkest first</option>
                           <option value="most-clipped">Most gamut-clipped</option>
                           <option value="most-print-risk">Most print risk</option>
+                          <option value="most-varied">Most varied</option>
                         </select>
                       </div>
                     </>
@@ -1825,6 +1840,7 @@ export default function Home() {
             ) : viewMode === "colors" ? (
               <ColorBrowser
                 colorIndex={colorIndex}
+                paletteLookup={paletteLookup}
                 onSelectColor={(hex) => {
                   setViewMode("palettes");
                   setColorSearchActive(true);

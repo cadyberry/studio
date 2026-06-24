@@ -13,9 +13,15 @@ interface ColorEntry {
   lightness: number;
 }
 
+interface PaletteStrip {
+  name: string;
+  colors: { hex: string }[];
+}
+
 interface ColorBrowserProps {
   colorIndex: ColorEntry[];
   onSelectColor: (hex: string) => void;
+  paletteLookup: Map<string, PaletteStrip>;
 }
 
 const HUE_BANDS = [
@@ -38,7 +44,7 @@ function getBand(hue: number): string {
   return "Reds"; // 360 wraps to 0
 }
 
-export default function ColorBrowser({ colorIndex, onSelectColor }: ColorBrowserProps) {
+export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup }: ColorBrowserProps) {
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
 
@@ -86,6 +92,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor }: ColorBrowser
     const isCopied = copiedHex === c.hex;
     const fg = getContrastColor(c.hex);
     const count = c.paletteIds.length;
+    const paletteData = c.paletteIds.map((id) => paletteLookup.get(id)).filter(Boolean) as PaletteStrip[];
 
     return (
       <motion.div
@@ -100,7 +107,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor }: ColorBrowser
         onMouseLeave={() => setHoveredHex(null)}
         onClick={() => onSelectColor(c.hex)}
       >
-        {/* 48x48 square */}
+        {/* square aspect ratio */}
         <div className="w-full" style={{ paddingBottom: "100%" }} />
 
         {/* Count badge — shows when there are multiple palettes */}
@@ -116,7 +123,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor }: ColorBrowser
           </div>
         )}
 
-        {/* Hover overlay */}
+        {/* Hover overlay — hex + copy */}
         {isHovered && (
           <div
             className="absolute inset-0 rounded-[var(--radius-sm)] flex flex-col items-center justify-center gap-0.5 p-0.5"
@@ -139,6 +146,43 @@ export default function ColorBrowser({ colorIndex, onSelectColor }: ColorBrowser
                 : <Copy size={9} style={{ color: fg === "#fafaf8" ? "#fff" : "#111" }} />
               }
             </button>
+          </div>
+        )}
+
+        {/* Palette detail panel — floats above the swatch on hover */}
+        {isHovered && paletteData.length > 0 && (
+          <div
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 pointer-events-none"
+            style={{ minWidth: 148 }}
+          >
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] shadow-2xl p-2 space-y-1.5">
+              {paletteData.slice(0, 5).map((p, i) => (
+                <div key={c.paletteIds[i]} className="flex items-center gap-1.5">
+                  <div className="flex rounded-[2px] overflow-hidden flex-shrink-0" style={{ width: 72, height: 10 }}>
+                    {p.colors.slice(0, 8).map((col, ci) => (
+                      <div key={ci} className="flex-1" style={{ backgroundColor: col.hex }} />
+                    ))}
+                  </div>
+                  <span className="text-[9px] text-[var(--foreground)] truncate flex-1 min-w-0 leading-none">{p.name}</span>
+                </div>
+              ))}
+              {paletteData.length > 5 && (
+                <p className="text-[9px] text-[var(--muted)] text-center leading-none pt-0.5">
+                  +{paletteData.length - 5} more
+                </p>
+              )}
+            </div>
+            {/* Downward arrow */}
+            <div className="flex justify-center">
+              <div
+                className="w-2 h-1.5"
+                style={{
+                  borderLeft: "4px solid transparent",
+                  borderRight: "4px solid transparent",
+                  borderTop: "4px solid var(--border)",
+                }}
+              />
+            </div>
           </div>
         )}
       </motion.div>
