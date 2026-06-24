@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-06-24 — Session 108: Color Browser Click-to-Jump Palette Navigation
+
+### What was done
+- **Palette rows in Color Browser tooltip are now clickable** — each row in the hover tooltip (showing palettes containing the current swatch) is now a button that navigates directly to that palette in the library, rather than being display-only
+  - `onJumpToPalette?: (paletteId: string) => void` prop added to `ColorBrowser`; in `page.tsx`, `handleJumpToPalette` sets `viewMode = "palettes"` and `highlightedPaletteId = id`
+  - Tooltip rows changed from `<div>` to `<button>` with `hover:bg-[var(--surface-2)]` hover styling, `title` tooltip naming the destination palette, and `e.stopPropagation()` to prevent the parent swatch click from also triggering color search
+  - Removed `pointer-events-none` from the tooltip outer div; added an invisible `h-2` gap-filler div (`absolute top-full left-0 right-0`) to bridge the `mb-2` space between tooltip and swatch, keeping the mouse inside the DOM subtree as it crosses the gap
+- **Highlighted palette shows a sky ring** — the jumped-to palette card gets `ring-2 ring-sky-300/70` (dark: `ring-sky-600/60`) with a `border-sky-400` for 2.2 seconds, clearing automatically; the `useEffect` also calls `scrollIntoView({ behavior: "smooth", block: "center" })` 80ms after viewMode switch to let the palette grid render first
+  - `isHighlighted?: boolean` and `cardId?: string` props added to PaletteCard; `cardId={pc-${palette.id}}` used as the HTML `id` attribute on the outer `motion.div` for DOM targeting; `isHighlighted` ring takes priority in the border-class cascade (above cover/frozen/pinned/selected states)
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **`pointer-events-none` removal + gap filler, not hover delay** — the standard way to fix tooltip-hover gaps is a CSS "bridge" element that fills the visual gap and stays in the same DOM subtree, preventing `mouseleave` on the parent; this keeps the tooltip dismissal instant when the mouse leaves the side rather than delayed
+- **Sky ring for highlight** — distinct from the amber (cover), indigo (frozen), orange (pinned), and green (selection) rings already in use; sky reads as "navigated here" rather than a state flag
+- **80ms scroll delay** — avoids a race where `scrollIntoView` fires before the viewMode switch re-renders the palette grid; small enough to be imperceptible to users
+
+### What's next (Session 109)
+- **Single-swatch AI naming in SwatchEditor** — inline "Ask AI" button next to the Name field that calls `/api/name-swatches` for just the current swatch hex and shows clickable suggestions below the field
+- **"Most varied" visual indicator on PaletteCard** — a small L-range gradient bar (dark→light) shown as a subtle strip at the bottom of each card, making the "Most varied" sort order visually self-explanatory
+- **Color Browser: hue band jump links** — sticky letter-index on the right edge of the Colors view (like iOS contact list), so navigating between hue bands in a large library doesn't require scrolling
+
+---
+
 ## 2026-06-24 — Session 107: Color Browser Tooltip + Most Varied Sort
 
 ### What was done
