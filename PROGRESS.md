@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-06-24 — Session 107: Color Browser Tooltip + Most Varied Sort
+
+### What was done
+- **Color Browser palette tooltip** — hovering any swatch in Colors view now shows a floating panel above the swatch listing every palette that contains that hex, with a mini color strip and palette name per row (up to 5, overflow count shown). Implemented by passing a `paletteLookup: Map<id, {name, colors}>` into ColorBrowser from the parent, built from the already-filtered palette list so it respects all active filters. O(1) lookup per swatch on render.
+- **"Most varied" sort option** — new sort in the library dropdown ranks palettes by oklch L range (max L − min L across all swatches). High score = palette spans a wide perceptual lightness range, making it ideal for generating lighter/darker variants. Uses `hexToOklch` already imported; pure perceptual metric, not HSL lightness.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Floating tooltip above swatch** (`bottom-full mb-2`) — shows palette context without leaving the Colors view; positioned via CSS transforms so it doesn't clip within the tight 40px grid; downward caret arrow provides visual anchor
+- **5 palettes max in tooltip** — prevents the panel from growing tall when a common neutral appears across many palettes; overflow count keeps the info honest
+- **oklch L for "Most varied"** — perceptually uniform lightness range; `max L - min L` is a single scalar that captures how much visual contrast the palette can generate; HSL L would give misleading results at saturated hues
+
+### What's next (Session 108)
+- **Swatch name edit in SwatchEditor** — the Name field and local suggestions are already there; add an "Ask AI" inline button next to the field that calls `/api/name-swatches` for a single hex and populates a clickable suggestion row (no full-palette naming needed, just one hex)
+- **Color Browser: click to jump to palette** — in the hover tooltip, make each palette row clickable to jump back to Palettes view and scroll to/highlight that specific palette
+- **"Most varied" visual indicator** — show the oklch L range as a small gradient bar on each PaletteCard (dark → light span) so the sort makes visual sense at a glance
+
+---
+
 ## 2026-06-23 — Session 106: AI Swatch Naming (Bulk)
 
 ### What was done
