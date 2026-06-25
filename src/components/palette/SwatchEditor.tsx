@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw, Minus, Plus, Copy, Check } from "lucide-react";
+import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2 } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
@@ -44,6 +44,8 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const [swatchName, setSwatchName] = useState(palette?.colors[swatchIndex]?.name ?? "");
   const [suggestions, setSuggestions] = useState<string[]>(() => getColorNameSuggestions(originalHex));
   const [hexCopied, setHexCopied] = useState(false);
+  const [aiName, setAiName] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [oklchState, setOklchState] = useState<OklchValues>(
     () => hexToOklch(originalHex) ?? { l: 50, c: 0.1, h: 0 }
   );
@@ -58,8 +60,26 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
       setOklchState(hexToOklch(initial) ?? { l: 50, c: 0.1, h: 0 });
       setSwatchName(palette.colors[swatchIndex]?.name ?? "");
       setSuggestions(getColorNameSuggestions(initial));
+      setAiName(null);
     }
   }, [palette, swatchIndex]);
+
+  const handleAskAi = async () => {
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/name-swatches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ colors: [hex] }),
+      });
+      const data = await res.json();
+      if (data.names?.[0]) setAiName(data.names[0]);
+    } catch {
+      // silent fail
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // Debounce suggestion updates so they don't flash on every slider tick.
   useEffect(() => {
@@ -567,9 +587,22 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
 
             {/* Color name */}
             <div>
-              <p className="text-[10px] text-[var(--muted)] mb-1.5 uppercase tracking-widest font-semibold select-none">
-                Name
-              </p>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] text-[var(--muted)] uppercase tracking-widest font-semibold select-none">
+                  Name
+                </p>
+                <button
+                  onClick={handleAskAi}
+                  disabled={aiLoading}
+                  className="flex items-center gap-1 text-[9px] font-semibold text-violet-500 hover:text-violet-400 dark:text-violet-400 dark:hover:text-violet-300 disabled:opacity-50 transition-colors"
+                  title="Ask AI for a creative Pantone-style color name"
+                >
+                  {aiLoading
+                    ? <Loader2 size={10} className="animate-spin" />
+                    : <Sparkles size={10} />}
+                  Ask AI
+                </button>
+              </div>
               <input
                 type="text"
                 value={swatchName}
@@ -579,6 +612,20 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                 maxLength={40}
               />
               <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                {aiName && (
+                  <button
+                    onClick={() => setSwatchName(aiName)}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors flex items-center gap-1 ${
+                      swatchName === aiName
+                        ? "border-violet-400 bg-violet-400/15 text-violet-700 dark:text-violet-300 font-medium"
+                        : "border-violet-300/70 bg-violet-50/50 dark:bg-violet-900/10 text-violet-600 dark:text-violet-400 hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
+                    }`}
+                    title={`AI suggestion — click to use "${aiName}"`}
+                  >
+                    <Sparkles size={8} />
+                    {aiName}
+                  </button>
+                )}
                 {suggestions.map((name) => (
                   <button
                     key={name}
