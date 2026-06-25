@@ -3011,3 +3011,46 @@
 - **`@import` CSS recursion in URL extractor** — follow one level of `@import url(...)` inside fetched CSS for sites that split tokens across imported files
 - **Color search history** — recent hex color searches stored in localStorage; a dropdown below the color search input for quick re-use
 - **Palette "Print-ready" quick filter** — a toggle in the filter bar that hides all palettes with any print risk swatches, so creators can instantly see their safe-for-print palettes only
+
+---
+
+## 2026-06-21 — Sessions 100–109: Catch-up Summary (reconstructed from git log)
+
+### What was done across these sessions
+- **Session 100**: Print-safe quick filter pill — "Print-safe" toggle in the mood/lock filter bar hides all palettes with CMYK print-risk swatches; emerald pill + count when active
+- **Session 101**: Print-safe collection badge — emerald `CheckCircle2` icon appears on collection sidebar entries when every palette in that collection is print-safe; shown in the collection hover tooltip too
+- **Session 102**: Sort collections by cohesion score — new "Most cohesive" option in the collection sort selector in the sidebar; uses existing `computeCohesionScore`
+- **Session 103**: AI palette naming wired into rename dialog — clicking the Wand2 icon inside the RenameModal now calls `/api/name-palette` and surfaces 3 name suggestions as clickable pills
+- **Session 104**: Color Browser view — new "Colors" toggle in the library header reveals a hue-organized swatch index of all colors across the filtered palette set, sorted by oklch hue then lightness
+- **Session 105**: Palette variation generator — a "Variations" button on PaletteCard opens a panel with 4 derived variants (Lighter, Darker, Muted, Vivid) computed in oklch space; each can be forked directly to the library
+- **Session 106**: Bulk swatch naming with AI — "Name swatches" (Tags icon) button on PaletteCard calls `/api/name-swatches` for all colors in the palette in one request; names appear on each swatch
+- **Session 107**: Color Browser palette tooltip + "Most varied" sort — hovering a color in the Color Browser shows which palettes it belongs to; new "Most varied" sort option (highest oklch-L range first)
+- **Session 108**: Color Browser click-to-jump palette navigation — clicking a palette name in the Color Browser tooltip switches to Palettes view and scrolls to + briefly highlights the target palette card
+- **Session 109**: Single-swatch AI naming in SwatchEditor — a Wand2 icon button in the swatch edit panel calls `/api/name-swatches` for that single hex and auto-fills the name field; named suggestions appear inline
+
+### What's next (Session 110)
+- **Swatch name search** — extend the main search bar to match on swatch names; show amber ring on name-matched swatches + name snippet below the card (done this session)
+- Possible: per-swatch note/annotation field in SwatchEditor (beyond palette-level notes)
+- Possible: saved filter presets in localStorage
+
+---
+
+## 2026-06-25 — Session 110: Swatch Name Search
+
+### What was done
+- **Swatch name search** — the main library search bar now finds palettes by swatch name in addition to palette name and notes:
+  - `matchesSearch` in `page.tsx` extended with `p.colors.some((c) => !!c.name && c.name.toLowerCase().includes(q))` — searches all swatch names in each palette
+  - Placeholder updated from "Search palettes & notes…" to "Search palettes, colors & notes…" — tells creators what's searchable
+  - **Amber ring indicator** on matching swatches — when a swatch's name matches the current search query, an amber `inset 0 0 0 2px rgba(251,191,36,0.8)` ring appears on that swatch in the palette strip. Computed as `isNameMatch` boolean (only when not already showing the color-hex-match white ring). Added to both frozen and unfrozen (drag-to-reorder) swatch sections in PaletteCard.
+  - **Swatch name snippet** below the palette card metadata — an amber-tinted `bg-amber-50` panel (styled like the existing yellow notes-excerpt panel) appears when the search matches one or more swatch names. Shows up to 3 matching swatch names with the query term highlighted; a "+N" overflow count for more than 3 matches. Tag icon distinguishes it from the StickyNote notes excerpt.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Snippet parallels the note-excerpt pattern exactly** — same panel shape, same yellow-highlight mark, same truncation pattern; the only differences are the amber color (vs yellow for notes) and the Tag icon. Creators who understand one will immediately understand the other.
+- **`isNameMatch = !isMatch && searchQuery && ...`** — the amber ring is suppressed when a swatch is already highlighted by the color-hex search (white ring); avoids visual conflict between the two search modes
+- **Limit snippet to 3 names** — palettes with many named swatches could produce a long list; 3 names plus overflow count keeps the card compact
+
+### What's next (Session 111)
+- **Per-swatch note/annotation in SwatchEditor** — a small text note field on each swatch (e.g., "use for background only", "Pantone 185 C equivalent")
+- **Saved filter presets** — let creators save the current filter state (collection + mood + tag + print-safe) as a named preset they can recall
+- **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates
