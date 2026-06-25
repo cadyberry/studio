@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-06-25 — Session 109: Single-Swatch AI Naming in SwatchEditor
+
+### What was done
+- **"Ask AI" button in SwatchEditor Name field** — a small violet `✦ Ask AI` button next to the "Name" label in the swatch editor calls `/api/name-swatches` for just the current swatch hex and surfaces the AI's Pantone-style suggestion as a distinct clickable chip
+  - Button shows a `Loader2` spinner while the API call is in flight; disabled state prevents double-fire
+  - AI suggestion chip is styled in violet (border-violet-300/bg-violet-50) to distinguish it from the existing heuristic suggestion chips (which stay in the default border/surface colors)
+  - Chip has a `Sparkles` (✦) icon prefix at 8px — clear visual signal it's AI-generated, not a heuristic pick
+  - Clicking either the AI chip or any existing chip sets the name field instantly; clicking "Save" persists to the palette
+  - `aiName` state resets to `null` whenever `swatchIndex` or `palette.id` changes, so stale AI names don't bleed across swatch switches
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **AI chip as a first-class peer to heuristic chips** — both types appear in the same flex-wrap row; the AI chip comes first so it's prominent without taking up separate real estate above/below the input
+- **Single hex call, single result** — sending one hex and getting one Painterly name keeps latency low (Haiku returns in ~300ms); calling 3× for 3 suggestions would be wasteful given only one will be used
+- **Violet brand color for AI affordances** — violet is already the color of AI actions in this codebase (the Wand2 and Tags buttons on PaletteCard also resolve to the Claude API); using it here makes the AI provenance recognizable by pattern, not just icon
+
+### What's next (Session 110)
+- **"Most varied" visual indicator on PaletteCard** — a small oklch L-range gradient bar (dark→light span) at the bottom of each palette card, making the "Most varied" sort order visually self-explanatory
+- **Color Browser: hue band jump links** — sticky letter-index on the right edge of Colors view (like iOS contact list), so navigating between hue bands in a large library doesn't require scrolling
+- **Swatch editor: recent colors row** — show the last 8 hex values the user has picked across all palettes as quick-access swatches at the top of the editor
+
+---
+
 ## 2026-06-24 — Session 108: Color Browser Click-to-Jump Palette Navigation
 
 ### What was done
