@@ -541,6 +541,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           <div className={`flex ${isCover ? "h-40" : "h-28"}`}>
             {orderedColors.map((color, i) => {
               const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
+              const isNameMatch = !isMatch && !!searchQuery && !!color.name && color.name.toLowerCase().includes(searchQuery.toLowerCase());
               return (
                 <div
                   key={color._key}
@@ -551,6 +552,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 >
                   {isMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+                  )}
+                  {isNameMatch && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(251,191,36,0.8)" }} />
                   )}
                   {copiedSwatchKey === color._key && (
                     <motion.div
@@ -637,6 +641,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           >
             {orderedColors.map((color, i) => {
               const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
+              const isNameMatch = !isMatch && !!searchQuery && !!color.name && color.name.toLowerCase().includes(searchQuery.toLowerCase());
               return (
                 <Reorder.Item
                   key={color._key}
@@ -655,6 +660,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 >
                   {isMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
+                  )}
+                  {isNameMatch && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(251,191,36,0.8)" }} />
                   )}
                   {copiedSwatchKey === color._key && (
                     <motion.div
@@ -1057,6 +1065,28 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               >
                 {highlightMatch(palette.notes, searchQuery)}
               </p>
+            );
+          })()}
+          {searchQuery && (() => {
+            const nameMatches = palette.colors.filter(
+              (c) => c.name && c.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            if (!nameMatches.length) return null;
+            return (
+              <div className="flex items-start gap-1.5 mt-1.5 px-2 py-1.5 rounded-[var(--radius-sm)] bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/40">
+                <Tag size={9} className="text-amber-500 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                <p className="text-[10px] text-[var(--fg)] leading-snug min-w-0">
+                  {nameMatches.slice(0, 3).map((c, i) => (
+                    <span key={c.hex + i}>
+                      {i > 0 && <span className="text-[var(--muted)] mx-1">·</span>}
+                      {highlightMatch(c.name!, searchQuery)}
+                    </span>
+                  ))}
+                  {nameMatches.length > 3 && (
+                    <span className="text-[var(--muted)] ml-1">+{nameMatches.length - 3}</span>
+                  )}
+                </p>
+              </div>
             );
           })()}
         </div>

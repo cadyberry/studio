@@ -355,7 +355,8 @@ export default function Home() {
     const q = search.toLowerCase();
     const matchesSearch = !search ||
       p.name.toLowerCase().includes(q) ||
-      (!!p.notes && p.notes.toLowerCase().includes(q));
+      (!!p.notes && p.notes.toLowerCase().includes(q)) ||
+      p.colors.some((c) => !!c.name && c.name.toLowerCase().includes(q));
     return matchesSearch && matchesCollection && matchesTag;
   });
 
@@ -1156,7 +1157,7 @@ export default function Home() {
                               setSearch("");
                             }
                           }}
-                          placeholder="Search palettes & notes…"
+                          placeholder="Search palettes, colors & notes…"
                           className="w-full text-sm bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-8 pr-8 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]"
                         />
                         {!search && (
