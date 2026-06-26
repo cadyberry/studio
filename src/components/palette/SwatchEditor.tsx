@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2 } from "lucide-react";
+import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2, StickyNote } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
@@ -42,6 +42,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const [hexInput, setHexInput] = useState(originalHex);
   const [hsl, setHsl] = useState<{ h: number; s: number; l: number }>({ h: 0, s: 0, l: 50 });
   const [swatchName, setSwatchName] = useState(palette?.colors[swatchIndex]?.name ?? "");
+  const [swatchNote, setSwatchNote] = useState(palette?.colors[swatchIndex]?.note ?? "");
   const [suggestions, setSuggestions] = useState<string[]>(() => getColorNameSuggestions(originalHex));
   const [hexCopied, setHexCopied] = useState(false);
   const [aiName, setAiName] = useState<string | null>(null);
@@ -59,6 +60,7 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
       setHsl(initialHsl);
       setOklchState(hexToOklch(initial) ?? { l: 50, c: 0.1, h: 0 });
       setSwatchName(palette.colors[swatchIndex]?.name ?? "");
+      setSwatchNote(palette.colors[swatchIndex]?.note ?? "");
       setSuggestions(getColorNameSuggestions(initial));
       setAiName(null);
     }
@@ -156,8 +158,11 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const handleSave = () => {
     if (!palette) return;
     const trimmedName = swatchName.trim();
+    const trimmedNote = swatchNote.trim();
     const newColors = palette.colors.map((c, i) =>
-      i === swatchIndex ? { ...c, hex, name: trimmedName || undefined } : c
+      i === swatchIndex
+        ? { ...c, hex, name: trimmedName || undefined, note: trimmedNote || undefined }
+        : c
     );
     updatePalette(palette.id, { colors: newColors });
     onClose();
@@ -641,6 +646,29 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Swatch note */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <StickyNote size={10} className="text-[var(--muted)]" />
+                <p className="text-[10px] text-[var(--muted)] uppercase tracking-widest font-semibold select-none">
+                  Note
+                </p>
+              </div>
+              <textarea
+                value={swatchNote}
+                onChange={(e) => setSwatchNote(e.target.value)}
+                placeholder={'Add a note about this color — e.g. "use for backgrounds only", "Pantone 185 C equivalent"…'}
+                rows={2}
+                maxLength={200}
+                className="w-full text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-3 py-1.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)] placeholder:font-normal resize-none leading-relaxed"
+              />
+              {swatchNote.length > 0 && (
+                <p className="text-[9px] text-[var(--muted)] mt-0.5 text-right tabular-nums select-none">
+                  {swatchNote.length}/200
+                </p>
+              )}
             </div>
 
             {/* Live palette preview */}

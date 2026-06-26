@@ -542,13 +542,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             {orderedColors.map((color, i) => {
               const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
               const isNameMatch = !isMatch && !!searchQuery && !!color.name && color.name.toLowerCase().includes(searchQuery.toLowerCase());
+              const hasNote = !!color.note;
               return (
                 <div
                   key={color._key}
                   style={{ flex: 1, position: "relative", backgroundColor: color.hex }}
                   className="group/swatch cursor-pointer"
                   onClick={() => handleSwatchCopy(color._key, color.hex)}
-                  title={`${color.hex} — click to copy`}
+                  title={`${color.hex}${color.note ? ` · ${color.note}` : ""} — click to copy`}
                 >
                   {isMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 3px rgba(255,255,255,0.85)" }} />
@@ -625,6 +626,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       <Layers size={9} />
                     </button>
                   )}
+                  {hasNote && (
+                    <div
+                      className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full pointer-events-none group-hover/swatch:opacity-0 transition-opacity"
+                      style={{
+                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.75)",
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -642,6 +651,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             {orderedColors.map((color, i) => {
               const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
               const isNameMatch = !isMatch && !!searchQuery && !!color.name && color.name.toLowerCase().includes(searchQuery.toLowerCase());
+              const hasNote = !!color.note;
               return (
                 <Reorder.Item
                   key={color._key}
@@ -655,7 +665,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       handleSwatchCopy(color._key, color.hex);
                     }
                   }}
-                  title={`${color.hex} — drag to reorder · click to copy`}
+                  title={`${color.hex}${color.note ? ` · ${color.note}` : ""} — drag to reorder · click to copy`}
                   whileDrag={{ scale: 1.04, zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
                 >
                   {isMatch && (
@@ -747,6 +757,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   >
                     <Pencil size={9} />
                   </button>
+                  {hasNote && (
+                    <div
+                      className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full pointer-events-none group-hover/swatch:opacity-0 transition-opacity"
+                      style={{
+                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.75)",
+                      }}
+                    />
+                  )}
                 </Reorder.Item>
               );
             })}

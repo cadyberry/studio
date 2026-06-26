@@ -1,6 +1,7 @@
 export interface ColorSwatch {
   hex: string;
   name?: string;
+  note?: string;
 }
 
 export interface Palette {
