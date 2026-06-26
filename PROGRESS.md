@@ -3054,3 +3054,30 @@
 - **Per-swatch note/annotation in SwatchEditor** — a small text note field on each swatch (e.g., "use for background only", "Pantone 185 C equivalent")
 - **Saved filter presets** — let creators save the current filter state (collection + mood + tag + print-safe) as a named preset they can recall
 - **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates
+
+---
+
+## 2026-06-26 — Session 111: Per-Swatch Note Annotation
+
+### What was done
+- **Per-swatch note field** — SwatchEditor now has a `Note` section (with a StickyNote icon) between the Name field and the live palette preview:
+  - `note?: string` added to the `ColorSwatch` type in `src/types/index.ts`
+  - `swatchNote` state in SwatchEditor initialized from `palette.colors[swatchIndex]?.note ?? ""`, synced in the palette/swatchIndex effect
+  - A 2-row `<textarea>` with a 200-character limit; character counter appears once the creator starts typing
+  - On `handleSave`, `note: trimmedNote || undefined` is included in the updated colors array — falsy/empty notes are stripped to `undefined` to keep stored data clean
+  - Import: added `StickyNote` from lucide-react for the section label
+- **Note indicator dot on swatch strip (PaletteCard)** — a small persistent dot (1.5×1.5px, contrast-colored, bottom-right corner) appears on any swatch in the card's color strip that has a note. It fades on hover to avoid obscuring the edit overlay:
+  - Both frozen (static div) and unfrozen (Reorder.Item) swatch loops updated
+  - `hasNote = !!color.note` computed alongside the existing `isMatch` / `isNameMatch` booleans
+  - `title` attribute on each swatch div updated to include `· <note text>` when a note exists — so hovering the swatch in a browser shows the full note in the native tooltip
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **`note: trimmedNote || undefined`** — stripping empty notes to undefined prevents blank strings from serializing to localStorage and polluting the data schema
+- **Bottom-right dot, fades on hover** — the top-right corner already has the Pencil edit button (on hover); the dot lives at the bottom-right so it never competes with the button, and fading on hover keeps the hover state clean
+- **Native `title` tooltip for note text** — adding the note to the `title` attribute is zero-cost surface area; creators hovering a swatch see the note instantly without any popover infrastructure
+
+### What's next (Session 112)
+- **Saved filter presets** — let creators save the current filter state (collection + mood + tag + print-safe) as a named preset in localStorage they can recall with one click
+- **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates at 55 chars
+- **Swatch note search** — extend the search bar to match on swatch notes (in addition to swatch names already searchable); show note excerpt under matched cards
