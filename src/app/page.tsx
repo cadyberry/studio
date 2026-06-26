@@ -356,7 +356,8 @@ export default function Home() {
     const matchesSearch = !search ||
       p.name.toLowerCase().includes(q) ||
       (!!p.notes && p.notes.toLowerCase().includes(q)) ||
-      p.colors.some((c) => !!c.name && c.name.toLowerCase().includes(q));
+      p.colors.some((c) => !!c.name && c.name.toLowerCase().includes(q)) ||
+      p.colors.some((c) => !!c.note && c.note.toLowerCase().includes(q));
     return matchesSearch && matchesCollection && matchesTag;
   });
 

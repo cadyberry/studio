@@ -542,6 +542,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             {orderedColors.map((color, i) => {
               const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
               const isNameMatch = !isMatch && !!searchQuery && !!color.name && color.name.toLowerCase().includes(searchQuery.toLowerCase());
+              const isNoteMatch = !isMatch && !isNameMatch && !!searchQuery && !!color.note && color.note.toLowerCase().includes(searchQuery.toLowerCase());
               const hasNote = !!color.note;
               return (
                 <div
@@ -556,6 +557,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   )}
                   {isNameMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(251,191,36,0.8)" }} />
+                  )}
+                  {isNoteMatch && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(96,165,250,0.85)" }} />
                   )}
                   {copiedSwatchKey === color._key && (
                     <motion.div
@@ -651,6 +655,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             {orderedColors.map((color, i) => {
               const isMatch = bestMatchIndex !== null && i === bestMatchIndex.idx;
               const isNameMatch = !isMatch && !!searchQuery && !!color.name && color.name.toLowerCase().includes(searchQuery.toLowerCase());
+              const isNoteMatch = !isMatch && !isNameMatch && !!searchQuery && !!color.note && color.note.toLowerCase().includes(searchQuery.toLowerCase());
               const hasNote = !!color.note;
               return (
                 <Reorder.Item
@@ -673,6 +678,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   )}
                   {isNameMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(251,191,36,0.8)" }} />
+                  )}
+                  {isNoteMatch && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(96,165,250,0.85)" }} />
                   )}
                   {copiedSwatchKey === color._key && (
                     <motion.div
@@ -1102,6 +1110,28 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   ))}
                   {nameMatches.length > 3 && (
                     <span className="text-[var(--muted)] ml-1">+{nameMatches.length - 3}</span>
+                  )}
+                </p>
+              </div>
+            );
+          })()}
+          {searchQuery && (() => {
+            const noteMatches = palette.colors.filter(
+              (c) => c.note && c.note.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            if (!noteMatches.length) return null;
+            return (
+              <div className="flex items-start gap-1.5 mt-1.5 px-2 py-1.5 rounded-[var(--radius-sm)] bg-blue-50 dark:bg-blue-900/20 border border-blue-200/60 dark:border-blue-700/40">
+                <StickyNote size={9} className="text-blue-400 dark:text-blue-300 mt-0.5 flex-shrink-0" />
+                <p className="text-[10px] text-[var(--fg)] leading-snug min-w-0">
+                  {noteMatches.slice(0, 2).map((c, i) => (
+                    <span key={c.hex + i}>
+                      {i > 0 && <span className="text-[var(--muted)] mx-1">·</span>}
+                      {highlightMatch(c.note!, searchQuery)}
+                    </span>
+                  ))}
+                  {noteMatches.length > 2 && (
+                    <span className="text-[var(--muted)] ml-1">+{noteMatches.length - 2}</span>
                   )}
                 </p>
               </div>
