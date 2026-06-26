@@ -3081,3 +3081,26 @@
 - **Saved filter presets** — let creators save the current filter state (collection + mood + tag + print-safe) as a named preset in localStorage they can recall with one click
 - **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates at 55 chars
 - **Swatch note search** — extend the search bar to match on swatch notes (in addition to swatch names already searchable); show note excerpt under matched cards
+
+---
+
+## 2026-06-26 — Session 112: Swatch Note Search
+
+### What was done
+- **Swatch note search** — the main library search bar now finds palettes by swatch note text in addition to palette name, palette notes, and swatch names:
+  - `matchesSearch` in `page.tsx` extended with `p.colors.some((c) => !!c.note && c.note.toLowerCase().includes(q))` — the fourth match condition, completing the full-text search across all palette fields
+  - **Blue ring indicator** on matching swatches — when a swatch's note matches the current search query, a `rgba(96,165,250,0.85)` inset ring (blue-400) appears on that swatch in the palette strip. Priority chain: white ring (hex color match) > amber ring (swatch name match) > blue ring (swatch note match); each ring only shows when the higher-priority conditions don't apply
+  - Ring added to both frozen (static div) and unfrozen (Reorder.Item) swatch sections in PaletteCard
+  - **Note-match snippet panel** below the card metadata — a blue-tinted `bg-blue-50` panel (similar to the amber panel for swatch name matches) appears when the search matches one or more swatch notes. Shows up to 2 matching note excerpts with the query term highlighted; "+N" overflow count for more. StickyNote icon distinguishes it from the Tag icon used for swatch name matches.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Blue for note matches** — white = hex color, amber = swatch name, blue = swatch note; three visually distinct ring colors, each tied to a semantic type of match. Creators can glance at a palette and know what kind of content the search matched.
+- **2-note snippet limit (vs 3 for names)** — notes are longer strings; 2 excerpts fit without making the card too tall, and "+N" keeps the count visible
+- **Priority chain `!isMatch && !isNameMatch`** — a swatch that matches both its name and its note gets the amber (name) ring; the blue note ring only shows when no higher-priority match applies. Avoids visual conflict between ring types on the same swatch.
+- **StickyNote vs Tag icon** — StickyNote already carries the "swatch note" semantic from the SwatchEditor panel and the note-dot tooltip; using it in the snippet gives visual continuity
+
+### What's next (Session 113)
+- **Saved filter presets** — let creators save the current filter state (collection + mood + tag + print-safe) as a named preset in localStorage they can recall with one click
+- **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates at 55 chars
+- **Palette "from URL" history** — list recently extracted URLs in the URL extractor dropdown for quick re-use
