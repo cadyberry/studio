@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Type, Link2, Loader2, Plus, AlertCircle } from "lucide-react";
+import { X, Type, Link2, Loader2, Plus, AlertCircle, Clock, Trash2 } from "lucide-react";
 import { isValidHex } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import type { ColorSwatch } from "@/types";
+
+const URL_HISTORY_KEY = "palette-url-history";
+const MAX_URL_HISTORY = 8;
 
 type Tab = "text" | "url";
 
@@ -50,14 +53,57 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
   const [urlCssCount, setUrlCssCount] = useState<number | null>(null);
   const [urlImportCount, setUrlImportCount] = useState<number | null>(null);
   const [paletteName, setPaletteName] = useState("");
+  const [urlHistory, setUrlHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const historyRef = useRef<HTMLDivElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(URL_HISTORY_KEY);
+      if (saved) setUrlHistory(JSON.parse(saved));
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(URL_HISTORY_KEY, JSON.stringify(urlHistory));
+  }, [urlHistory]);
+
+  function addToHistory(url: string) {
+    setUrlHistory((prev) => {
+      const deduped = [url, ...prev.filter((u) => u !== url)].slice(0, MAX_URL_HISTORY);
+      return deduped;
+    });
+  }
+
+  function removeFromHistory(url: string) {
+    setUrlHistory((prev) => prev.filter((u) => u !== url));
+  }
+
+  // Close history dropdown on outside click
+  useEffect(() => {
+    if (!showHistory) return;
+    function handler(e: MouseEvent) {
+      if (historyRef.current && !historyRef.current.contains(e.target as Node) &&
+          urlInputRef.current && !urlInputRef.current.contains(e.target as Node)) {
+        setShowHistory(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showHistory]);
 
   const textColors = parseHexInput(textInput);
   const previewColors = tab === "text" ? textColors : (urlColors ?? []);
   const canImport = previewColors.length >= 2;
 
-  async function handleExtract() {
-    const raw = urlInput.trim();
+  async function handleExtract(targetUrl?: string) {
+    const raw = (targetUrl ?? urlInput).trim();
     if (!raw) return;
+    if (targetUrl) {
+      setUrlInput(targetUrl);
+      setShowHistory(false);
+    }
     setUrlError(null);
     setUrlColors(null);
     setUrlCssCount(null);
@@ -74,6 +120,7 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
       setUrlColors(data.colors as string[]);
       setUrlCssCount(typeof data.cssCount === "number" ? data.cssCount : null);
       setUrlImportCount(typeof data.importCount === "number" ? data.importCount : null);
+      addToHistory(raw);
     } catch (err) {
       setUrlError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -166,30 +213,113 @@ export default function ImportModal({ onClose, onImport }: ImportModalProps) {
               <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">
                 Website URL
               </label>
-              <div className="flex gap-2">
-                <input
-                  autoFocus
-                  type="url"
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400/40 placeholder:text-[var(--muted)]/50"
-                  placeholder="https://example.com"
-                  value={urlInput}
-                  onChange={(e) => {
-                    setUrlInput(e.target.value);
-                    setUrlColors(null);
-                    setUrlError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && urlInput.trim()) handleExtract();
-                  }}
-                />
-                <Button
-                  onClick={handleExtract}
-                  disabled={!urlInput.trim() || urlLoading}
-                  className="shrink-0"
-                >
-                  {urlLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Extract"}
-                </Button>
+              <div className="relative">
+                <div className="flex gap-2">
+                  <input
+                    ref={urlInputRef}
+                    autoFocus
+                    type="url"
+                    className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400/40 placeholder:text-[var(--muted)]/50"
+                    placeholder="https://example.com"
+                    value={urlInput}
+                    onChange={(e) => {
+                      setUrlInput(e.target.value);
+                      setUrlColors(null);
+                      setUrlError(null);
+                      setShowHistory(false);
+                    }}
+                    onFocus={() => {
+                      if (!urlInput && urlHistory.length > 0) setShowHistory(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && urlInput.trim()) handleExtract();
+                      if (e.key === "Escape") setShowHistory(false);
+                    }}
+                  />
+                  <Button
+                    onClick={() => handleExtract()}
+                    disabled={!urlInput.trim() || urlLoading}
+                    className="shrink-0"
+                  >
+                    {urlLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Extract"}
+                  </Button>
+                </div>
+
+                {/* URL history dropdown */}
+                <AnimatePresence>
+                  {showHistory && urlHistory.length > 0 && (
+                    <motion.div
+                      ref={historyRef}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute left-0 right-0 top-full mt-1 z-10 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)]">
+                        <span className="text-[10px] font-medium text-[var(--muted)] flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Recent
+                        </span>
+                        <button
+                          onClick={() => { setUrlHistory([]); setShowHistory(false); }}
+                          className="text-[10px] text-[var(--muted)] hover:text-red-500 transition-colors flex items-center gap-0.5"
+                          title="Clear history"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Clear
+                        </button>
+                      </div>
+                      {urlHistory.map((histUrl) => {
+                        let display = histUrl;
+                        try { display = new URL(histUrl).hostname; } catch { /* keep raw */ }
+                        return (
+                          <div
+                            key={histUrl}
+                            className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault(); // prevent input blur before click fires
+                              handleExtract(histUrl);
+                            }}
+                          >
+                            <Link2 className="w-3 h-3 text-[var(--muted)] shrink-0" />
+                            <span className="flex-1 text-sm truncate text-[var(--foreground)]" title={histUrl}>
+                              {display}
+                            </span>
+                            <span className="text-[10px] text-[var(--muted)] truncate max-w-[140px] hidden group-hover:block" title={histUrl}>
+                              {histUrl.length > 40 ? histUrl.slice(0, 40) + "…" : histUrl}
+                            </span>
+                            <button
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                removeFromHistory(histUrl);
+                                if (urlHistory.length <= 1) setShowHistory(false);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 ml-auto text-[var(--muted)] hover:text-red-500 transition-opacity shrink-0"
+                              title="Remove"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+
+              {/* Recent history hint — show when input is empty and history exists */}
+              {!showHistory && urlHistory.length > 0 && !urlInput && !urlColors && (
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="flex items-center gap-1 text-[10px] text-[var(--muted)] hover:text-[var(--accent)] transition-colors mt-1"
+                >
+                  <Clock className="w-3 h-3" />
+                  {urlHistory.length} recent URL{urlHistory.length !== 1 ? "s" : ""}
+                </button>
+              )}
+
               {urlError && (
                 <p className="flex items-start gap-1.5 text-xs text-red-500 mt-1.5 leading-snug">
                   <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
