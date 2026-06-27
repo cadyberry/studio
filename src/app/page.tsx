@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -21,7 +21,7 @@ import CompareModal from "@/components/palette/CompareModal";
 import ColorBrowser from "@/components/palette/ColorBrowser";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
-import type { Palette, Collection, ColorSwatch } from "@/types";
+import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
 
 const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
 
@@ -163,6 +163,10 @@ export default function Home() {
   const [bulkTagInput, setBulkTagInput] = useState("");
   const bulkTagInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<"palettes" | "colors">("palettes");
+  const [filterPresets, setFilterPresets] = useState<FilterPreset[]>([]);
+  const [savePresetOpen, setSavePresetOpen] = useState(false);
+  const [presetNameInput, setPresetNameInput] = useState("");
+  const presetNameInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -207,6 +211,19 @@ export default function Home() {
       localStorage.setItem("palette-color-search-history", JSON.stringify(colorSearchHistory));
     } catch {}
   }, [colorSearchHistory]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-filter-presets");
+      if (saved) setFilterPresets(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("palette-filter-presets", JSON.stringify(filterPresets));
+    } catch {}
+  }, [filterPresets]);
 
   // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay
   useEffect(() => {
@@ -336,6 +353,47 @@ export default function Home() {
     const clearTimer = setTimeout(() => setHighlightedPaletteId(null), 2200);
     return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
   }, [highlightedPaletteId]);
+
+  const isFilterActive =
+    activeCollection !== "all" ||
+    activeTag !== "all" ||
+    activeMood !== "all" ||
+    activeFreezeFilter !== "all" ||
+    printReadyOnly ||
+    activeColorCount !== "all" ||
+    sortBy !== "newest";
+
+  const savePreset = useCallback((name: string) => {
+    const preset: FilterPreset = {
+      id: crypto.randomUUID(),
+      name,
+      collection: activeCollection,
+      tag: activeTag,
+      mood: activeMood,
+      freezeFilter: activeFreezeFilter,
+      printReadyOnly,
+      colorCount: activeColorCount,
+      sortBy,
+      createdAt: new Date().toISOString(),
+    };
+    setFilterPresets((prev) => [...prev, preset]);
+    setSavePresetOpen(false);
+    setPresetNameInput("");
+  }, [activeCollection, activeTag, activeMood, activeFreezeFilter, printReadyOnly, activeColorCount, sortBy]);
+
+  const applyPreset = useCallback((preset: FilterPreset) => {
+    setActiveCollection(preset.collection);
+    setActiveTag(preset.tag);
+    setActiveMood(preset.mood as PaletteMood | "all");
+    setActiveFreezeFilter(preset.freezeFilter);
+    setPrintReadyOnly(preset.printReadyOnly);
+    setActiveColorCount(preset.colorCount);
+    setSortBy(preset.sortBy as typeof sortBy);
+  }, []);
+
+  const deletePreset = useCallback((id: string) => {
+    setFilterPresets((prev) => prev.filter((p) => p.id !== id));
+  }, []);
 
   const baseFiltered = palettes.filter((p) => {
     const matchesCollection =
@@ -1304,6 +1362,48 @@ export default function Home() {
                       )}
                     </>
                   )}
+                  {/* Save view button — shown when any filter is non-default */}
+                  {!colorSearchActive && !savePresetOpen && isFilterActive && (
+                    <button
+                      onClick={() => { setSavePresetOpen(true); setPresetNameInput(""); }}
+                      title="Save current filters as a view"
+                      className="p-1.5 rounded-[var(--radius-sm)] border transition-all shrink-0 border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-violet-400 hover:text-violet-600 dark:hover:border-violet-600 dark:hover:text-violet-400"
+                    >
+                      <BookmarkPlus size={13} />
+                    </button>
+                  )}
+                  {!colorSearchActive && savePresetOpen && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <input
+                        ref={presetNameInputRef}
+                        type="text"
+                        value={presetNameInput}
+                        onChange={(e) => setPresetNameInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && presetNameInput.trim()) savePreset(presetNameInput.trim());
+                          if (e.key === "Escape") setSavePresetOpen(false);
+                        }}
+                        placeholder="View name…"
+                        autoFocus
+                        maxLength={32}
+                        className="w-28 text-xs bg-[var(--surface)] border border-violet-400 rounded-[var(--radius-sm)] px-2 py-1.5 outline-none placeholder:text-[var(--muted)] focus:border-violet-500"
+                      />
+                      <button
+                        onClick={() => { if (presetNameInput.trim()) savePreset(presetNameInput.trim()); }}
+                        disabled={!presetNameInput.trim()}
+                        className="text-xs px-2 py-1.5 rounded-[var(--radius-sm)] bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setSavePresetOpen(false)}
+                        className="p-1 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                        title="Cancel"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
                   {/* Color search toggle */}
                   <button
                     onClick={() => {
@@ -1649,6 +1749,45 @@ export default function Home() {
                         </button>
                       );
                     })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Saved view presets row */}
+            <AnimatePresence>
+              {filterPresets.length > 0 && !colorSearchActive && (
+                <motion.div
+                  key="filter-presets"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5 flex items-center gap-1">
+                      <BookMarked size={9} />
+                      Saved
+                    </span>
+                    {filterPresets.map((preset) => (
+                      <div key={preset.id} className="group/preset flex items-center">
+                        <button
+                          onClick={() => applyPreset(preset)}
+                          title={`Apply view: ${preset.name}`}
+                          className="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-l-full text-xs font-medium transition-all border border-r-0 bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50/60 dark:hover:border-violet-700 dark:hover:text-violet-300 dark:hover:bg-violet-950/20"
+                        >
+                          {preset.name}
+                        </button>
+                        <button
+                          onClick={() => deletePreset(preset.id)}
+                          title={`Delete view "${preset.name}"`}
+                          className="flex items-center px-1.5 py-1 rounded-r-full text-xs transition-all border bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50/60 dark:hover:border-rose-700 dark:hover:text-rose-400 dark:hover:bg-rose-950/20 opacity-0 group-hover/preset:opacity-100"
+                        >
+                          <X size={9} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               )}

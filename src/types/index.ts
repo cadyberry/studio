@@ -33,3 +33,16 @@ export interface CohesionRecord {
   score: number;
   label: "Fragmented" | "Developing" | "Cohesive" | "Unified";
 }
+
+export interface FilterPreset {
+  id: string;
+  name: string;
+  collection: string;
+  tag: string;
+  mood: string;
+  freezeFilter: "all" | "locked";
+  printReadyOnly: boolean;
+  colorCount: number | "all";
+  sortBy: string;
+  createdAt: string;
+}
