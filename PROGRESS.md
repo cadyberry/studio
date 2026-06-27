@@ -3127,3 +3127,27 @@
 - **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates at 55 chars even if the full note fits
 - **"From URL" history in URL extractor** — list recently extracted URLs in a dropdown for quick re-use
 - **Palette variation generator UX polish** — add a "Replace" option alongside "Fork" in the variations panel
+
+---
+
+## 2026-06-27 — Session 114: URL History in Import Palette Modal
+
+### What was done
+- **URL history dropdown in Import Palette → "From URL" tab** — up to 8 recently-extracted URLs are persisted to localStorage (`palette-url-history`) and surfaced as a dropdown when the user focuses the empty URL input:
+  - Each history row shows the **hostname** as the primary label, plus the full URL on hover as a secondary truncated string; hovering reveals a per-row `×` delete button
+  - Clicking a row **populates the input and immediately triggers extraction** — one click to re-pull a previously used site (no separate "Extract" button press needed); the dropdown closes and the spinner starts
+  - **"Clear" button** in the dropdown header (`Trash2` icon) wipes all history at once
+  - **"N recent URLs" hint link** (Clock icon) appears below the input when the history exists but the dropdown is hidden — clicking restores it
+  - History is **only written on successful extraction** — failed URL attempts don't pollute the list; duplicates are deduplicated and moved to the top (most-recent-first)
+  - Outside-click handler (mousedown on document) closes the dropdown; row clicks use `onMouseDown` + `e.preventDefault()` so the input's blur doesn't fire before the click is processed
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Store in `ImportModal` state, not page-level state** — URL history is scoped to the modal; keeping it inside the modal component avoids polluting `page.tsx` with yet another top-level state slice; localStorage handles cross-session persistence
+- **`onMouseDown` + `e.preventDefault()` for row clicks** — standard pattern for dropdown-inside-input patterns; prevents the input's `onBlur` from closing the dropdown before the `onClick` registers, without needing `setTimeout` hacks
+- **Hostname as primary display, full URL on hover** — `new URL(histUrl).hostname` produces clean labels ("unavoided.com", "coolors.co"); the full URL is always accessible on hover for disambiguation when the same host was queried multiple times
+
+### What's next (Session 115)
+- **Palette notes search: full note excerpt when short** — currently always truncates at 55 chars; show full text when it fits within ~120 chars
+- **Palette variation generator: "Replace" option** — alongside "Fork", add a "Replace" button that overwrites the source palette's colors with the variant in-place
+- **"Most varied" visual indicator on PaletteCard** — small oklch L-range gradient bar (dark→light) at the bottom of each card making the sort visually self-explanatory
