@@ -3104,3 +3104,26 @@
 - **Saved filter presets** — let creators save the current filter state (collection + mood + tag + print-safe) as a named preset in localStorage they can recall with one click
 - **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates at 55 chars
 - **Palette "from URL" history** — list recently extracted URLs in the URL extractor dropdown for quick re-use
+
+---
+
+## 2026-06-27 — Session 113: Saved Filter Presets
+
+### What was done
+- **Saved filter presets ("Views")** — creators can now bookmark any combination of active filters and recall it with one click:
+  - `FilterPreset` type added to `src/types/index.ts` — captures collection, tag, mood, freeze filter, print-ready toggle, color count, and sort order along with a name, id, and createdAt
+  - `filterPresets` state with localStorage persistence via key `palette-filter-presets` — same pattern as color search history; loads on mount, saves on every change
+  - **BookmarkPlus button** in the library header row (between sort select and color search toggle) — appears only when at least one filter is non-default (`isFilterActive`). Clicking it opens an inline name input with a violet border, a "Save" button, and an Escape/× to cancel. Enter key confirms. After save, the input dismisses and the preset appears immediately.
+  - **"Saved" chip row** below the filter pill rows (above the compare hint banner) — shows a `BookMarked` label + one chip per saved preset. Each chip is a split pill: clicking the left part applies all filters from the preset; hovering reveals a rose-colored × on the right to delete. Row hidden during color-search mode.
+  - `applyPreset` sets all 7 filter state variables atomically; `deletePreset` filters by id; `savePreset` snapshots current state.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **`isFilterActive` includes `sortBy !== "newest"`** — sort order is part of a "view" and worth preserving (e.g. "Spring Drop sorted by Most cohesive"); default sort excluded to avoid showing the bookmark button on a completely fresh session
+- **Split-pill chip design** — the × delete only reveals on hover (`opacity-0 group-hover/preset:opacity-100`) so the chip row stays scannable when not being edited; no confirmation dialog for delete since presets are cheap to re-create
+- **`!colorSearchActive` guard on preset row** — color search overrides normal filtering; showing the preset row during color search would be misleading since applying a preset would exit color search mode
+
+### What's next (Session 114)
+- **Palette notes search improvements** — show full note excerpt when the note is short; currently always truncates at 55 chars even if the full note fits
+- **"From URL" history in URL extractor** — list recently extracted URLs in a dropdown for quick re-use
+- **Palette variation generator UX polish** — add a "Replace" option alongside "Fork" in the variations panel
