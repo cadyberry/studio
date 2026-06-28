@@ -366,6 +366,23 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const freshness = getFreshness(palette.createdAt);
   const harmonyColors = getHarmonyColors(palette.colors);
 
+  // oklch L-range for the gradient bar (darkest → lightest sorted by perceptual lightness)
+  const oklchRange = (() => {
+    const ls = palette.colors
+      .map((c) => { const ok = hexToOklch(c.hex); return ok ? { l: ok.l, hex: c.hex } : null; })
+      .filter((x): x is { l: number; hex: string } => x !== null)
+      .sort((a, b) => a.l - b.l);
+    if (ls.length < 2) return null;
+    const range = ls[ls.length - 1].l - ls[0].l;
+    return {
+      darkest: ls[0].hex,
+      lightest: ls[ls.length - 1].hex,
+      range: Math.round(range),
+      minL: Math.round(ls[0].l),
+      maxL: Math.round(ls[ls.length - 1].l),
+    };
+  })();
+
   // Lightness range badge: min–max HSL L across all swatches
   const lightnessRange = (() => {
     const ls = palette.colors
@@ -813,6 +830,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           );
         })}
       </div>
+
+      {/* oklch L-range gradient bar — dark→light span, always visible */}
+      {oklchRange && (
+        <div
+          className="w-full"
+          style={{
+            height: 4,
+            background: `linear-gradient(to right, ${oklchRange.darkest}, ${oklchRange.lightest})`,
+            opacity: 0.65,
+          }}
+          title={`Lightness span (perceptual): L ${oklchRange.minL} → ${oklchRange.maxL} · ${oklchRange.range}pt range · wider = "Most varied"`}
+        />
+      )}
 
       {/* Harmony mini-preview — slides in on hover */}
       {harmonyColors.length > 0 && (
