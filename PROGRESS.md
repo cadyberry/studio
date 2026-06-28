@@ -3175,3 +3175,25 @@
 - **Palette notes search: full note excerpt when short** — currently always truncates at 55 chars; show full text when it fits within ~120 chars
 - **Palette variation generator: "Replace" option** — alongside "Fork", add a "Replace" button that overwrites the source palette's colors with the variant in-place
 - **"Most varied" visual indicator on PaletteCard** — small oklch L-range gradient bar (dark→light) at the bottom of each card making the sort visually self-explanatory
+
+---
+
+## 2026-06-28 — Session 115: Variation Generator "Replace" Option
+
+### What was done
+- **"Replace" button in the variations panel** — each variant row in the Variations overlay now has two actions: Fork (adds a new palette to the library) and Replace (overwrites the current palette's colors in-place):
+  - `replacedVariant` state (`PaletteVariant | null`) tracks which row's Replace was clicked, mirroring the `forkedVariant` feedback pattern
+  - `handleReplaceVariant(variant)` calls `updatePalette(palette.id, { colors: variantColors })` with the derived variant colors; after 1.2 seconds, the state clears and the variations overlay closes automatically — the card has already updated to reflect the new colors
+  - Replace button styled with a rose hover (amber warning for overwrites fits less well than rose, which is already the palette's "destructive" idiom in button variants elsewhere) — idle state matches Fork's neutral look so the two buttons are visually parallel, but Replace distinguishes itself by going rose on hover
+  - Footer hint updated from "Each variant is added to your library with a 'variant' tag" → "**Fork** adds a new palette · **Replace** overwrites this one" — clarifies the semantic difference directly under the action buttons
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Close overlay after Replace** — unlike Fork (which you might want to use on multiple variants in one session), Replace is a one-shot action; closing the overlay immediately after success reveals the updated palette card with its new colors, giving instant visual confirmation
+- **Rose hover for Replace** — rose is already the button "danger" variant color used elsewhere in PaletteCard (e.g. the delete confirmation button); reusing it for Replace signals "this is irreversible" without adding new vocabulary. Idle state stays neutral so creators don't feel warned before they've even considered the action.
+- **`|| undefined` note stripping pattern not needed here** — the replace only updates colors; name, notes, tags, and collection stay untouched. No need to touch the rest of the palette schema.
+
+### What's next (Session 116)
+- **Palette notes search: full note excerpt when short** — currently always truncates at 55 chars; show full text when it fits within ~120 chars
+- **"Most varied" visual indicator on PaletteCard** — the oklch L-range gradient bar already shows at the bottom of each card; the sort label tooltip could be improved but the bar itself is already present
+- **Saved view indicator** — when a saved filter preset is active, show its name in the filter bar so creators can see which view they're in
