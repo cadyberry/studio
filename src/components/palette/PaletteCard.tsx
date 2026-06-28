@@ -141,6 +141,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [suggestionIdx, setSuggestionIdx] = useState(-1);
   const [variationsOpen, setVariationsOpen] = useState(false);
   const [forkedVariant, setForkedVariant] = useState<PaletteVariant | null>(null);
+  const [replacedVariant, setReplacedVariant] = useState<PaletteVariant | null>(null);
   const [swatchNaming, setSwatchNaming] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   // Refs so keyboard handler always sees latest values without re-registering
@@ -466,6 +467,13 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     });
     setForkedVariant(variant);
     setTimeout(() => setForkedVariant(null), 1500);
+  };
+
+  const handleReplaceVariant = (variant: PaletteVariant) => {
+    const variantColors = derivePaletteVariant(palette.colors, variant);
+    updatePalette(palette.id, { colors: variantColors });
+    setReplacedVariant(variant);
+    setTimeout(() => { setReplacedVariant(null); setVariationsOpen(false); }, 1200);
   };
 
   const handleNameSwatches = async () => {
@@ -1540,6 +1548,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 {VARIANTS.map((variant) => {
                   const variantColors = derivePaletteVariant(palette.colors, variant);
                   const forked = forkedVariant === variant;
+                  const replaced = replacedVariant === variant;
                   return (
                     <div key={variant} className="flex items-center gap-2">
                       <span className="text-[10px] text-[var(--muted)] w-14 shrink-0 font-medium">
@@ -1557,7 +1566,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       <button
                         onClick={() => handleForkVariant(variant)}
                         disabled={forked}
-                        title={forked ? "Added to library!" : `Add ${PALETTE_VARIANT_LABELS[variant]} variant to library`}
+                        title={forked ? "Added to library!" : `Add ${PALETTE_VARIANT_LABELS[variant]} variant to library as a new palette`}
                         className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
                           forked
                             ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
@@ -1566,12 +1575,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       >
                         {forked ? "✓" : "Fork"}
                       </button>
+                      <button
+                        onClick={() => handleReplaceVariant(variant)}
+                        disabled={replaced}
+                        title={replaced ? "Replaced!" : `Replace this palette's colors with the ${PALETTE_VARIANT_LABELS[variant]} variant`}
+                        className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+                          replaced
+                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                        }`}
+                      >
+                        {replaced ? "✓" : "Replace"}
+                      </button>
                     </div>
                   );
                 })}
               </div>
               <p className="text-[9px] text-[var(--muted)] mt-2">
-                Each variant is added to your library with a &ldquo;variant&rdquo; tag
+                <strong className="font-semibold">Fork</strong> adds a new palette · <strong className="font-semibold">Replace</strong> overwrites this one
               </p>
             </motion.div>
           );
