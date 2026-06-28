@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-06-28 — Session 115: oklch L-Range Gradient Bar on PaletteCard
+
+### What was done
+- **oklch L-range gradient bar** — a 4px dark→light gradient strip now appears between the lightness sparkline and the harmony preview on every palette card:
+  - Colors are sorted by perceptual oklch L (using the existing `hexToOklch` utility), then a CSS `linear-gradient(to right, darkestHex, lightestHex)` is applied across the full card width
+  - Strip is always visible (opacity 0.65) — it's a persistent visual fingerprint for each palette's lightness variance
+  - Tooltip shows exact values: `Lightness span (perceptual): L 18 → 92 · 74pt range · wider = "Most varied"`
+  - Single-color palettes (`ls.length < 2`) safely skip the strip — `oklchRange` returns `null` and nothing renders
+  - `oklchRange` computed alongside the existing `lightnessRange` (HSL) and `gamutClippedCount` derived values in the component body
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Perceptual sort, not array order** — sorting by oklch L ensures the gradient always goes from objectively darkest to lightest, regardless of how the creator arranged swatches in the strip; the sparkline shows per-swatch order, the gradient bar shows the lightness spread
+- **Placed between sparkline and harmony preview** — groups both data-viz strips together above the info row; the sparkline shows per-swatch profile, the gradient bar shows the range envelope
+- **4px height, 0.65 opacity** — visible enough to be informative without competing with the swatch strip above it; the slight transparency lets the card background show through at the gradient edges for a softer look
+- **Always visible (not sort-gated)** — showing only when `sortBy === "most-varied"` would make it invisible until the sort is changed; always-on means creators immediately learn what the bar means
+
+### What's next (Session 116)
+- **Palette notes search: full note excerpt when short** — currently always truncates at 55 chars; show full text when it fits within ~120 chars (short notes shouldn't be truncated at all)
+- **Palette variation generator: "Replace" option** — alongside "Fork", add a "Replace" button that overwrites the source palette's colors with the variant in-place (with a confirmation step)
+- **Color Browser: hue band jump links** — sticky letter-index on the right edge of Colors view (like iOS contact list), so navigating between hue bands in a large library doesn't require scrolling
+
+---
+
 ## 2026-06-25 — Session 109: Single-Swatch AI Naming in SwatchEditor
 
 ### What was done
