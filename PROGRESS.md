@@ -2,6 +2,24 @@
 
 ---
 
+## 2026-06-29 — Session 117: Full Note Excerpt for Short Palette Notes
+
+### What was done
+- **Full note excerpt for short notes** — `getNoteExcerpt` now detects when the entire note is ≤120 chars and, instead of applying the 55-char context window, returns the full note text with no truncation ellipsis. Long notes (>120 chars) are unchanged — the 55-char context window around the match keyword is preserved.
+- The fix is a single `effectiveContext` variable: `notes.length <= 120 ? notes.length : context`. When `effectiveContext = notes.length`, `start = max(0, idx - notes.length) = 0` and `end = notes.length`, so `truncStart` and `truncEnd` are both false — no ellipsis chars render.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **120-char threshold** — short palette notes are typically one punchy sentence ("great for autumn product drops", "pulled from the forest canopy photo"). 120 chars comfortably fits such notes while still clipping longer multi-sentence notes at the context window.
+- **`effectiveContext` not a new parameter** — keeps the function signature unchanged; all existing callers work without modification.
+
+### What's next (Session 118)
+- **Color count badge on collection chips** — small number badge showing how many palettes are in each collection, visible directly on the chip without switching to that collection
+- **Palette variation generator: smarter defaults** — when opening variations overlay, auto-select the most common mood/style from the source palette's existing tags as the starting point
+- **Hue band jump links in Color Browser** — sticky letter-index on the right edge (like an iOS contact list) so navigating between hue bands in a large library doesn't require scrolling
+
+---
+
 ## 2026-06-29 — Session 116: Active View Indicator for Saved Filter Presets
 
 ### What was done
