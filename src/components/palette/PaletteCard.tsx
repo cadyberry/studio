@@ -37,8 +37,10 @@ function getNoteExcerpt(
   const lowerQuery = query.toLowerCase();
   const idx = lowerNotes.indexOf(lowerQuery);
   if (idx === -1) return null;
-  const start = Math.max(0, idx - context);
-  const end = Math.min(notes.length, idx + query.length + context);
+  // Short notes (≤120 chars) show in full — no truncation ellipsis
+  const effectiveContext = notes.length <= 120 ? notes.length : context;
+  const start = Math.max(0, idx - effectiveContext);
+  const end = Math.min(notes.length, idx + query.length + effectiveContext);
   return {
     prefix: notes.slice(start, idx),
     match: notes.slice(idx, idx + query.length),
