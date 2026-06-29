@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-06-29 — Session 116: Active View Indicator for Saved Filter Presets
+
+### What was done
+- **Active view indicator** — when the current filter state exactly matches a saved preset, two things now show it:
+  1. **Violet badge in the filter bar header** ("Viewing: Spring Drop" with CheckCircle2 icon) — appears where the BookmarkPlus save button would be, since there's nothing to save when you're already in a saved view. Badge disappears the moment any filter changes, signaling "you're now diverged from this view."
+  2. **Highlighted preset chip** in the saved preset row — the matching chip fills violet (bg-violet-100/border-violet-300) with a small CheckCircle2 icon prepended, distinguishing the active chip from inactive ones at a glance. The delete button on the active chip also inherits the violet border so the split-pill looks unified.
+- `activePresetId` derived via `useMemo` — compares all 7 filter dimensions (collection, tag, mood, freezeFilter, printReadyOnly, colorCount, sortBy) against each saved preset; returns the first matching preset id or null. Reactive to any filter or preset change.
+- `BookmarkPlus` save button now conditionally requires `!activePresetId` — hides when already in a named view; reappears when filters diverge from the saved state.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Two touch points, not one** — the header badge is the primary "you are here" signal (always visible without scrolling); the chip highlight is the secondary anchor (useful when the presets row is visible). Together they make the active state unmissable without being noisy.
+- **Replacing BookmarkPlus with the badge** — when you're already in a named view, showing "save" implies you'd be saving a duplicate. Swapping the button for a non-interactive badge keeps the same spatial slot while communicating presence instead of affordance.
+- **`useMemo` over `useEffect` state** — `activePresetId` is pure derived state (filter values → matching preset id); no side effects, no async. `useMemo` recalculates only when dependencies change, keeping it zero-overhead.
+
+### What's next (Session 117)
+- **Palette notes search: full note excerpt when short** — currently always truncates at 55 chars; show full text when the note fits within ~120 chars
+- **Palette variation generator: smarter defaults** — when opening variations, auto-select the most common mood/style detected in the palette's existing tags
+- **Color count badge on collection chips** — small number showing how many palettes are in each collection without having to switch to it
+
+---
+
 ## 2026-06-28 — Session 115: oklch L-Range Gradient Bar on PaletteCard
 
 ### What was done
