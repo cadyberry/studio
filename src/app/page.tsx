@@ -363,6 +363,21 @@ export default function Home() {
     activeColorCount !== "all" ||
     sortBy !== "newest";
 
+  const activePresetId = useMemo(
+    () =>
+      filterPresets.find(
+        (p) =>
+          p.collection === activeCollection &&
+          p.tag === activeTag &&
+          p.mood === activeMood &&
+          p.freezeFilter === activeFreezeFilter &&
+          p.printReadyOnly === printReadyOnly &&
+          p.colorCount === activeColorCount &&
+          p.sortBy === sortBy
+      )?.id ?? null,
+    [filterPresets, activeCollection, activeTag, activeMood, activeFreezeFilter, printReadyOnly, activeColorCount, sortBy]
+  );
+
   const savePreset = useCallback((name: string) => {
     const preset: FilterPreset = {
       id: crypto.randomUUID(),
@@ -1362,8 +1377,18 @@ export default function Home() {
                       )}
                     </>
                   )}
-                  {/* Save view button — shown when any filter is non-default */}
-                  {!colorSearchActive && !savePresetOpen && isFilterActive && (
+                  {/* Active view badge — shown when current filters match a saved preset exactly */}
+                  {!colorSearchActive && !savePresetOpen && activePresetId && (
+                    <span
+                      title={`Active view: ${filterPresets.find((p) => p.id === activePresetId)?.name}`}
+                      className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-700 shrink-0 whitespace-nowrap"
+                    >
+                      <CheckCircle2 size={9} className="shrink-0" />
+                      {filterPresets.find((p) => p.id === activePresetId)?.name}
+                    </span>
+                  )}
+                  {/* Save view button — shown when filters are non-default and no preset is active */}
+                  {!colorSearchActive && !savePresetOpen && isFilterActive && !activePresetId && (
                     <button
                       onClick={() => { setSavePresetOpen(true); setPresetNameInput(""); }}
                       title="Save current filters as a view"
@@ -1770,24 +1795,36 @@ export default function Home() {
                       <BookMarked size={9} />
                       Saved
                     </span>
-                    {filterPresets.map((preset) => (
-                      <div key={preset.id} className="group/preset flex items-center">
-                        <button
-                          onClick={() => applyPreset(preset)}
-                          title={`Apply view: ${preset.name}`}
-                          className="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-l-full text-xs font-medium transition-all border border-r-0 bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50/60 dark:hover:border-violet-700 dark:hover:text-violet-300 dark:hover:bg-violet-950/20"
-                        >
-                          {preset.name}
-                        </button>
-                        <button
-                          onClick={() => deletePreset(preset.id)}
-                          title={`Delete view "${preset.name}"`}
-                          className="flex items-center px-1.5 py-1 rounded-r-full text-xs transition-all border bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50/60 dark:hover:border-rose-700 dark:hover:text-rose-400 dark:hover:bg-rose-950/20 opacity-0 group-hover/preset:opacity-100"
-                        >
-                          <X size={9} />
-                        </button>
-                      </div>
-                    ))}
+                    {filterPresets.map((preset) => {
+                      const isActive = preset.id === activePresetId;
+                      return (
+                        <div key={preset.id} className="group/preset flex items-center">
+                          <button
+                            onClick={() => applyPreset(preset)}
+                            title={isActive ? `Viewing: ${preset.name}` : `Apply view: ${preset.name}`}
+                            className={`flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-l-full text-xs font-medium transition-all border border-r-0 ${
+                              isActive
+                                ? "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-700"
+                                : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50/60 dark:hover:border-violet-700 dark:hover:text-violet-300 dark:hover:bg-violet-950/20"
+                            }`}
+                          >
+                            {isActive && <CheckCircle2 size={9} className="shrink-0" />}
+                            {preset.name}
+                          </button>
+                          <button
+                            onClick={() => deletePreset(preset.id)}
+                            title={`Delete view "${preset.name}"`}
+                            className={`flex items-center px-1.5 py-1 rounded-r-full text-xs transition-all border hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50/60 dark:hover:border-rose-700 dark:hover:text-rose-400 dark:hover:bg-rose-950/20 opacity-0 group-hover/preset:opacity-100 ${
+                              isActive
+                                ? "bg-violet-100 text-violet-400 border-violet-300 dark:bg-violet-950/40 dark:border-violet-700"
+                                : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)]"
+                            }`}
+                          >
+                            <X size={9} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
