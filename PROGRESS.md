@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-06-30 — Session 118: Collection Size Badge on Palette Card Chips
+
+### What was done
+- **Collection size badge on PaletteCard chips** — each on-card collection chip now shows the palette count for that collection as a small opacity-50 tabular-nums number next to the collection name. Visible at a glance on every card without switching to the collection view. Single-palette collections omit the count (no noisy "1"s).
+- **Count in CollectionModal** — the collection assignment picker also shows each collection's palette count, helping creators choose the right collection when assigning a palette.
+- `collectionSize?: number` prop added to `PaletteCard` and destructured in the component; computed in `page.tsx` as `palettes.filter((p) => p.collectionId === palette.collectionId).length`.
+- Tooltip on the jump-to-collection button updated: now reads "Jump to Spring Drop · 5 palettes" when count is available.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Hide count when 1** — a collection with one palette shows just the name; the number becomes meaningful starting at 2. Avoids visual noise for newly-created solo collections.
+- **`palettes` added to CollectionModal store read** — destructured from `usePaletteStore()` alongside `collections`; count computed inline as a filter, no new store method needed.
+- **opacity-50 for the count** — de-emphasized relative to the collection name so it reads as metadata, not the primary label.
+
+### What's next (Session 119)
+- **Palette variation generator: smarter defaults** — when opening variations overlay, auto-select the most common mood/style from the source palette's existing tags as the starting point
+- **Hue band jump links in Color Browser** — sticky letter-index on the right edge (like an iOS contact list) so navigating between hue bands in a large library doesn't require scrolling
+- **Palette notes inline edit** — click the notes field on a PaletteCard to edit in-place without opening the swatch editor
+
+---
+
 ## 2026-06-29 — Session 117: Full Note Excerpt for Short Palette Notes
 
 ### What was done
