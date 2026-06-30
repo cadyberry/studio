@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Copy, Check } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
@@ -37,6 +37,19 @@ const HUE_BANDS = [
   { label: "Pinks", min: 330, max: 360 },
 ];
 
+const BAND_ABBREV: Record<string, string> = {
+  Reds: "R",
+  Oranges: "O",
+  Yellows: "Y",
+  "Yellow-Greens": "YG",
+  Greens: "G",
+  Cyans: "Cy",
+  Blues: "B",
+  Purples: "Pu",
+  Pinks: "Pk",
+  Neutrals: "N",
+};
+
 function getBand(hue: number): string {
   const h = ((hue % 360) + 360) % 360;
   for (const band of HUE_BANDS) {
@@ -45,15 +58,18 @@ function getBand(hue: number): string {
   return "Reds"; // 360 wraps to 0
 }
 
+function bandId(label: string): string {
+  return `color-band-${label.replace(/\s+/g, "-")}`;
+}
+
 export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup, onJumpToPalette }: ColorBrowserProps) {
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
+  const [activeBand, setActiveBand] = useState<string | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Separate neutrals (low chroma) from chromatic colors
   const { neutrals, chromatics } = useMemo(() => {
-    // We don't have chroma in colorIndex but we can approximate from hue variance
-    // Use oklch approximation: if hex brightness is between 15-85% and it's near grey, it's neutral
-    // Simpler: neutrals are colors where R, G, B are all within 30 of each other
     const neutrals: ColorEntry[] = [];
     const chromatics: ColorEntry[] = [];
     for (const c of colorIndex) {
@@ -80,6 +96,64 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     }
     return HUE_BANDS.map((b) => ({ label: b.label, colors: bandMap.get(b.label) ?? [] })).filter((b) => b.colors.length > 0);
   }, [chromatics]);
+
+  // All sections in order (chromatic bands + neutrals)
+  const allSections = useMemo(() => {
+    const sections = bands.map((b) => b.label);
+    if (neutrals.length > 0) sections.push("Neutrals");
+    return sections;
+  }, [bands, neutrals]);
+
+  // IntersectionObserver: track which band header is most visible
+  const setupObserver = useCallback(() => {
+    observerRef.current?.disconnect();
+    const entries = new Map<string, number>();
+
+    const observer = new IntersectionObserver(
+      (observed) => {
+        for (const entry of observed) {
+          entries.set(entry.target.id, entry.intersectionRatio);
+        }
+        // Pick the topmost section whose header is visible
+        let top: string | null = null;
+        let topY = Infinity;
+        for (const [id, ratio] of entries) {
+          if (ratio > 0) {
+            const el = document.getElementById(id);
+            if (el) {
+              const y = el.getBoundingClientRect().top;
+              if (y < topY) { topY = y; top = id; }
+            }
+          }
+        }
+        if (top) {
+          setActiveBand(top.replace("color-band-", "").replace(/-/g, " ").replace("Yellow Greens", "Yellow-Greens"));
+        }
+      },
+      { threshold: [0, 0.1, 1], rootMargin: "0px 0px -60% 0px" }
+    );
+
+    for (const label of allSections) {
+      const el = document.getElementById(bandId(label));
+      if (el) observer.observe(el);
+    }
+
+    observerRef.current = observer;
+  }, [allSections]);
+
+  useEffect(() => {
+    setupObserver();
+    return () => observerRef.current?.disconnect();
+  }, [setupObserver]);
+
+  const scrollToBand = (label: string) => {
+    const el = document.getElementById(bandId(label));
+    if (!el) return;
+    // Offset for the sticky header (~56px) + small gap
+    const top = el.getBoundingClientRect().top + window.scrollY - 72;
+    window.scrollTo({ top, behavior: "smooth" });
+    setActiveBand(label);
+  };
 
   const handleCopy = (e: React.MouseEvent, hex: string) => {
     e.stopPropagation();
@@ -210,46 +284,78 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <p className="text-xs text-[var(--muted)]">
-          {colorIndex.length} unique color{colorIndex.length !== 1 ? "s" : ""} — click any swatch to find palettes that contain it
-        </p>
+    <div className="flex gap-1">
+      {/* Main content */}
+      <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-[var(--muted)]">
+            {colorIndex.length} unique color{colorIndex.length !== 1 ? "s" : ""} — click any swatch to find palettes that contain it
+          </p>
+        </div>
+
+        {bands.map((band) => (
+          <div key={band.label}>
+            <div id={bandId(band.label)} className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
+                {band.label}
+              </span>
+              <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{band.colors.length}</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+            <div
+              className="grid gap-1.5"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+            >
+              {band.colors.map(renderSwatch)}
+            </div>
+          </div>
+        ))}
+
+        {neutrals.length > 0 && (
+          <div>
+            <div id={bandId("Neutrals")} className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
+                Neutrals
+              </span>
+              <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{neutrals.length}</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+            <div
+              className="grid gap-1.5"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+            >
+              {neutrals.map(renderSwatch)}
+            </div>
+          </div>
+        )}
       </div>
 
-      {bands.map((band) => (
-        <div key={band.label}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
-              {band.label}
-            </span>
-            <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{band.colors.length}</span>
-            <div className="flex-1 h-px bg-[var(--border)]" />
-          </div>
-          <div
-            className="grid gap-1.5"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+      {/* Sticky hue-band jump index — iOS-style right edge letter list */}
+      {allSections.length > 1 && (
+        <div className="w-5 flex-shrink-0 relative">
+          <nav
+            className="sticky flex flex-col items-center gap-px"
+            style={{ top: 72 }}
+            aria-label="Jump to color band"
           >
-            {band.colors.map(renderSwatch)}
-          </div>
-        </div>
-      ))}
-
-      {neutrals.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
-              Neutrals
-            </span>
-            <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{neutrals.length}</span>
-            <div className="flex-1 h-px bg-[var(--border)]" />
-          </div>
-          <div
-            className="grid gap-1.5"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
-          >
-            {neutrals.map(renderSwatch)}
-          </div>
+            {allSections.map((label) => {
+              const isActive = activeBand === label;
+              return (
+                <button
+                  key={label}
+                  onClick={() => scrollToBand(label)}
+                  title={label}
+                  className={`w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none ${
+                    isActive
+                      ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                  }`}
+                >
+                  {BAND_ABBREV[label] ?? label.slice(0, 2)}
+                </button>
+              );
+            })}
+          </nav>
         </div>
       )}
     </div>
