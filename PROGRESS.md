@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-06-30 — Session 119: Hue Band Jump Index in Color Browser
+
+### What was done
+- **Sticky hue-band jump index** — a compact iOS-style letter list now appears on the right edge of the Color Browser view. Each visible hue band gets a 2-letter abbreviation chip (R, O, Y, YG, G, Cy, B, Pu, Pk, N), sticky at `top: 72px` so it stays visible as the user scrolls through a large color library.
+- **Smooth scroll-to-band** — clicking any chip calls `window.scrollTo` with an offset that accounts for the 56px sticky header, landing cleanly on the band header without obscuring it.
+- **Active band tracking via IntersectionObserver** — an observer watches all band header elements and highlights the chip matching the currently visible section. The active chip fills with `--accent` background (same violet as the rest of the UI); inactive chips are muted and hover to foreground on mouseover.
+- `bandId(label)` helper produces stable `id` attributes (`color-band-Reds`, `color-band-Yellow-Greens`, etc.) for both the band headers and the observer targets.
+- Index only renders when `allSections.length > 1` — no nav chrome when the library only has one hue band (e.g. newly extracted palette).
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **`useCallback` + `useEffect` for observer setup** — `setupObserver` is memoized on `allSections` so the observer correctly reconnects whenever the visible band set changes (filter change, new palette added). Prevents stale observations.
+- **`top: 72px` on sticky nav** — header is 56px; 72px adds 16px breathing room. Keeps the index well clear of the header bar on all screen sizes.
+- **Only shown when >1 section** — when there's just one band (e.g. a filter that yields only blues), the index would be a single chip with no value. Hiding it keeps the UI clean.
+- **`IntersectionObserver` with `rootMargin: "0px 0px -60% 0px"`** — treats the bottom 60% of viewport as outside the intersection zone, so the "active" band is whichever header appears in the top 40% — the one the user is actually reading, not one that's barely on screen.
+
+### What's next (Session 120)
+- **Palette notes inline edit** — click the notes field on a PaletteCard to edit in-place without opening the swatch editor; save on blur or Enter
+- **Palette variation generator: smarter defaults** — when opening variations overlay, auto-select the most common mood/style from the source palette's existing tags as the starting point
+- **Color Browser: color count badge on band headers** — show total unique colors per band directly in the band header row (already shows count, but could be styled more prominently)
+
+---
+
 ## 2026-06-30 — Session 118: Collection Size Badge on Palette Card Chips
 
 ### What was done
