@@ -13,7 +13,7 @@ interface CollectionModalProps {
 }
 
 export default function CollectionModal({ palette, onClose }: CollectionModalProps) {
-  const { collections, addCollection, updatePalette } = usePaletteStore();
+  const { collections, palettes, addCollection, updatePalette } = usePaletteStore();
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -63,16 +63,24 @@ export default function CollectionModal({ palette, onClose }: CollectionModalPro
                 <span className="text-[var(--muted)]">No collection</span>
                 {!palette.collectionId && <Check size={14} className="text-[var(--accent)]" />}
               </button>
-              {collections.map((c) => (
-                <button
-                  key={c.id}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-sm"
-                  onClick={() => handleAssign(c.id)}
-                >
-                  <span>{c.name}</span>
-                  {palette.collectionId === c.id && <Check size={14} className="text-[var(--accent)]" />}
-                </button>
-              ))}
+              {collections.map((c) => {
+                const count = palettes.filter((p) => p.collectionId === c.id).length;
+                return (
+                  <button
+                    key={c.id}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-sm"
+                    onClick={() => handleAssign(c.id)}
+                  >
+                    <span>{c.name}</span>
+                    <span className="flex items-center gap-2 shrink-0 ml-2">
+                      {count > 0 && (
+                        <span className="text-[11px] text-[var(--muted)] tabular-nums">{count}</span>
+                      )}
+                      {palette.collectionId === c.id && <Check size={14} className="text-[var(--accent)]" />}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Create new */}

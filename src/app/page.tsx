@@ -2051,6 +2051,9 @@ export default function Home() {
                     const palCollectionName = palette.collectionId
                       ? (collections.find((c) => c.id === palette.collectionId)?.name)
                       : undefined;
+                    const palCollectionSize = palette.collectionId
+                      ? palettes.filter((p) => p.collectionId === palette.collectionId).length
+                      : undefined;
                     return (
                       <PaletteCard
                         key={palette.id}
@@ -2082,6 +2085,7 @@ export default function Home() {
                         className={isCoverPalette ? "sm:col-span-2" : ""}
                         searchQuery={search || undefined}
                         collectionName={palCollectionName}
+                        collectionSize={palCollectionSize}
                         onJumpToCollection={jumpToCollection}
                         onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
                         onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}

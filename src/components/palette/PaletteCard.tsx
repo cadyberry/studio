@@ -94,6 +94,7 @@ interface PaletteCardProps {
   className?: string;
   searchQuery?: string;
   collectionName?: string;
+  collectionSize?: number;
   onJumpToCollection?: (collectionId: string) => void;
   onClearCollection?: () => void;
   onFilterByTag?: (tag: string) => void;
@@ -112,7 +113,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -1031,14 +1032,20 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 {onJumpToCollection ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); onJumpToCollection(palette.collectionId!); }}
-                    title={`Jump to ${collectionName ?? "collection"}`}
-                    className="px-1.5 py-0.5 hover:bg-[var(--accent)] hover:text-[var(--accent-fg)] transition-colors max-w-[100px] truncate"
+                    title={`Jump to ${collectionName ?? "collection"}${collectionSize !== undefined ? ` · ${collectionSize} palette${collectionSize !== 1 ? "s" : ""}` : ""}`}
+                    className="flex items-center gap-1 px-1.5 py-0.5 hover:bg-[var(--accent)] hover:text-[var(--accent-fg)] transition-colors"
                   >
-                    {collectionName ?? "in collection"}
+                    <span className="max-w-[90px] truncate">{collectionName ?? "in collection"}</span>
+                    {collectionSize !== undefined && collectionSize > 1 && (
+                      <span className="opacity-50 tabular-nums shrink-0">{collectionSize}</span>
+                    )}
                   </button>
                 ) : (
-                  <span className="px-1.5 py-0.5 max-w-[120px] truncate">
-                    {collectionName ?? "in collection"}
+                  <span className="flex items-center gap-1 px-1.5 py-0.5">
+                    <span className="max-w-[110px] truncate">{collectionName ?? "in collection"}</span>
+                    {collectionSize !== undefined && collectionSize > 1 && (
+                      <span className="opacity-50 tabular-nums shrink-0">{collectionSize}</span>
+                    )}
                   </span>
                 )}
                 {onClearCollection && (
