@@ -67,6 +67,25 @@ function getFreshness(createdAt: string): { label: string; bgClass: string; text
   return null;
 }
 
+function getRecommendedVariant(colors: { hex: string }[]): { variant: PaletteVariant; reason: string } {
+  if (colors.length === 0) return { variant: "lighter", reason: "Add some light" };
+  const hsls = colors
+    .map((c) => { const rgb = hexToRgb(c.hex); return rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b) : null; })
+    .filter((v): v is { h: number; s: number; l: number } => v !== null);
+  if (hsls.length === 0) return { variant: "saturated", reason: "Add color to neutrals" };
+
+  const avgS = hsls.reduce((s, h) => s + h.s, 0) / hsls.length;
+  const avgL = hsls.reduce((s, h) => s + h.l, 0) / hsls.length;
+
+  if (avgS > 58)  return { variant: "muted",     reason: "Highly saturated — muted version great for print" };
+  if (avgS < 22)  return { variant: "saturated", reason: "Very muted — vivid version would pop" };
+  if (avgL > 68)  return { variant: "darker",    reason: "Mostly light — darker version adds depth" };
+  if (avgL < 32)  return { variant: "lighter",   reason: "Mostly dark — lighter version opens it up" };
+  // Balanced palette: suggest the opposite of detected mood
+  if (avgL > 52)  return { variant: "darker",    reason: "Mid-light tones — try the darker contrast" };
+  return { variant: "lighter", reason: "Mid-dark tones — try the lighter contrast" };
+}
+
 const MOOD_STYLES: Record<PaletteMood, { bg: string; text: string; label: string }> = {
   vivid:  { bg: "bg-rose-100 dark:bg-rose-900/30",   text: "text-rose-600 dark:text-rose-400",   label: "vivid"  },
   muted:  { bg: "bg-zinc-100 dark:bg-zinc-800",       text: "text-zinc-500 dark:text-zinc-400",   label: "muted"  },
@@ -1603,6 +1622,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       <AnimatePresence>
         {variationsOpen && (() => {
           const VARIANTS: PaletteVariant[] = ["lighter", "darker", "muted", "saturated"];
+          const { variant: recommended, reason: recommendedReason } = getRecommendedVariant(palette.colors);
           return (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
@@ -1611,7 +1631,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               transition={{ duration: 0.15 }}
               className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
             >
-              <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
                   Variations
                 </span>
@@ -1622,17 +1642,37 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   <X size={11} />
                 </button>
               </div>
+              {/* Smart suggestion line */}
+              <p className="text-[9px] text-[var(--muted)] mb-2 leading-relaxed">
+                <span className="inline-flex items-center gap-0.5 text-violet-500 dark:text-violet-400 font-medium">
+                  <span>★</span> Best fit:
+                </span>
+                {" "}{recommendedReason}
+              </p>
               <div className="flex flex-col gap-1.5">
                 {VARIANTS.map((variant) => {
                   const variantColors = derivePaletteVariant(palette.colors, variant);
                   const forked = forkedVariant === variant;
                   const replaced = replacedVariant === variant;
+                  const isRecommended = variant === recommended;
                   return (
-                    <div key={variant} className="flex items-center gap-2">
-                      <span className="text-[10px] text-[var(--muted)] w-14 shrink-0 font-medium">
+                    <div
+                      key={variant}
+                      className={`flex items-center gap-2 rounded-[4px] transition-colors ${
+                        isRecommended ? "bg-violet-50/60 dark:bg-violet-950/30 -mx-1 px-1 py-0.5" : ""
+                      }`}
+                    >
+                      <span className={`text-[10px] w-14 shrink-0 font-medium flex items-center gap-1 ${
+                        isRecommended ? "text-violet-600 dark:text-violet-400" : "text-[var(--muted)]"
+                      }`}>
                         {PALETTE_VARIANT_LABELS[variant]}
+                        {isRecommended && (
+                          <span className="text-[8px] font-bold text-violet-500 dark:text-violet-400 leading-none">★</span>
+                        )}
                       </span>
-                      <div className="flex flex-1 rounded-[3px] overflow-hidden h-6 min-w-0">
+                      <div className={`flex flex-1 rounded-[3px] overflow-hidden h-6 min-w-0 ${
+                        isRecommended ? "ring-1 ring-violet-300/60 dark:ring-violet-700/60" : ""
+                      }`}>
                         {variantColors.map((c, i) => (
                           <div
                             key={i}
