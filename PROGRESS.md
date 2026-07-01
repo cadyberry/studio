@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-01 — Session 121: Variations Overlay Smart Recommendations
+
+### What was done
+- **Smart variant recommendation in variations overlay** — the overlay now analyzes the palette's average HSL saturation and lightness to determine which transform would be most useful, and highlights it as the "Best fit."
+- A `getRecommendedVariant()` helper derives the recommendation from 5 rules: highly saturated → Muted (better for print), very muted → Vivid (to pop), mostly light → Darker (depth), mostly dark → Lighter (opens up), balanced → Darker/Lighter based on median lightness.
+- The overlay shows a `★ Best fit: [reason]` line just below the header, e.g. "Highly saturated — muted version great for print" — a one-line nudge that helps creators know where to start.
+- The recommended variant row gets a subtle violet highlight background, a thin violet ring on the swatch strip preview, and a `★` marker next to its name in the label column.
+- All existing Fork / Replace behavior is unchanged; the highlight is purely informational.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **Analysis at render time, not stored** — the recommendation is computed live from the palette's current colors each time the overlay opens. Zero store changes needed; the palette could be updated and the recommendation stays accurate.
+- **Saturation-first, lightness-second** — saturation drives the most visually dramatic change for print-on-demand work (muted vs vivid is a core consideration when designing for POD). Lightness is checked second for contrast range.
+- **One recommended at a time** — showing more than one "recommended" would dilute the signal. A single clear suggestion is more useful than a ranked list.
+- **Non-prescriptive** — the reason text explains _why_ (e.g. "Highly saturated — muted version great for print") so the creator can agree or disagree. It's a starting point, not an instruction.
+
+### What's next (Session 122)
+- **Palette "Print-safe" quick check** — a one-click button on the PaletteCard that summarizes CMYK risk for all colors as a traffic-light status (all safe / some caution / high risk) without opening the full export modal
+- **Color Browser: palette count in band jump index chips** — add a small count of unique colors per band to the jump-index chip tooltip
+- **Trend Library: "Use in new palette" flow** — clicking a trend palette swatch opens the extractor pre-seeded with those colors for easy remixing
+
+---
+
 ## 2026-07-01 — Session 120: Palette Notes Inline Edit
 
 ### What was done
