@@ -141,6 +141,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesValue, setNotesValue] = useState(palette.notes ?? "");
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [inlineNotesEditing, setInlineNotesEditing] = useState(false);
+  const [inlineNotesValue, setInlineNotesValue] = useState(palette.notes ?? "");
+  const inlineNotesRef = useRef<HTMLTextAreaElement>(null);
   const [suggestionIdx, setSuggestionIdx] = useState(-1);
   const [variationsOpen, setVariationsOpen] = useState(false);
   const [forkedVariant, setForkedVariant] = useState<PaletteVariant | null>(null);
@@ -228,6 +231,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     if (!notesOpen) setNotesValue(palette.notes ?? "");
   }, [palette.notes, notesOpen]);
 
+  // Sync inline notes value when palette.notes changes externally
+  useEffect(() => {
+    if (!inlineNotesEditing) setInlineNotesValue(palette.notes ?? "");
+  }, [palette.notes, inlineNotesEditing]);
+
   // Ordered colors with stable keys for drag-to-reorder
   const [orderedColors, setOrderedColors] = useState<KeyedColor[]>(() =>
     palette.colors.map((c, i) => ({ ...c, _key: `${palette.id}-${i}` }))
@@ -271,6 +279,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setTagging(false);
     setTagInput("");
     setNaming({ type: "idle" });
+    setInlineNotesEditing(false);
     setNotesValue(palette.notes ?? "");
     setNotesOpen(true);
     setTimeout(() => {
@@ -293,9 +302,34 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setNotesOpen(false);
   };
 
+  const openInlineNotes = () => {
+    setInlineNotesValue(palette.notes ?? "");
+    setInlineNotesEditing(true);
+    setNotesOpen(false);
+    setTimeout(() => {
+      inlineNotesRef.current?.focus();
+      const len = inlineNotesRef.current?.value.length ?? 0;
+      inlineNotesRef.current?.setSelectionRange(len, len);
+    }, 30);
+  };
+
+  const commitInlineNotes = () => {
+    const trimmed = inlineNotesValue.trim();
+    if (trimmed !== (palette.notes ?? "")) {
+      updatePalette(palette.id, { notes: trimmed || undefined });
+    }
+    setInlineNotesEditing(false);
+  };
+
+  const cancelInlineNotes = () => {
+    setInlineNotesValue(palette.notes ?? "");
+    setInlineNotesEditing(false);
+  };
+
   const openTagging = () => {
     setNaming({ type: "idle" });
     setNotesOpen(false);
+    setInlineNotesEditing(false);
     setTagging(true);
     setTimeout(() => tagInputRef.current?.focus(), 50);
   };
@@ -1113,11 +1147,37 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               );
             })}
           </div>
-          {palette.notes && (() => {
+          {inlineNotesEditing ? (
+            <div className="mt-1.5">
+              <textarea
+                ref={inlineNotesRef}
+                value={inlineNotesValue}
+                onChange={(e) => setInlineNotesValue(e.target.value)}
+                onBlur={commitInlineNotes}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitInlineNotes(); }
+                  if (e.key === "Escape") { e.preventDefault(); cancelInlineNotes(); }
+                }}
+                placeholder="Add a creative note…"
+                className="w-full text-[10px] bg-[var(--surface-2)] border border-[var(--accent)] rounded-[var(--radius-sm)] px-2 py-1.5 outline-none transition-colors placeholder:text-[var(--muted)] resize-none leading-relaxed"
+                rows={2}
+                maxLength={280}
+                spellCheck
+              />
+              <div className="flex items-center justify-between mt-0.5">
+                <p className="text-[9px] text-[var(--muted)]">Enter to save · Shift+Enter newline · Esc cancel</p>
+                <span className="text-[9px] text-[var(--muted)] tabular-nums">{inlineNotesValue.length}/280</span>
+              </div>
+            </div>
+          ) : palette.notes ? (() => {
             const excerpt = searchQuery ? getNoteExcerpt(palette.notes, searchQuery) : null;
             if (excerpt) {
               return (
-                <div className="flex items-start gap-1.5 mt-1.5 px-2 py-1.5 rounded-[var(--radius-sm)] bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/60 dark:border-yellow-700/40">
+                <div
+                  className="flex items-start gap-1.5 mt-1.5 px-2 py-1.5 rounded-[var(--radius-sm)] bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200/60 dark:border-yellow-700/40 cursor-text group/noteinline"
+                  onClick={openInlineNotes}
+                  title="Click to edit note"
+                >
                   <StickyNote size={9} className="text-yellow-500 dark:text-yellow-400 mt-0.5 flex-shrink-0 fill-yellow-100 dark:fill-yellow-900/40" />
                   <p className="text-[10px] text-[var(--fg)] leading-snug min-w-0 break-words">
                     {excerpt.truncStart && <span className="text-[var(--muted)]">…</span>}
@@ -1133,13 +1193,22 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             }
             return (
               <p
-                className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-default select-none"
-                title={palette.notes}
+                className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-text select-none hover:text-[var(--fg)] transition-colors"
+                title="Click to edit note"
+                onClick={openInlineNotes}
               >
                 {highlightMatch(palette.notes, searchQuery)}
               </p>
             );
-          })()}
+          })() : (
+            <p
+              className="text-[9px] italic text-[var(--muted)]/0 group-hover:text-[var(--muted)]/40 mt-1 leading-snug cursor-text select-none transition-colors"
+              onClick={openInlineNotes}
+              title="Click to add a note"
+            >
+              Add a note…
+            </p>
+          )}
           {searchQuery && (() => {
             const nameMatches = palette.colors.filter(
               (c) => c.name && c.name.toLowerCase().includes(searchQuery.toLowerCase())
