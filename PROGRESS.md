@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-01 — Session 120: Palette Notes Inline Edit
+
+### What was done
+- **Palette notes inline edit** — clicking the notes text on any PaletteCard now switches it to an inline textarea directly on the card body. No bottom overlay required for a quick note edit.
+- Click the note text (italic paragraph) → compact inline textarea replaces it; Enter saves, Esc cancels, Shift+Enter inserts a newline. Saves on blur.
+- **Empty-note hover prompt** — when a palette has no notes, a faint "Add a note…" text fades in on card hover. Clicking it opens the same inline textarea. Removes the barrier of hunting for the StickyNote button.
+- Character counter shown during inline edit (`n/280`).
+- All conflicting interactions close inline editing: opening the tag editor, AI naming, or the full notes overlay all cleanly collapse the inline textarea and discard uncommitted changes.
+- The StickyNote action button still opens the full bottom overlay (for longer notes, pasting, etc.).
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **Single click, not double-click** — notes are read-only metadata; a single click to edit is consistent with how placeholder text behaves in most tools. Contrast with palette name, which uses double-click because misclick-to-rename is more disruptive.
+- **Inline over overlay for quick edits** — the overlay adds friction (slide-in animation, separate focus context). The inline textarea is zero-ceremony; the overlay remains for power users who want the full editing surface.
+- **`text-[var(--muted)]/0 group-hover:text-[var(--muted)]/40`** — empty-note hint is fully transparent by default, fades to 40% opacity on card hover. Visible enough to discover, quiet enough to not clutter cards with notes.
+
+### What's next (Session 121)
+- **Palette variation generator: smarter defaults** — when opening variations overlay, auto-select the most common mood/style from the source palette's existing tags as the starting point
+- **Color Browser: color count badge on band headers** — show total unique colors per band in the header row
+- **Palette export: bulk ZIP download** — select multiple palettes and download a ZIP with one PNG swatch file per palette
+
+---
+
 ## 2026-06-30 — Session 119: Hue Band Jump Index in Color Browser
 
 ### What was done
