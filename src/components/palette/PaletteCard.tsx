@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -169,6 +169,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [replacedVariant, setReplacedVariant] = useState<PaletteVariant | null>(null);
   const [swatchNaming, setSwatchNaming] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [printCheckOpen, setPrintCheckOpen] = useState(false);
+  const [printMutedIdx, setPrintMutedIdx] = useState<number | null>(null);
+  const [printMutedAll, setPrintMutedAll] = useState(false);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -534,6 +536,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     updatePalette(palette.id, { colors: variantColors });
     setReplacedVariant(variant);
     setTimeout(() => { setReplacedVariant(null); setVariationsOpen(false); }, 1200);
+  };
+
+  const muteSwatch = (idx: number) => {
+    const ok = hexToOklch(palette.colors[idx].hex);
+    if (!ok || ok.c <= 0.25) return;
+    const newHex = oklchToHex(ok.l, 0.25, ok.h);
+    const newColors = palette.colors.map((c, i) => i === idx ? { ...c, hex: newHex } : c);
+    updatePalette(palette.id, { colors: newColors });
+    setPrintMutedIdx(idx);
+    setTimeout(() => setPrintMutedIdx(null), 1400);
+  };
+
+  const muteAllVivid = () => {
+    const newColors = palette.colors.map((c) => {
+      const ok = hexToOklch(c.hex);
+      if (!ok || ok.c <= 0.25) return c;
+      return { ...c, hex: oklchToHex(ok.l, 0.25, ok.h) };
+    });
+    updatePalette(palette.id, { colors: newColors });
+    setPrintMutedAll(true);
+    setTimeout(() => setPrintMutedAll(false), 1400);
   };
 
   const handleNameSwatches = async () => {
@@ -1773,12 +1796,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   <span className={`w-2 h-2 rounded-full ${trafficLight.dotClass} shrink-0`} />
                   {trafficLight.label}
                 </div>
-                <button
-                  onClick={() => setPrintCheckOpen(false)}
-                  className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
-                >
-                  <X size={11} />
-                </button>
+                <div className="flex items-center gap-1">
+                  {printRisk.vivid > 0 && (
+                    <button
+                      onClick={muteAllVivid}
+                      title="Clamp all vivid swatches to C=0.25 (print-safe boundary)"
+                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded transition-colors ${
+                        printMutedAll
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-800/40"
+                      }`}
+                    >
+                      {printMutedAll ? "✓ Muted" : `Mute all vivid`}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setPrintCheckOpen(false)}
+                    className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -1788,7 +1826,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   const isVivid = chroma > 0.25;
                   const isModerate = chroma > 0.12 && !isVivid;
                   const isSafe = !isVivid && !isModerate;
-                  const fg = getContrastColor(c.hex);
+                  const justMuted = printMutedIdx === i;
                   return (
                     <div key={i} className="flex items-center gap-2">
                       <div
@@ -1804,23 +1842,38 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                           {c.name}
                         </span>
                       )}
-                      <span className={`ml-auto shrink-0 text-[9px] font-medium px-1.5 py-px rounded tabular-nums ${
-                        isVivid
-                          ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
-                          : isModerate
-                          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      }`}
-                        title={
+                      <div className="ml-auto flex items-center gap-1 shrink-0">
+                        {isVivid && (
+                          <button
+                            onClick={() => muteSwatch(i)}
+                            title={`Clamp chroma to C=0.25 — moves from vivid to caution zone`}
+                            className={`text-[9px] font-medium px-1 py-px rounded transition-colors ${
+                              justMuted
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+                            }`}
+                          >
+                            {justMuted ? "✓" : "Mute"}
+                          </button>
+                        )}
+                        <span className={`text-[9px] font-medium px-1.5 py-px rounded tabular-nums ${
                           isVivid
-                            ? `C=${chroma.toFixed(3)} — highly vivid, press may not reproduce at full saturation`
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
                             : isModerate
-                            ? `C=${chroma.toFixed(3)} — moderate chroma, slight shift possible in print`
-                            : `C=${chroma.toFixed(3)} — safe for CMYK print`
-                        }
-                      >
-                        {isVivid ? "Vivid" : isModerate ? "Caution" : "Safe"}
-                      </span>
+                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        }`}
+                          title={
+                            isVivid
+                              ? `C=${chroma.toFixed(3)} — highly vivid, press may not reproduce at full saturation`
+                              : isModerate
+                              ? `C=${chroma.toFixed(3)} — moderate chroma, slight shift possible in print`
+                              : `C=${chroma.toFixed(3)} — safe for CMYK print`
+                          }
+                        >
+                          {isVivid ? "Vivid" : isModerate ? "Caution" : "Safe"}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
