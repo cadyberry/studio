@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -168,6 +168,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [forkedVariant, setForkedVariant] = useState<PaletteVariant | null>(null);
   const [replacedVariant, setReplacedVariant] = useState<PaletteVariant | null>(null);
   const [swatchNaming, setSwatchNaming] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [printCheckOpen, setPrintCheckOpen] = useState(false);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -299,6 +300,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setTagInput("");
     setNaming({ type: "idle" });
     setInlineNotesEditing(false);
+    setPrintCheckOpen(false);
     setNotesValue(palette.notes ?? "");
     setNotesOpen(true);
     setTimeout(() => {
@@ -349,6 +351,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setNaming({ type: "idle" });
     setNotesOpen(false);
     setInlineNotesEditing(false);
+    setPrintCheckOpen(false);
     setTagging(true);
     setTimeout(() => tagInputRef.current?.focus(), 50);
   };
@@ -510,6 +513,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setTagInput("");
     setNaming({ type: "idle" });
     setNotesOpen(false);
+    setPrintCheckOpen(false);
     setVariationsOpen(true);
   };
 
@@ -1045,20 +1049,26 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </span>
             )}
             {(printRisk.vivid + printRisk.moderate > 0) && (
-              <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums ${
+              <button
+                onClick={() => {
+                  setPrintCheckOpen((v) => {
+                    if (!v) {
+                      setTagging(false);
+                      setNotesOpen(false);
+                      setVariationsOpen(false);
+                    }
+                    return !v;
+                  });
+                }}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums transition-opacity hover:opacity-80 ${
                   printRisk.vivid > 0
                     ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
                     : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                 }`}
-                title={`${printRisk.vivid + printRisk.moderate} color${printRisk.vivid + printRisk.moderate !== 1 ? "s" : ""} may shift in CMYK print${
-                  printRisk.vivid > 0
-                    ? ` — ${printRisk.vivid} highly vivid (oklch C > 0.25): press may not reproduce at full saturation`
-                    : " — moderate saturation (oklch C 0.12–0.25): slight shift possible"
-                }`}
+                title="Click to see print risk details"
               >
                 {printRisk.vivid + printRisk.moderate} print risk
-              </span>
+              </button>
             )}
             {colorMatchHex && bestMatchIndex && (() => {
               const tier = getMatchTier(bestMatchIndex.dE);
@@ -1342,6 +1352,28 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             title={palette.notes ? "Edit note" : "Add note"}
           >
             <StickyNote size={13} className={palette.notes ? "fill-yellow-200 dark:fill-yellow-900 text-yellow-600 dark:text-yellow-400" : ""} />
+          </Button>
+          <Button
+            variant={printCheckOpen ? "outline" : "ghost"}
+            size="sm"
+            onClick={() => {
+              setPrintCheckOpen((v) => {
+                if (!v) {
+                  setTagging(false);
+                  setNotesOpen(false);
+                  setVariationsOpen(false);
+                }
+                return !v;
+              });
+            }}
+            title="Print-safe check"
+            className={printCheckOpen || printRisk.vivid > 0
+              ? "text-rose-500 dark:text-rose-400"
+              : printRisk.moderate > 0
+              ? "text-orange-500 dark:text-orange-400"
+              : ""}
+          >
+            <Printer size={13} />
           </Button>
           <Button variant="ghost" size="sm" onClick={() => onExport(palette)} title="Export">
             <Download size={13} />
@@ -1711,6 +1743,91 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </div>
               <p className="text-[9px] text-[var(--muted)] mt-2">
                 <strong className="font-semibold">Fork</strong> adds a new palette · <strong className="font-semibold">Replace</strong> overwrites this one
+              </p>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Print-safe quick check overlay */}
+      <AnimatePresence>
+        {printCheckOpen && (() => {
+          const allSafe = printRisk.vivid === 0 && printRisk.moderate === 0;
+          const vividOnly = printRisk.vivid > 0;
+          const trafficLight = allSafe
+            ? { label: "All print-safe", dotClass: "bg-emerald-500", bgClass: "bg-emerald-50 dark:bg-emerald-950/30", textClass: "text-emerald-700 dark:text-emerald-400" }
+            : vividOnly
+            ? { label: "High print risk", dotClass: "bg-rose-500", bgClass: "bg-rose-50 dark:bg-rose-950/30", textClass: "text-rose-700 dark:text-rose-400" }
+            : { label: "Some caution", dotClass: "bg-orange-400", bgClass: "bg-orange-50 dark:bg-orange-950/30", textClass: "text-orange-700 dark:text-orange-400" };
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${trafficLight.bgClass} ${trafficLight.textClass}`}>
+                  <span className={`w-2 h-2 rounded-full ${trafficLight.dotClass} shrink-0`} />
+                  {trafficLight.label}
+                </div>
+                <button
+                  onClick={() => setPrintCheckOpen(false)}
+                  className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                {palette.colors.map((c, i) => {
+                  const ok = hexToOklch(c.hex);
+                  const chroma = ok?.c ?? 0;
+                  const isVivid = chroma > 0.25;
+                  const isModerate = chroma > 0.12 && !isVivid;
+                  const isSafe = !isVivid && !isModerate;
+                  const fg = getContrastColor(c.hex);
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <div
+                        className="w-6 h-4 rounded-[3px] shrink-0 border border-black/10"
+                        style={{ backgroundColor: c.hex }}
+                        title={c.hex}
+                      />
+                      <span className="text-[9px] font-mono text-[var(--muted)] w-14 shrink-0 tabular-nums">
+                        {c.hex.toUpperCase()}
+                      </span>
+                      {c.name && (
+                        <span className="text-[9px] text-[var(--foreground)] truncate flex-1 min-w-0">
+                          {c.name}
+                        </span>
+                      )}
+                      <span className={`ml-auto shrink-0 text-[9px] font-medium px-1.5 py-px rounded tabular-nums ${
+                        isVivid
+                          ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                          : isModerate
+                          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      }`}
+                        title={
+                          isVivid
+                            ? `C=${chroma.toFixed(3)} — highly vivid, press may not reproduce at full saturation`
+                            : isModerate
+                            ? `C=${chroma.toFixed(3)} — moderate chroma, slight shift possible in print`
+                            : `C=${chroma.toFixed(3)} — safe for CMYK print`
+                        }
+                      >
+                        {isVivid ? "Vivid" : isModerate ? "Caution" : "Safe"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-[9px] text-[var(--muted)] mt-2 leading-relaxed">
+                Based on oklch chroma · C&gt;0.25 vivid · C 0.12–0.25 caution · C≤0.12 safe
               </p>
             </motion.div>
           );
