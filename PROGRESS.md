@@ -3327,3 +3327,28 @@
 - **Palette notes search: full note excerpt when short** — currently always truncates at 55 chars; show full text when it fits within ~120 chars
 - **"Most varied" visual indicator on PaletteCard** — the oklch L-range gradient bar already shows at the bottom of each card; the sort label tooltip could be improved but the bar itself is already present
 - **Saved view indicator** — when a saved filter preset is active, show its name in the filter bar so creators can see which view they're in
+
+---
+
+## 2026-07-02 — Session 122: Print-Safe Quick Check Panel
+
+### What was done
+- **Print-safe quick check panel on PaletteCard** — a `Printer` button in the action bar (and the existing "N print risk" badge) now open an inline panel that shows a traffic-light summary and per-swatch risk status at a glance, without opening the full Export modal or SwatchEditor:
+  - **Traffic-light header** — a colored pill at the top of the panel: emerald "All print-safe" · orange "Some caution" · rose "High print risk" — shows the worst-case status for the whole palette at a glance
+  - **Per-swatch rows** — each color is shown with: a 24×16 color square, its hex code (monospaced), swatch name (if any), and a risk badge on the right ("Safe" / "Caution" / "Vivid") color-coded emerald/orange/rose. Hovering the badge shows the exact oklch C value and what it means.
+  - **Footer** — one-line legend explaining thresholds: "C>0.25 vivid · C 0.12–0.25 caution · C≤0.12 safe"
+  - **Print risk badge now clickable** — the existing "N print risk" metadata badge toggles the same panel, giving a second entry point for creators who already know what to look for
+  - **Printer button coloring** — button stays neutral (gray) for all-safe palettes, orange for moderate risk, rose for vivid risk, providing a persistent glanceable signal in the action row
+  - **Mutual exclusivity** — opening the print check panel closes Variations, Notes, and Tag editor overlays; opening any of those closes the print check panel
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Inline panel, not a modal** — the overlay pattern (absolute-positioned, slides up from the bottom of the card) is established in Variations and Notes; consistent UX, no focus trap needed, and the color strip is still visible above it
+- **Traffic-light pill not just a badge** — a pill with text is more legible at a glance than a colored dot alone; the text anchors the color signal for creators who might be colorblind or scanning quickly
+- **Exact C value in tooltip, not text** — creators curious about a specific swatch can hover to see "C=0.287 — highly vivid, press may not reproduce at full saturation"; the list itself uses simple Safe/Caution/Vivid so it reads fast
+- **Printer button colorizes even when panel is closed** — so creators can scan a dense library and immediately spot orange/rose-tinted Printer icons without opening every card
+
+### What's next (Session 123)
+- **Color Browser: color count in band jump index chip tooltips** — update `title={label}` on each chip to say "Reds · 12 colors" for quick orientation
+- **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
+- **Print check: "Fix" action for vivid swatches** — a small "Mute" button next to each Vivid-risk swatch that applies the oklch-chroma clamp to C≤0.25 in one click
