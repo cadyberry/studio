@@ -3352,3 +3352,25 @@
 - **Color Browser: color count in band jump index chip tooltips** — update `title={label}` on each chip to say "Reds · 12 colors" for quick orientation
 - **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
 - **Print check: "Fix" action for vivid swatches** — a small "Mute" button next to each Vivid-risk swatch that applies the oklch-chroma clamp to C≤0.25 in one click
+
+---
+
+## 2026-07-02 — Session 123: Print Check "Mute" Fix Action
+
+### What was done
+- **Per-swatch "Mute" button in print check panel** — each row where a swatch is flagged "Vivid" (oklch C > 0.25) now has a small "Mute" button. Clicking it clamps that swatch's chroma to exactly C=0.25 in oklch space (the print-safe boundary), updates the palette in the store, and the badge immediately changes to "Caution". The button shows a brief "✓" confirmation for 1.4s after click.
+- **"Mute all vivid" header button** — when any vivid swatches exist, a "Mute all vivid" button appears in the panel header. One click clamps every vivid swatch to C=0.25 simultaneously; shows "✓ Muted" for 1.4s.
+- Both actions call `oklchToHex(ok.l, 0.25, ok.h)` — preserving lightness and hue while dropping just the excess chroma. The result is a color that prints predictably without losing its character.
+- Imported `oklchToHex` into `PaletteCard.tsx` (it was already exported from utils but not imported here).
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **C=0.25 exactly** (not lower) — this is the boundary between "vivid" and "caution" risk. Dropping to 0.24 would push the swatch into caution; 0.25 is the minimal intervention that gets it out of the high-risk zone. Creators who want a more aggressive mute can use the Variations panel's "Muted" transform (which drops to C*0.3).
+- **Mute ≠ Variations "Muted"** — the Variations panel's muted transform is C * 0.3 (very dramatic desaturation). The print Mute is a surgical C=0.25 clamp — only what's needed to hit the safety threshold. A different function, a different intent.
+- **No undo prompt** — consistent with Replace variant (which also has no confirmation). The change is immediately visible in the swatch preview; creators can re-open the panel and see the badge is now "Caution" or "Safe". Palette undo is not a feature yet, so no false promise of one.
+- **justMuted state per-swatch** — a single `printMutedIdx` number tracks the last muted swatch index; shown as "✓" for 1.4s. Avoids a Set of indices since you'd rarely mute two swatches in rapid succession and the panel re-renders cleanly.
+
+### What's next (Session 124)
+- **Color Browser: color count in band jump index chip tooltips** — update `title={label}` on each chip to say "Reds · 12 colors" for quick orientation
+- **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
+- **Print check: "Caution → Safe" single-click mute** — now that Vivid is handled, consider adding a lighter mute for Caution swatches (clamp to C=0.12) for creators who want all-green palettes
