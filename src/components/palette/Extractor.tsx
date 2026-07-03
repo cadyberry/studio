@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Wand2, Save, X, Hash, ImageIcon } from "lucide-react";
 import { extractColorsFromImage } from "@/lib/colorExtract";
@@ -32,7 +32,13 @@ function parseHexList(input: string): ColorSwatch[] {
   return result;
 }
 
-export default function Extractor() {
+interface ExtractorProps {
+  seedHex?: string;
+  seedName?: string;
+  onSeedConsumed?: () => void;
+}
+
+export default function Extractor({ seedHex, seedName, onSeedConsumed }: ExtractorProps) {
   const [inputMode, setInputMode] = useState<InputMode>("image");
   const [dragging, setDragging] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -44,6 +50,19 @@ export default function Extractor() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const addPalette = usePaletteStore((s) => s.addPalette);
+
+  // Seed from Trend Library: switch to hex mode and pre-fill
+  useEffect(() => {
+    if (!seedHex) return;
+    setInputMode("hex");
+    setHexInput(seedHex);
+    setColors([]);
+    setThumbnail(null);
+    if (seedName) setPaletteName(seedName);
+    setSaved(false);
+    onSeedConsumed?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedHex]);
 
   const hexColors = useMemo(() => parseHexList(hexInput), [hexInput]);
   const activeColors = inputMode === "hex" ? hexColors : colors;

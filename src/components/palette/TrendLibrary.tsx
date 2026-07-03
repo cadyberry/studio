@@ -10,6 +10,7 @@ import { getContrastColor } from "@/lib/utils";
 interface TrendLibraryProps {
   onClose: () => void;
   onFork: (colors: string[], name: string) => void;
+  onUseInExtractor?: (colors: string[], name: string) => void;
 }
 
 const SEASON_ICONS: Record<Season, React.FC<{ size?: number; className?: string }>> = {
@@ -23,9 +24,11 @@ const SEASON_ICONS: Record<Season, React.FC<{ size?: number; className?: string 
 function TrendCard({
   palette,
   onFork,
+  onUseInExtractor,
 }: {
   palette: (typeof TREND_PALETTES)[0];
   onFork: (colors: string[], name: string) => void;
+  onUseInExtractor?: (colors: string[], name: string) => void;
 }) {
   const [forked, setForked] = useState(false);
 
@@ -62,12 +65,21 @@ function TrendCard({
         ))}
       </div>
 
-      {/* Info + fork */}
-      <div className="px-3 py-2.5 flex items-center gap-3">
+      {/* Info + actions */}
+      <div className="px-3 py-2.5 flex items-center gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">{palette.name}</p>
           <p className="text-[11px] text-[var(--muted)] truncate">{palette.mood}</p>
         </div>
+        {onUseInExtractor && (
+          <button
+            onClick={() => onUseInExtractor(palette.colors, palette.name)}
+            className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-md border border-[var(--border)] hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] transition-all"
+            title="Open in extractor to customize before saving"
+          >
+            Remix
+          </button>
+        )}
         <button
           onClick={handleFork}
           className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-md border transition-all ${
@@ -92,7 +104,7 @@ function TrendCard({
   );
 }
 
-export default function TrendLibrary({ onClose, onFork }: TrendLibraryProps) {
+export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: TrendLibraryProps) {
   const [season, setSeason] = useState<Season>("evergreen");
 
   const filtered = TREND_PALETTES.filter((p) => p.season === season);
@@ -164,7 +176,7 @@ export default function TrendLibrary({ onClose, onFork }: TrendLibraryProps) {
               className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             >
               {filtered.map((p) => (
-                <TrendCard key={p.id} palette={p} onFork={onFork} />
+                <TrendCard key={p.id} palette={p} onFork={onFork} onUseInExtractor={onUseInExtractor} />
               ))}
             </motion.div>
           </div>
@@ -172,7 +184,7 @@ export default function TrendLibrary({ onClose, onFork }: TrendLibraryProps) {
           {/* Footer */}
           <div className="px-5 py-3 border-t border-[var(--border-subtle)] shrink-0">
             <p className="text-[10px] text-[var(--muted)]">
-              Fork saves a copy to your library — the original trend palette stays here. Forked palettes are fully editable.
+              <strong className="font-semibold">Fork</strong> saves directly to your library · <strong className="font-semibold">Remix</strong> opens it in the extractor to customize first
             </p>
           </div>
         </motion.div>

@@ -108,6 +108,7 @@ export default function Home() {
   const [compareTarget, setCompareTarget] = useState<Palette | null>(null);
   const [cohesionTarget, setCohesionTarget] = useState<Collection | null>(null);
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
+  const [trendSeed, setTrendSeed] = useState<{ hex: string; name: string } | undefined>();
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
@@ -643,7 +644,11 @@ export default function Home() {
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-3">
                 Extract
               </h2>
-              <Extractor />
+              <Extractor
+                seedHex={trendSeed?.hex}
+                seedName={trendSeed?.name}
+                onSeedConsumed={() => setTrendSeed(undefined)}
+              />
             </div>
 
             {/* Library stats panel */}
@@ -2137,6 +2142,10 @@ export default function Home() {
           onClose={() => setShowTrendLibrary(false)}
           onFork={(colors, name) => {
             addPalette({ name, colors: colors.map((hex) => ({ hex })), tags: ["trend"] });
+          }}
+          onUseInExtractor={(colors, name) => {
+            setTrendSeed({ hex: colors.join(", "), name });
+            setShowTrendLibrary(false);
           }}
         />
       )}
