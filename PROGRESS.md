@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-03 — Session 125: Caution→Safe Mute, Season Counts, Jump Tooltips
+
+### What was done
+- **Print check: Caution→Safe mute** — each Caution-zone swatch (C 0.12–0.25) in the print check overlay now has a per-swatch "Mute" button that clamps its oklch chroma to C=0.12, moving it into the safe zone. A "Mute all caution" button appears in the header alongside the existing "Mute all vivid" button when caution-zone colors are present. Both show a "✓ Muted" confirmation that auto-clears after 1.4s. This completes the print-safe quick-fix workflow: creators can now fix vivid AND caution swatches in one place without opening the swatch editor.
+- **Trend Library: season palette count badge** — each season tab button now shows a small palette count next to the label (e.g. "Evergreen · 8"). The count is pre-computed at module load from TREND_PALETTES so it's zero-cost at render. Count is slightly dimmed (opacity-70 active, opacity-50 inactive) to stay secondary to the label without hiding it. Helps creators quickly navigate to seasons with more palettes.
+- **Color Browser: jump index chip tooltips with counts** — the iOS-style jump index chips on the right edge of Color Browser now show "Reds · 12 colors" (instead of just "Reds") on hover. A `sectionCounts` map is derived from the existing `bands` and `neutrals` memos, so no extra iteration. Gives quick orientation while scrolling a large color library.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **C=0.12 clamp for caution mute** — mirrors the "caution zone" lower boundary. Clamping to exactly the boundary keeps the color as vivid as possible while being technically safe, rather than defaulting to a neutral gray.
+- **Separate `cautionMutedIdx` / `cautionMutedAll` state** — mirrors the existing `printMutedIdx` / `printMutedAll` pattern exactly. Keeps the two mute actions visually independent: amber confirmation for caution, rose for vivid. A creator can mute all caution, see those turn green, then mute all vivid separately.
+- **SEASON_COUNTS outside component** — computed once at module level (not in a useMemo). TREND_PALETTES is a static constant; computing at import time vs. render time makes no correctness difference and saves the overhead of dependency tracking.
+
+### What's next (Session 126)
+- **Palette "Print-safe" quick check: traffic light on card action row** — show the traffic-light dot (green/amber/red) directly in the print check action button so print risk is visible before opening the panel
+- **Color Browser: filter by palette collection** — add a Collection dropdown to the Color Browser filters so creators can browse colors from a specific collection only
+- **Trend Library: search / filter by palette name** — add a text search box above the grid to filter trend palettes by name within the active season
+
+---
+
 ## 2026-07-03 — Session 124: Trend Library "Remix" Flow
 
 ### What was done
