@@ -104,6 +104,13 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     return sections;
   }, [bands, neutrals]);
 
+  // Color count per section — used in jump index chip tooltips
+  const sectionCounts = useMemo(() => {
+    const m = new Map<string, number>(bands.map((b) => [b.label, b.colors.length]));
+    if (neutrals.length > 0) m.set("Neutrals", neutrals.length);
+    return m;
+  }, [bands, neutrals]);
+
   // IntersectionObserver: track which band header is most visible
   const setupObserver = useCallback(() => {
     observerRef.current?.disconnect();
@@ -340,11 +347,12 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
           >
             {allSections.map((label) => {
               const isActive = activeBand === label;
+              const count = sectionCounts.get(label) ?? 0;
               return (
                 <button
                   key={label}
                   onClick={() => scrollToBand(label)}
-                  title={label}
+                  title={`${label} · ${count} color${count !== 1 ? "s" : ""}`}
                   className={`w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none ${
                     isActive
                       ? "bg-[var(--accent)] text-[var(--accent-fg)]"

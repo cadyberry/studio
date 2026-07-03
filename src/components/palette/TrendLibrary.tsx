@@ -104,6 +104,12 @@ function TrendCard({
   );
 }
 
+// Pre-compute palette count per season (static — TREND_PALETTES never changes at runtime)
+const SEASON_COUNTS: Record<Season, number> = SEASONS.reduce(
+  (acc, s) => ({ ...acc, [s]: TREND_PALETTES.filter((p) => p.season === s).length }),
+  {} as Record<Season, number>
+);
+
 export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: TrendLibraryProps) {
   const [season, setSeason] = useState<Season>("evergreen");
 
@@ -161,6 +167,9 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                 >
                   <TabIcon size={11} />
                   {SEASON_META[s].label}
+                  <span className={`text-[10px] tabular-nums leading-none ${isActive ? "opacity-70" : "opacity-50"}`}>
+                    {SEASON_COUNTS[s]}
+                  </span>
                 </button>
               );
             })}

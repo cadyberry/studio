@@ -171,6 +171,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [printCheckOpen, setPrintCheckOpen] = useState(false);
   const [printMutedIdx, setPrintMutedIdx] = useState<number | null>(null);
   const [printMutedAll, setPrintMutedAll] = useState(false);
+  const [cautionMutedIdx, setCautionMutedIdx] = useState<number | null>(null);
+  const [cautionMutedAll, setCautionMutedAll] = useState(false);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -557,6 +559,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     updatePalette(palette.id, { colors: newColors });
     setPrintMutedAll(true);
     setTimeout(() => setPrintMutedAll(false), 1400);
+  };
+
+  const muteSwatchToSafe = (idx: number) => {
+    const ok = hexToOklch(palette.colors[idx].hex);
+    if (!ok || ok.c <= 0.12) return;
+    const newHex = oklchToHex(ok.l, 0.12, ok.h);
+    const newColors = palette.colors.map((c, i) => i === idx ? { ...c, hex: newHex } : c);
+    updatePalette(palette.id, { colors: newColors });
+    setCautionMutedIdx(idx);
+    setTimeout(() => setCautionMutedIdx(null), 1400);
+  };
+
+  const muteAllCaution = () => {
+    const newColors = palette.colors.map((c) => {
+      const ok = hexToOklch(c.hex);
+      if (!ok || ok.c <= 0.12 || ok.c > 0.25) return c;
+      return { ...c, hex: oklchToHex(ok.l, 0.12, ok.h) };
+    });
+    updatePalette(palette.id, { colors: newColors });
+    setCautionMutedAll(true);
+    setTimeout(() => setCautionMutedAll(false), 1400);
   };
 
   const handleNameSwatches = async () => {
@@ -1797,6 +1820,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   {trafficLight.label}
                 </div>
                 <div className="flex items-center gap-1">
+                  {printRisk.moderate > 0 && (
+                    <button
+                      onClick={muteAllCaution}
+                      title="Clamp all caution swatches to C=0.12 (print-safe)"
+                      className={`text-[9px] font-medium px-1.5 py-0.5 rounded transition-colors ${
+                        cautionMutedAll
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/40"
+                      }`}
+                    >
+                      {cautionMutedAll ? "✓ Muted" : `Mute all caution`}
+                    </button>
+                  )}
                   {printRisk.vivid > 0 && (
                     <button
                       onClick={muteAllVivid}
@@ -1827,6 +1863,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   const isModerate = chroma > 0.12 && !isVivid;
                   const isSafe = !isVivid && !isModerate;
                   const justMuted = printMutedIdx === i;
+                  const justMutedToSafe = cautionMutedIdx === i;
                   return (
                     <div key={i} className="flex items-center gap-2">
                       <div
@@ -1856,6 +1893,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                             {justMuted ? "✓" : "Mute"}
                           </button>
                         )}
+                        {isModerate && (
+                          <button
+                            onClick={() => muteSwatchToSafe(i)}
+                            title={`Clamp chroma to C=0.12 — moves from caution to safe zone`}
+                            className={`text-[9px] font-medium px-1 py-px rounded transition-colors ${
+                              justMutedToSafe
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-amber-100 hover:text-amber-700 dark:hover:bg-amber-900/30 dark:hover:text-amber-400"
+                            }`}
+                          >
+                            {justMutedToSafe ? "✓" : "Mute"}
+                          </button>
+                        )}
                         <span className={`text-[9px] font-medium px-1.5 py-px rounded tabular-nums ${
                           isVivid
                             ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
@@ -1880,7 +1930,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </div>
 
               <p className="text-[9px] text-[var(--muted)] mt-2 leading-relaxed">
-                Based on oklch chroma · C&gt;0.25 vivid · C 0.12–0.25 caution · C≤0.12 safe
+                Based on oklch chroma · C&gt;0.25 vivid · C 0.12–0.25 caution · C≤0.12 safe · Mute clamps to zone boundary
               </p>
             </motion.div>
           );
