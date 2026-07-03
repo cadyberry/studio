@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-03 — Session 124: Trend Library "Remix" Flow
+
+### What was done
+- **Trend Library "Remix" button** — each TrendCard in the Trend Library now shows a secondary "Remix" button alongside the existing "Fork" button. Clicking "Remix" closes the modal and opens the Extractor pre-seeded with that trend palette's colors and name — giving creators a fast path to customizing a trend palette before committing it to their library.
+- `Extractor` gains three new props: `seedHex` (comma-separated hex string), `seedName` (pre-fills the palette name field), and `onSeedConsumed` (called immediately after the seed is applied so the parent can clear its state). A `useEffect` watches `seedHex` and, when set, switches to hex mode, populates the input and name field, and fires `onSeedConsumed`.
+- `TrendLibrary` / `TrendCard` gain an `onUseInExtractor?: (colors: string[], name: string) => void` prop. The "Remix" button renders only when this prop is provided; the footer hint updates to "Fork saves directly to your library · Remix opens it in the extractor to customize first."
+- `page.tsx` adds a `trendSeed` state `{ hex, name }`. When `onUseInExtractor` fires, `trendSeed` is set, the Trend Library closes, and the Extractor picks up the seed on its next render.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing.
+
+### Key decisions
+- **"Remix" not "Use"** — "Remix" implies creative reuse and matches the POD creator's mental model (remixing a trend into your own design), whereas "Use" is ambiguous about whether the colors are saved or just referenced.
+- **seedName pre-fills but doesn't lock** — the trend palette name is placed in the name field as a starting point; the creator can immediately overwrite it. This gives them a reference ("Autumn Forest · Remix") while staying non-prescriptive.
+- **onSeedConsumed fires immediately** — the effect clears the parent state right away rather than waiting for "Save." This ensures the seed doesn't re-apply if the user switches modes and back, and keeps page.tsx state lean.
+- **No auto-scroll** — the Extractor lives in the always-visible sidebar. No scroll-to needed on desktop; the visual switch from image→hex mode and pre-filled textarea is the signal.
+
+### What's next (Session 125)
+- **Color Browser: color count in band jump index chip tooltips** — update `title={label}` on each chip to say "Reds · 12 colors" for quick orientation
+- **Print check: "Caution → Safe" mute** — a "Mute" button for swatches in the Caution zone (C 0.12–0.25) that clamps chroma to C=0.12 for all-green palettes
+- **Trend Library: season palette count badge** — show how many palettes are in each season tab (e.g. "Evergreen · 8") for quick navigation
+
+---
+
 ## 2026-07-01 — Session 121: Variations Overlay Smart Recommendations
 
 ### What was done
