@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-07-04 — Session 127: Trend Library Search/Filter
+
+### What was done
+- **Trend Library search input** — a compact search field now appears between the season tabs and the palette grid. Typing filters palettes by name or mood (case-insensitive substring match) within the active season. Features: Search icon on the left; X clear button on the right when text is present; animated empty state showing "No palettes match &quot;query&quot;" with a "Clear search" link when nothing matches; a small result count ("3 of 8") shown in the bottom-right of the grid when a query is active.
+- **Search resets on season change** — switching seasons clears the query, so you never land in a filtered state on a new season. `handleSeasonChange` combines both state updates.
+- **Mood search included** — the filter checks both `palette.name` and `palette.mood`, so searching "soft" or "botanical" surfaces palettes by feel, not just name.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **Inline input, not a modal filter** — the Trend Library modal is already compact; an inline input between tabs and grid is the natural location, adds minimal chrome, and is immediately discoverable.
+- **Mood included in search** — palette names alone can be narrow ("Cherry Blossom" vs "spring floral"). Including mood strings lets creators search by feel ("soft", "romantic", "botanical") which is how they actually think about trends.
+- **AnimatePresence mode="wait" on grid** — swapping the grid vs. empty state gets a clean fade transition; season changes also trigger a fade since the key includes both `season` and `q`.
+- **Result count only when filtering** — the "3 of 8" count only appears during an active search, not in the default (all-results) view where it would be redundant noise.
+
+### What's next (Session 128)
+- **Color Browser: filter by palette collection** — add a Collection dropdown to Color Browser filters so creators can browse colors from a specific collection only
+- **Palette "print-safe" all-green persistent indicator** — a subtle always-visible mini-badge or icon on cards where every swatch is print-safe (C≤0.12), rewarding creators who've cleaned up their palettes
+- **Trend Library: add more palettes per season** — most seasons have only 3–5 palettes; expand to 8–10 each to make the search more useful
+
+---
+
 ## 2026-07-04 — Session 126: Print-Safe Traffic-Light Dot on Action Button
 
 ### What was done
