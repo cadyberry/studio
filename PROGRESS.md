@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-04 — Session 126: Print-Safe Traffic-Light Dot on Action Button
+
+### What was done
+- **Traffic-light dot on Printer action button** — the Printer icon button in the card action row (visible on hover) now shows a small 6×6px circular dot in the top-right corner of the icon. Dot color mirrors the palette's print risk: emerald for all-safe, orange for caution-zone colors present, rose for vivid (high-risk). Dot has a thin `border-[var(--surface)]` ring so it reads cleanly against any button background. The button tooltip is also upgraded to include the counts — e.g. "Print-safe check · 2 vivid, 1 caution" — giving full print context on hover before opening the panel.
+- **Traffic-light dot on info-row print-risk badge** — the "N print risk" clickable badge in the always-visible info row (shown when any palette colors are risky) now has a matching colored dot on its left edge. Rose dot for vivid-dominant, orange for caution-only. Wraps the badge in `flex items-center gap-1` so the dot aligns inline with the text.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing.
+
+### Key decisions
+- **Dot on button, not replacing icon** — a standalone colored dot without the Printer icon would lose the affordance. Overlaying the dot as a small badge preserves the icon's meaning while adding the status signal.
+- **emerald for safe, orange for caution, rose for vivid** — matches the exact colors already used in the print check panel's traffic-light row. One consistent color language across the whole feature.
+- **`border-[var(--surface)]` on the dot** — creates a 1px "knockout" ring between the dot and the icon. Keeps the dot readable when the icon color is dark (rose) or the button is in outline state.
+- **Tooltip upgrade** — "Print-safe check · 2 vivid, 1 caution" gives actionable info without opening the panel. Creators can decide in one glance whether a palette needs attention.
+
+### What's next (Session 127)
+- **Color Browser: filter by palette collection** — add a Collection dropdown to Color Browser filters so creators can browse colors from a specific collection only
+- **Trend Library: search / filter by palette name** — add a text search input above the grid to filter trend palettes by name within the active season
+- **Palette "print-safe" all-green persistent indicator** — a subtle always-visible mini-badge or checkmark on cards where every swatch is print-safe (C≤0.12), rewarding creators who've cleaned up their palettes
+
+---
+
 ## 2026-07-03 — Session 125: Caution→Safe Mute, Season Counts, Jump Tooltips
 
 ### What was done
