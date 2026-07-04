@@ -1106,13 +1106,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     return !v;
                   });
                 }}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums transition-opacity hover:opacity-80 ${
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums transition-opacity hover:opacity-80 ${
                   printRisk.vivid > 0
                     ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
                     : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                 }`}
                 title="Click to see print risk details"
               >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${printRisk.vivid > 0 ? "bg-rose-500" : "bg-orange-400"}`} />
                 {printRisk.vivid + printRisk.moderate} print risk
               </button>
             )}
@@ -1412,14 +1413,31 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 return !v;
               });
             }}
-            title="Print-safe check"
+            title={
+              printRisk.vivid > 0
+                ? `Print-safe check · ${printRisk.vivid} vivid, ${printRisk.moderate} caution`
+                : printRisk.moderate > 0
+                ? `Print-safe check · ${printRisk.moderate} caution`
+                : "Print-safe check · All safe"
+            }
             className={printCheckOpen || printRisk.vivid > 0
               ? "text-rose-500 dark:text-rose-400"
               : printRisk.moderate > 0
               ? "text-orange-500 dark:text-orange-400"
               : ""}
           >
-            <Printer size={13} />
+            <span className="relative inline-flex items-center justify-center">
+              <Printer size={13} />
+              <span
+                className={`absolute -top-[3px] -right-[4px] w-[6px] h-[6px] rounded-full border border-[var(--surface)] ${
+                  printRisk.vivid > 0
+                    ? "bg-rose-500"
+                    : printRisk.moderate > 0
+                    ? "bg-orange-400"
+                    : "bg-emerald-400"
+                }`}
+              />
+            </span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => onExport(palette)} title="Export">
             <Download size={13} />
