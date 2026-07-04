@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check } from "lucide-react";
+import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { TREND_PALETTES, SEASONS, SEASON_META, type Season } from "@/lib/trendPalettes";
 import { getContrastColor } from "@/lib/utils";
@@ -112,8 +112,23 @@ const SEASON_COUNTS: Record<Season, number> = SEASONS.reduce(
 
 export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: TrendLibraryProps) {
   const [season, setSeason] = useState<Season>("evergreen");
+  const [query, setQuery] = useState("");
 
-  const filtered = TREND_PALETTES.filter((p) => p.season === season);
+  const handleSeasonChange = (s: Season) => {
+    setSeason(s);
+    setQuery("");
+  };
+
+  const seasonPalettes = TREND_PALETTES.filter((p) => p.season === season);
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? seasonPalettes.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.mood.toLowerCase().includes(q)
+      )
+    : seasonPalettes;
+
   const meta = SEASON_META[season];
   const Icon = SEASON_ICONS[season];
 
@@ -158,7 +173,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
               return (
                 <button
                   key={s}
-                  onClick={() => setSeason(s)}
+                  onClick={() => handleSeasonChange(s)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                     isActive
                       ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-sm"
@@ -175,19 +190,68 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
             })}
           </div>
 
+          {/* Search input */}
+          <div className="px-5 pb-3 shrink-0">
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search ${SEASON_META[season].label} palettes…`}
+                className="w-full pl-8 pr-8 py-1.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-all"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Palette grid */}
           <div className="overflow-y-auto px-5 pb-5">
-            <motion.div
-              key={season}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-            >
-              {filtered.map((p) => (
-                <TrendCard key={p.id} palette={p} onFork={onFork} onUseInExtractor={onUseInExtractor} />
-              ))}
-            </motion.div>
+            <AnimatePresence mode="wait">
+              {filtered.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-12 text-center"
+                >
+                  <p className="text-sm text-[var(--muted)]">No palettes match <span className="font-semibold text-[var(--foreground)]">&ldquo;{query}&rdquo;</span></p>
+                  <button
+                    onClick={() => setQuery("")}
+                    className="mt-2 text-xs text-[var(--accent)] hover:underline"
+                  >
+                    Clear search
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={`${season}-${q}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                >
+                  {filtered.map((p) => (
+                    <TrendCard key={p.id} palette={p} onFork={onFork} onUseInExtractor={onUseInExtractor} />
+                  ))}
+                  {q && (
+                    <p className="col-span-full text-[10px] text-[var(--muted)] text-right pt-1 tabular-nums">
+                      {filtered.length} of {seasonPalettes.length}
+                    </p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Footer */}
