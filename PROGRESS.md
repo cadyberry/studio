@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-07-05 — Session 128: Color Browser Collection Filter
+
+### What was done
+- **Collection filter dropdown in Color Browser** — a compact `Layers`-icon select at the top-right of the Color Browser header lets creators filter the color grid by collection without touching the sidebar:
+  - Default: "All collections" (shows colors from all currently-filtered palettes)
+  - Selecting a collection narrows the grid to only colors where at least one source palette belongs to that collection; the count line updates to "12 of 94 unique colors"
+  - **× clear button** appears beside the dropdown when a collection is active, for quick reset
+  - **Empty state with "Show all collections" link** — shown when the selected collection has no colors in the current view
+  - Archived collections are excluded from the dropdown
+- **paletteLookup now covers all palettes** (was previously only `filtered`) — this ensures the collection filter works correctly even when Color Browser is in "All palettes" mode; each palette entry includes `collectionId`
+- Jump-index bands and swatch counts re-derive from the per-collection subset, so the right-edge letter index stays accurate
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Filter inside ColorBrowser, not in parent** — the collection filter state lives in `page.tsx` (as `colorBrowserCollection`) but the filtering logic runs inside `ColorBrowser` using the `collectionId` on each entry of `paletteLookup`. This keeps the `colorIndex` prop stable (no extra parent memo needed) while giving the component full control over what's shown.
+- **`<select>` not a custom dropdown** — the collection list can be long; a native select handles overflow, keyboard nav, and mobile without extra code. Styled to match the existing surface-2 / border language.
+- **Filter is independent of sidebar collection** — changing Color Browser's collection dropdown does NOT change `activeCollection` in the sidebar, so switching back to "Palettes" view lands exactly where the creator left off.
+
+### What's next (Session 129)
+- **Palette "print-safe" persistent badge** — a subtle always-visible indicator on cards where every swatch is print-safe (C≤0.12), rewarding creators who've cleaned up palettes
+- **Trend Library: add more palettes per season** — expand most seasons from 3–5 to 8–10 palettes to make search more useful
+- **Color Browser: show collection name badge on each swatch when collection filter is active** — small tooltip addition so creators know which palette(s) in that collection contain this color
+
+---
+
 ## 2026-07-04 — Session 127: Trend Library Search/Filter
 
 ### What was done
