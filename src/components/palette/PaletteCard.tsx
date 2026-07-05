@@ -1094,7 +1094,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 {gamutClippedCount} clipped
               </span>
             )}
-            {(printRisk.vivid + printRisk.moderate > 0) && (
+            {(printRisk.vivid + printRisk.moderate > 0) ? (
               <button
                 onClick={() => {
                   setPrintCheckOpen((v) => {
@@ -1115,6 +1115,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               >
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${printRisk.vivid > 0 ? "bg-rose-500" : "bg-orange-400"}`} />
                 {printRisk.vivid + printRisk.moderate} print risk
+              </button>
+            ) : palette.colors.length > 0 && (
+              <button
+                onClick={() => {
+                  setPrintCheckOpen((v) => {
+                    if (!v) {
+                      setTagging(false);
+                      setNotesOpen(false);
+                      setVariationsOpen(false);
+                    }
+                    return !v;
+                  });
+                }}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 transition-opacity hover:opacity-80"
+                title="All swatches print-safe (oklch C ≤ 0.12) · Click to confirm"
+              >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
+                print safe
               </button>
             )}
             {colorMatchHex && bestMatchIndex && (() => {
