@@ -164,6 +164,7 @@ export default function Home() {
   const [bulkTagInput, setBulkTagInput] = useState("");
   const bulkTagInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<"palettes" | "colors">("palettes");
+  const [colorBrowserCollection, setColorBrowserCollection] = useState<string>("all");
   const [filterPresets, setFilterPresets] = useState<FilterPreset[]>([]);
   const [savePresetOpen, setSavePresetOpen] = useState(false);
   const [presetNameInput, setPresetNameInput] = useState("");
@@ -539,12 +540,12 @@ export default function Home() {
   }, [filtered]);
 
   const paletteLookup = useMemo(() => {
-    const map = new Map<string, { name: string; colors: { hex: string }[] }>();
-    for (const p of filtered) {
-      map.set(p.id, { name: p.name, colors: p.colors });
+    const map = new Map<string, { name: string; colors: { hex: string }[]; collectionId?: string }>();
+    for (const p of palettes) {
+      map.set(p.id, { name: p.name, colors: p.colors, collectionId: p.collectionId });
     }
     return map;
-  }, [filtered]);
+  }, [palettes]);
 
   const handleSetCover = (palette: Palette) => {
     if (activeCollection === "all") return;
@@ -2047,6 +2048,9 @@ export default function Home() {
                   setColorSearchHex(hex);
                 }}
                 onJumpToPalette={handleJumpToPalette}
+                collections={collections.filter((c) => !c.archived)}
+                collectionFilter={colorBrowserCollection}
+                onCollectionFilterChange={setColorBrowserCollection}
               />
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">

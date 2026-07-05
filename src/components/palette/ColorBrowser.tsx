@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Layers } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 
 interface ColorEntry {
@@ -16,6 +16,12 @@ interface ColorEntry {
 interface PaletteStrip {
   name: string;
   colors: { hex: string }[];
+  collectionId?: string;
+}
+
+interface CollectionOption {
+  id: string;
+  name: string;
 }
 
 interface ColorBrowserProps {
@@ -23,6 +29,9 @@ interface ColorBrowserProps {
   onSelectColor: (hex: string) => void;
   paletteLookup: Map<string, PaletteStrip>;
   onJumpToPalette?: (paletteId: string) => void;
+  collections?: CollectionOption[];
+  collectionFilter?: string;
+  onCollectionFilterChange?: (id: string) => void;
 }
 
 const HUE_BANDS = [
@@ -62,17 +71,25 @@ function bandId(label: string): string {
   return `color-band-${label.replace(/\s+/g, "-")}`;
 }
 
-export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup, onJumpToPalette }: ColorBrowserProps) {
+export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup, onJumpToPalette, collections, collectionFilter = "all", onCollectionFilterChange }: ColorBrowserProps) {
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [activeBand, setActiveBand] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Apply collection filter: keep only colors where at least one source palette is in the selected collection
+  const visibleColorIndex = useMemo(() => {
+    if (collectionFilter === "all" || !collections?.length) return colorIndex;
+    return colorIndex.filter((c) =>
+      c.paletteIds.some((pid) => paletteLookup.get(pid)?.collectionId === collectionFilter)
+    );
+  }, [colorIndex, collectionFilter, collections, paletteLookup]);
+
   // Separate neutrals (low chroma) from chromatic colors
   const { neutrals, chromatics } = useMemo(() => {
     const neutrals: ColorEntry[] = [];
     const chromatics: ColorEntry[] = [];
-    for (const c of colorIndex) {
+    for (const c of visibleColorIndex) {
       const hex = c.hex.replace("#", "");
       const r = parseInt(hex.slice(0, 2), 16);
       const g = parseInt(hex.slice(2, 4), 16);
@@ -282,6 +299,10 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     );
   };
 
+  const activeCollectionName = collectionFilter !== "all"
+    ? collections?.find((c) => c.id === collectionFilter)?.name
+    : null;
+
   if (colorIndex.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -294,46 +315,90 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     <div className="flex gap-1">
       {/* Main content */}
       <div className="flex-1 min-w-0 space-y-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
           <p className="text-xs text-[var(--muted)]">
-            {colorIndex.length} unique color{colorIndex.length !== 1 ? "s" : ""} — click any swatch to find palettes that contain it
+            {visibleColorIndex.length}{collectionFilter !== "all" && colorIndex.length !== visibleColorIndex.length ? ` of ${colorIndex.length}` : ""} unique color{visibleColorIndex.length !== 1 ? "s" : ""} — click any swatch to find palettes that contain it
           </p>
+          {collections && collections.length > 0 && onCollectionFilterChange && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <Layers size={11} className="text-[var(--muted)] flex-shrink-0" />
+              <select
+                value={collectionFilter}
+                onChange={(e) => onCollectionFilterChange(e.target.value)}
+                className="text-[11px] text-[var(--foreground)] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-0.5 leading-tight cursor-pointer hover:border-[var(--border-hover,var(--border))] transition-colors appearance-none pr-5"
+                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
+                title="Filter colors by collection"
+              >
+                <option value="all">All collections</option>
+                {collections.map((col) => (
+                  <option key={col.id} value={col.id}>{col.name}</option>
+                ))}
+              </select>
+              {activeCollectionName && (
+                <button
+                  onClick={() => onCollectionFilterChange("all")}
+                  className="text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors leading-none"
+                  title="Clear collection filter"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {bands.map((band) => (
-          <div key={band.label}>
-            <div id={bandId(band.label)} className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
-                {band.label}
-              </span>
-              <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{band.colors.length}</span>
-              <div className="flex-1 h-px bg-[var(--border)]" />
-            </div>
-            <div
-              className="grid gap-1.5"
-              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
-            >
-              {band.colors.map(renderSwatch)}
-            </div>
+        {visibleColorIndex.length === 0 && collectionFilter !== "all" ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-sm text-[var(--muted)]">
+              No colors in &ldquo;{activeCollectionName}&rdquo;
+            </p>
+            {onCollectionFilterChange && (
+              <button
+                onClick={() => onCollectionFilterChange("all")}
+                className="mt-2 text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--foreground)] transition-colors"
+              >
+                Show all collections
+              </button>
+            )}
           </div>
-        ))}
+        ) : (
+          <>
+            {bands.map((band) => (
+              <div key={band.label}>
+                <div id={bandId(band.label)} className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
+                    {band.label}
+                  </span>
+                  <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{band.colors.length}</span>
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
+                <div
+                  className="grid gap-1.5"
+                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+                >
+                  {band.colors.map(renderSwatch)}
+                </div>
+              </div>
+            ))}
 
-        {neutrals.length > 0 && (
-          <div>
-            <div id={bandId("Neutrals")} className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
-                Neutrals
-              </span>
-              <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{neutrals.length}</span>
-              <div className="flex-1 h-px bg-[var(--border)]" />
-            </div>
-            <div
-              className="grid gap-1.5"
-              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
-            >
-              {neutrals.map(renderSwatch)}
-            </div>
-          </div>
+            {neutrals.length > 0 && (
+              <div>
+                <div id={bandId("Neutrals")} className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
+                    Neutrals
+                  </span>
+                  <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{neutrals.length}</span>
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
+                <div
+                  className="grid gap-1.5"
+                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+                >
+                  {neutrals.map(renderSwatch)}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
