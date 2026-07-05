@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-05 — Session 129: Print-Safe Persistent Badge
+
+### What was done
+- **Print-safe persistent badge in the info row** — palette cards now show a small emerald "print safe" badge in the always-visible info row when every swatch has oklch chroma ≤ 0.12. This gives creators immediate visual confirmation that a palette is fully print-ready without hovering or opening any panel.
+  - Badge appears in the same position as the print-risk badge (they are mutually exclusive: risky palettes show the amber/rose risk count, safe palettes show the emerald "print safe" badge)
+  - Clicking the badge opens the print check panel to confirm all-green status — same UX as the risk badge, so the pattern is consistent
+  - Badge only appears when `palette.colors.length > 0` — empty palettes show nothing
+  - Styled: `bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400` with a small `bg-emerald-400` dot, matching the emerald dot already on the Printer action button
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Button, not span** — clicking the badge opens the print check panel (same as clicking the risk badge). Consistent interaction model: both print-state badges serve as shortcuts to the print check panel, regardless of risk level.
+- **Mutual exclusion with risk badge** — converted the `&&` guard to a ternary: risky → risk badge, safe+nonempty → safe badge. Clean and no edge cases.
+- **No animation or pulse** — the badge is a reward signal, not an alert. A static badge is quieter and doesn't draw attention away from actual creative work.
+
+### What's next (Session 130)
+- **Trend Library: expand season palettes** — most seasons have only 3–5 palettes; expand to 8–10 each to make search and discovery more useful
+- **Color Browser: collection name tooltip on swatches when collection filter is active** — small tooltip addition so creators know which palette(s) in that collection contain the hovered color
+- **Palette sorting by print-safe status** — add "Print safe first" as a sort option in the library header
+
+---
+
 ## 2026-07-05 — Session 128: Color Browser Collection Filter
 
 ### What was done
