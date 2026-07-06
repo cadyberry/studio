@@ -46,6 +46,34 @@ export const TREND_PALETTES: TrendPalette[] = [
     mood: "Dreamy · Quiet · Whimsical",
     colors: ["#f8f4ff", "#e6ddf8", "#c3a8e8", "#9068c4", "#4a2880"],
   },
+  {
+    id: "spring-dew",
+    name: "Morning Dew",
+    season: "spring",
+    mood: "Dewy · Airy · Fresh",
+    colors: ["#edf9f5", "#b8e8d4", "#70c4a4", "#b8dff0", "#5aafc8"],
+  },
+  {
+    id: "spring-tulip",
+    name: "Tulip Festival",
+    season: "spring",
+    mood: "Bold · Joyful · Dutch",
+    colors: ["#fef9e0", "#f7d44c", "#f06090", "#b02860", "#6828a0"],
+  },
+  {
+    id: "spring-wisteria",
+    name: "Wisteria Mist",
+    season: "spring",
+    mood: "Ethereal · Botanical · Soft",
+    colors: ["#f5f0fc", "#d4c0e8", "#9878c8", "#c8d8a8", "#7a9870"],
+  },
+  {
+    id: "spring-blossom",
+    name: "First Blossom",
+    season: "spring",
+    mood: "Clean · Simple · Light",
+    colors: ["#fdf8f4", "#f5d8cc", "#dba890", "#a06850", "#4a9060"],
+  },
 
   // ── Summer ────────────────────────────────────────────────────────────────────
   {
@@ -75,6 +103,34 @@ export const TREND_PALETTES: TrendPalette[] = [
     season: "summer",
     mood: "70s · Warm · Nostalgic",
     colors: ["#fff0d8", "#ffb347", "#ff6b6b", "#c94040", "#7a1c4b"],
+  },
+  {
+    id: "summer-watermelon",
+    name: "Watermelon Sugar",
+    season: "summer",
+    mood: "Juicy · Fun · Sweet",
+    colors: ["#fff5f8", "#ffaac0", "#e03060", "#a8d870", "#3c7020"],
+  },
+  {
+    id: "summer-neon",
+    name: "Neon Pop",
+    season: "summer",
+    mood: "Maximalist · Y2K · Electric",
+    colors: ["#f0f800", "#00d8f0", "#f00890", "#50e820", "#c000f0"],
+  },
+  {
+    id: "summer-sand",
+    name: "Sand & Surf",
+    season: "summer",
+    mood: "Coastal · Neutral · Quiet",
+    colors: ["#faf5ec", "#dfc898", "#b89060", "#7a6040", "#4a7888"],
+  },
+  {
+    id: "summer-nightbloom",
+    name: "Night Bloom",
+    season: "summer",
+    mood: "Lush · Tropical · Rich",
+    colors: ["#f0f8e8", "#60c888", "#2878c0", "#e87820", "#1c1040"],
   },
 
   // ── Fall ─────────────────────────────────────────────────────────────────────
@@ -106,6 +162,34 @@ export const TREND_PALETTES: TrendPalette[] = [
     mood: "Organic · Grounded · Studio",
     colors: ["#f4efe8", "#c8a878", "#8a6848", "#5c3820", "#2a1808"],
   },
+  {
+    id: "fall-pumpkin",
+    name: "Pumpkin Patch",
+    season: "fall",
+    mood: "Classic · Cozy · Festive",
+    colors: ["#fff6ec", "#ffc070", "#e06820", "#8c3010", "#281008"],
+  },
+  {
+    id: "fall-fog",
+    name: "Woodland Fog",
+    season: "fall",
+    mood: "Misty · Quiet · Nature",
+    colors: ["#f0ece8", "#c8b8b0", "#908080", "#708090", "#404850"],
+  },
+  {
+    id: "fall-copper",
+    name: "Copper Kettle",
+    season: "fall",
+    mood: "Warm · Metallic · Cozy",
+    colors: ["#faf0e0", "#e8a860", "#c06820", "#784020", "#1a0808"],
+  },
+  {
+    id: "fall-lategarden",
+    name: "Late Garden",
+    season: "fall",
+    mood: "Faded · Romantic · Autumnal",
+    colors: ["#f8f0ea", "#e0b0a0", "#b8a8c8", "#a0b890", "#503848"],
+  },
 
   // ── Winter ────────────────────────────────────────────────────────────────────
   {
@@ -135,6 +219,34 @@ export const TREND_PALETTES: TrendPalette[] = [
     season: "winter",
     mood: "Opulent · Warm · Dramatic",
     colors: ["#f9f0f0", "#e8c0c4", "#c06878", "#8b2040", "#3d0818"],
+  },
+  {
+    id: "winter-aurora",
+    name: "Northern Lights",
+    season: "winter",
+    mood: "Celestial · Wild · Electric",
+    colors: ["#e8f8f0", "#80e0c0", "#20c0a0", "#5040a0", "#080c20"],
+  },
+  {
+    id: "winter-cabin",
+    name: "Cozy Cabin",
+    season: "winter",
+    mood: "Hygge · Warm · Lived-in",
+    colors: ["#f8f0e0", "#d0a870", "#b06040", "#703018", "#284818"],
+  },
+  {
+    id: "winter-crystal",
+    name: "Crystal Palace",
+    season: "winter",
+    mood: "Geometric · Pure · Cold",
+    colors: ["#f0f6ff", "#c0d8f0", "#7098c0", "#304878", "#0c1828"],
+  },
+  {
+    id: "winter-spice",
+    name: "Holiday Spice",
+    season: "winter",
+    mood: "Festive · Traditional · Warm",
+    colors: ["#faf4f0", "#c02840", "#c89018", "#204828", "#681818"],
   },
 
   // ── Evergreen ─────────────────────────────────────────────────────────────────
@@ -179,6 +291,20 @@ export const TREND_PALETTES: TrendPalette[] = [
     season: "evergreen",
     mood: "Earthy · Zen · Natural",
     colors: ["#f4f8f0", "#c8d8a8", "#8aac68", "#4a7030", "#1e3010"],
+  },
+  {
+    id: "ever-slate",
+    name: "Slate Monochrome",
+    season: "evergreen",
+    mood: "Minimal · Timeless · Versatile",
+    colors: ["#f4f5f7", "#cdd1da", "#8898a8", "#485868", "#1a2028"],
+  },
+  {
+    id: "ever-chartreuse",
+    name: "Chartreuse Edit",
+    season: "evergreen",
+    mood: "Graphic · Bold · Modern",
+    colors: ["#e8f400", "#a0c800", "#587010", "#f0f0f0", "#0a0a0a"],
   },
 ];
 
