@@ -112,7 +112,7 @@ export default function Home() {
   const [showImport, setShowImport] = useState(false);
   const [activeTag, setActiveTag] = useState<string>("all");
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first">("newest");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
@@ -483,6 +483,7 @@ export default function Home() {
           case "most-clipped": return paletteGamutClippedCount(b) - paletteGamutClippedCount(a);
           case "most-print-risk": return palettePrintRiskCount(b) - palettePrintRiskCount(a);
           case "most-varied": return paletteOklchLRange(b) - paletteOklchLRange(a);
+          case "print-safe-first": return palettePrintRiskCount(a) - palettePrintRiskCount(b);
         }
       });
 
@@ -1274,6 +1275,7 @@ export default function Home() {
                           <option value="most-clipped">Most gamut-clipped</option>
                           <option value="most-print-risk">Most print risk</option>
                           <option value="most-varied">Most varied</option>
+                          <option value="print-safe-first">Print safe first</option>
                         </select>
                       </div>
                     </>

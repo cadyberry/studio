@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check, Search } from "lucide-react";
+import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check, Search, Clipboard } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { TREND_PALETTES, SEASONS, SEASON_META, type Season } from "@/lib/trendPalettes";
 import { getContrastColor } from "@/lib/utils";
@@ -31,12 +31,20 @@ function TrendCard({
   onUseInExtractor?: (colors: string[], name: string) => void;
 }) {
   const [forked, setForked] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleFork = () => {
     if (forked) return;
     onFork(palette.colors, palette.name);
     setForked(true);
     setTimeout(() => setForked(false), 2000);
+  };
+
+  const handleCopyHex = () => {
+    if (copied) return;
+    navigator.clipboard.writeText(palette.colors.join(", "));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -71,6 +79,17 @@ function TrendCard({
           <p className="text-sm font-semibold truncate">{palette.name}</p>
           <p className="text-[11px] text-[var(--muted)] truncate">{palette.mood}</p>
         </div>
+        <button
+          onClick={handleCopyHex}
+          className={`shrink-0 flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md border transition-all ${
+            copied
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : "border-[var(--border)] hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]"
+          }`}
+          title="Copy all hex values (great for AI art prompts)"
+        >
+          {copied ? <Check size={11} /> : <Clipboard size={11} />}
+        </button>
         {onUseInExtractor && (
           <button
             onClick={() => onUseInExtractor(palette.colors, palette.name)}
