@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-07-06 — Session 131: Print-Safe-First Sort + Trend Library Copy Hex
+
+### What was done
+- **"Print safe first" sort option** — added `print-safe-first` to the palette sort dropdown. Sorts palettes by print risk count ascending (0-risk palettes bubble to the top; most-risky palettes sink to the bottom). Complements the existing `most-print-risk` sort, which does the opposite. The new option has been in the queue for 2 sessions.
+  - Type union in `sortBy` state extended to include `"print-safe-first"`
+  - Switch case added: `palettePrintRiskCount(a) - palettePrintRiskCount(b)` (ascending)
+  - `<option value="print-safe-first">Print safe first</option>` added to the sort dropdown
+  - Works with the existing "clear filters" indicator (any non-"newest" sort shows the clear button)
+- **Trend Library "Copy all hex" button** — each TrendCard now has a compact clipboard icon button that copies all hex values as a comma-separated list (e.g. `#E8D5C4, #C4A882, #8B6F5E, #5C4033, #2D1B0E`). Ideal for pasting into Midjourney/DALL-E/ComfyUI prompts.
+  - `copied` state with 2s reset, identical to the `forked` pattern already in the component
+  - Button uses `Clipboard` icon at rest → `Check` icon on success, both sized at 11px
+  - Styled identically to the Remix/Fork buttons; emerald confirmation state matches Fork
+  - Positioned left of Remix, right of the name/mood block
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Icon-only copy button** — the card footer is already crowded (name, mood, Remix, Fork). An icon-only button with a tooltip ("Copy all hex values (great for AI art prompts)") is self-documenting without adding label text.
+- **Comma-space separator** — `"#HEX1, #HEX2, ..."` is the format most AI art tools and design tool paste dialogs expect. Raw comma (no space) can cause parsing issues in some tools.
+- **Print-safe-first secondary order** — within the risky group, palettes with fewer risky colors appear before those with more; 0-risk palettes always lead. Natural reading direction: safest → riskiest.
+
+### What's next (Session 132)
+- **Color Browser: collection name tooltip on swatches when collection filter is active** — when the Color Browser collection dropdown is set to a specific collection, hovering a swatch should show a small tooltip listing which palette(s) in that collection contain the color
+- **Palette notes word count / character count** — small inline count beside the notes textarea so creators know how much they've written
+- **Pinned palette visual distinction** — the pin state is tracked but the card only shows the pin icon on hover; consider a subtle top-left corner marker or border tint for always-visible pin indication
+
+---
+
 ## 2026-07-06 — Session 130: Trend Library Season Expansion (22 → 40 Palettes)
 
 ### What was done
