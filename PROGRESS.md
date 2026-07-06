@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-07-06 — Session 130: Trend Library Season Expansion (22 → 40 Palettes)
+
+### What was done
+- **Expanded Trend Library from 22 to 40 palettes** — each season now has exactly 8 curated palettes, up from 4 (Evergreen was 6). Added 18 new palettes total:
+  - **Spring**: Morning Dew (dewy mint/sky), Tulip Festival (bold Dutch brights), Wisteria Mist (lavender + sage), First Blossom (clean ivory + spring green)
+  - **Summer**: Watermelon Sugar (pink/red/green), Neon Pop (maximalist electric palette), Sand & Surf (coastal neutrals + ocean slate), Night Bloom (tropical green/ocean/mango)
+  - **Fall**: Pumpkin Patch (classic orange harvest), Woodland Fog (misty taupe + slate), Copper Kettle (warm metallic bronze), Late Garden (dusty peach/lavender/sage/plum)
+  - **Winter**: Northern Lights (aurora teal/violet on deep night), Cozy Cabin (hygge cream/camel/brick/pine), Crystal Palace (clean ice blues), Holiday Spice (cranberry/gold/forest/cinnamon)
+  - **Evergreen**: Slate Monochrome (5-stop neutral grayscale), Chartreuse Edit (graphic lime/olive/black/white)
+- All palette names, moods, and hex colors chosen for POD suitability — good tonal range, varied seasons/moods, print-reasonable
+- Season count badges in Trend Library tabs auto-update (SEASON_COUNTS derives at module load) — no UI changes needed
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **8 per season uniformly** — previously Spring/Summer/Fall/Winter had 4 and Evergreen had 6. Uniform 8 makes the tab counts more balanced and the search/discovery feature more useful.
+- **Chartreuse Edit and Neon Pop** — both are intentionally high-saturation/vivid palettes. The print-safe check panel already handles flagging these; they represent a real use case (digital art, vibrant apparel) that the library was missing.
+- **Late Garden and Woodland Fog** — two quieter, desaturated fall palettes to balance the existing "Crimson Forest" and "Harvest Spice" drama. Creators making muted autumn products had nothing to fork from.
+
+### What's next (Session 131)
+- **Palette sorting by print-safe status** — add "Print safe first" as a sort option in the library header (been in the queue for 2 sessions)
+- **Color Browser: collection name tooltip** — show which palette(s) in an active collection filter contain the hovered color
+- **Trend Library: "Copy all hex" button** — quick one-click copy of all 5 hex values as a comma-separated list (useful for pasting into AI art prompts)
+
+---
+
 ## 2026-07-05 — Session 129: Print-Safe Persistent Badge
 
 ### What was done
