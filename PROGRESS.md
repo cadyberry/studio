@@ -2,6 +2,24 @@
 
 ---
 
+## 2026-07-07 — Session 133: Inline Notes Word Count + Freshness Badge ISO Date Tooltip
+
+### What was done
+- **Inline notes word count** — the inline notes editor (below palette cards) now shows word count matching the full notes overlay: `Nw · length/280` format when text is present, plain `length/280` when empty. Previously the inline editor showed only `length/280` while the full overlay already had word count — they now match.
+- **Freshness badge ISO date tooltip** — the freshness badge ("1d", "new", "2w", etc. in the info row) previously had `title="Created X ago"` which redundantly repeated the same relative time the badge already displays. Now it shows `title="Created Jun 30, 2026"` — the actual calendar date via `formatDate`. Hovering the badge is now useful for library archaeology, not just a restatement.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Word count format `Nw ·`** — matches the full notes overlay exactly (`{notesValue.trim() ? `${notesValue.trim().split(/\s+/).length}w · ` : ""}`) so the two UIs feel like one system. No deviation from the established pattern.
+- **formatDate not formatRelativeAge** — the footer already shows a correct ISO date tooltip on the "Created X ago" text via the same function. Aligning the freshness badge to the same function closes the inconsistency. No new utility needed.
+
+### What's next (Session 134)
+- **Color Browser: "also in N other collections" summary line** — when filtering and a color has palettes in other collections too, a compact `also in 2 other collections` footer in the hover panel would surface cross-collection usage
+- **Palette card: created vs updated distinction in freshness badge** — the badge always shows `Created`, but if a palette was recently *edited* (not just created), surfacing "Edited" in the badge would be more informative (similar to what the footer already does with `Edited X ago`)
+- **Inline notes: preview word count in the non-editing state** — the note preview below the card (italic, click to edit) could show a compact `Nw` word count chip so creators know how long their note is at a glance without entering edit mode
+
+---
+
 ## 2026-07-07 — Session 132: Color Browser Collection Context in Swatch Hover Panel
 
 ### What was done
