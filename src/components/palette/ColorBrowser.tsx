@@ -191,7 +191,22 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     const isCopied = copiedHex === c.hex;
     const fg = getContrastColor(c.hex);
     const count = c.paletteIds.length;
-    const paletteData = c.paletteIds.map((id) => paletteLookup.get(id)).filter(Boolean) as PaletteStrip[];
+
+    // Build properly aligned (id, palette) pairs; tag each with collection membership
+    const paletteEntries = c.paletteIds
+      .map((id) => ({ id, palette: paletteLookup.get(id) }))
+      .filter((e): e is { id: string; palette: PaletteStrip } => !!e.palette)
+      .map((e) => ({
+        ...e,
+        inActiveCollection: collectionFilter !== "all" && e.palette.collectionId === collectionFilter,
+      }));
+
+    // When filtering, in-collection palettes bubble to the top
+    if (collectionFilter !== "all") {
+      paletteEntries.sort((a, b) => (b.inActiveCollection ? 1 : 0) - (a.inActiveCollection ? 1 : 0));
+    }
+
+    const filteringByCollection = collectionFilter !== "all" && !!activeCollectionName;
 
     return (
       <motion.div
@@ -249,23 +264,44 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
         )}
 
         {/* Palette detail panel — floats above the swatch on hover */}
-        {isHovered && paletteData.length > 0 && (
+        {isHovered && paletteEntries.length > 0 && (
           <div
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30"
-            style={{ minWidth: 148 }}
+            style={{ minWidth: 156 }}
           >
             <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] shadow-2xl p-1.5 space-y-0.5">
-              {paletteData.slice(0, 5).map((p, i) => (
+              {/* Collection context header — shown when a collection filter is active */}
+              {filteringByCollection && (
+                <div className="flex items-center gap-1 px-1 pb-0.5 mb-0.5 border-b border-[var(--border)]">
+                  <Layers size={8} className="text-[var(--accent)] flex-shrink-0" />
+                  <span className="text-[8px] font-semibold text-[var(--accent)] truncate leading-none">
+                    {activeCollectionName}
+                  </span>
+                </div>
+              )}
+              {paletteEntries.slice(0, 5).map(({ id, palette: p, inActiveCollection }) => (
                 <button
-                  key={c.paletteIds[i]}
-                  className="flex items-center gap-1.5 w-full rounded-[3px] px-1 py-0.5 hover:bg-[var(--surface-2)] transition-colors text-left"
+                  key={id}
+                  className={`flex items-center gap-1.5 w-full rounded-[3px] px-1 py-0.5 hover:bg-[var(--surface-2)] transition-colors text-left ${
+                    filteringByCollection && !inActiveCollection ? "opacity-40" : ""
+                  }`}
                   title={onJumpToPalette ? `Go to "${p.name}"` : p.name}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onJumpToPalette?.(c.paletteIds[i]);
+                    onJumpToPalette?.(id);
                   }}
                 >
+                  {/* In-collection indicator dot */}
+                  {filteringByCollection && (
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                        inActiveCollection
+                          ? "bg-[var(--accent)]"
+                          : "bg-[var(--border)]"
+                      }`}
+                    />
+                  )}
                   <div className="flex rounded-[2px] overflow-hidden flex-shrink-0" style={{ width: 72, height: 10 }}>
                     {p.colors.slice(0, 8).map((col, ci) => (
                       <div key={ci} className="flex-1" style={{ backgroundColor: col.hex }} />
@@ -274,9 +310,9 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                   <span className="text-[9px] text-[var(--foreground)] truncate flex-1 min-w-0 leading-none">{p.name}</span>
                 </button>
               ))}
-              {paletteData.length > 5 && (
+              {paletteEntries.length > 5 && (
                 <p className="text-[9px] text-[var(--muted)] text-center leading-none py-0.5">
-                  +{paletteData.length - 5} more
+                  +{paletteEntries.length - 5} more
                 </p>
               )}
             </div>
