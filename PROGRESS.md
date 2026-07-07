@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-07-07 — Session 132: Color Browser Collection Context in Swatch Hover Panel
+
+### What was done
+- **Collection context in Color Browser swatch hover panel** — when a collection filter is active, the palette list that appears on swatch hover now clearly communicates which palettes belong to the active collection:
+  - A `Layers` icon + collection name header appears at the top of the panel (with a subtle border separator), making the active filter visible without looking away from the swatch
+  - Each palette row gets a dot indicator: accent-colored for palettes in the active collection, muted for palettes from other collections
+  - In-collection palettes sort to the top of the list so the most relevant palettes are always visible first
+  - Out-of-collection palettes are dimmed with `opacity-40` — still readable for context but clearly secondary to the collection members
+  - Panel width bumped from 148→156px to accommodate the new dot column without truncating palette names
+- **Aligned `paletteEntries` data structure** — replaced the misaligned `paletteData[i]` + `c.paletteIds[i]` pattern (which would desync if any palette ID was absent from the lookup) with a proper `{ id, palette, inActiveCollection }` tuple array that stays aligned through filter operations
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Header + dot, not separate sections** — I considered splitting the popup into an "In Collection" section and an "Also in" section. A single sorted list with dots is less visually complex while communicating the same information — the sort order already tells the story.
+- **Dim, not hide** — out-of-collection palettes are `opacity-40`, not hidden. A color appearing in many palettes across collections is useful context (tells the creator this hue is well-used in their library). Hiding them would lose that.
+- **Accent color for the dot** — using `var(--accent)` ties the in-collection indicator to the same color as the filter dropdown's active state, so the visual language is consistent: "accent = the thing you've filtered to."
+
+### What's next (Session 133)
+- **Palette notes word count in inline editor** — the inline notes editor (below palette cards) shows only character count (`length/280`); adding word count (matching the full notes overlay) would be consistent
+- **Color Browser: "also in N other collections" summary line** — when filtering and a color has palettes in other collections too, a compact `also in 2 other collections` footer in the hover panel would let creators see cross-collection usage at a glance
+- **Palette card "created" date tooltip on the timestamp** — the card shows relative time ("3d ago") but hovering shows nothing; adding an ISO date tooltip would be useful for library archaeology
+
+---
+
 ## 2026-07-06 — Session 131: Print-Safe-First Sort + Trend Library Copy Hex
 
 ### What was done
