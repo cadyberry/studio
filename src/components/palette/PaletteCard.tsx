@@ -1150,7 +1150,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               <span
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${freshness.bgClass} ${freshness.textClass}`}
                 style={{ opacity: freshness.opacity }}
-                title={`Created ${formatRelativeAge(palette.createdAt)}`}
+                title={`Created ${formatDate(palette.createdAt)}`}
               >
                 {freshness.label}
               </span>
@@ -1260,7 +1260,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               />
               <div className="flex items-center justify-between mt-0.5">
                 <p className="text-[9px] text-[var(--muted)]">Enter to save · Shift+Enter newline · Esc cancel</p>
-                <span className="text-[9px] text-[var(--muted)] tabular-nums">{inlineNotesValue.length}/280</span>
+                <span className="text-[9px] text-[var(--muted)] tabular-nums">
+                  {inlineNotesValue.trim() ? `${inlineNotesValue.trim().split(/\s+/).length}w · ` : ""}{inlineNotesValue.length}/280
+                </span>
               </div>
             </div>
           ) : palette.notes ? (() => {
