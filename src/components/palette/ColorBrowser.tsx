@@ -208,6 +208,15 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
 
     const filteringByCollection = collectionFilter !== "all" && !!activeCollectionName;
 
+    // Count distinct OTHER collections this color appears in (excluding the active filter)
+    const otherCollectionCount = filteringByCollection
+      ? new Set(
+          paletteEntries
+            .filter((e) => !e.inActiveCollection && e.palette.collectionId)
+            .map((e) => e.palette.collectionId!)
+        ).size
+      : 0;
+
     return (
       <motion.div
         key={c.hex}
@@ -313,6 +322,11 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
               {paletteEntries.length > 5 && (
                 <p className="text-[9px] text-[var(--muted)] text-center leading-none py-0.5">
                   +{paletteEntries.length - 5} more
+                </p>
+              )}
+              {filteringByCollection && otherCollectionCount > 0 && (
+                <p className="text-[9px] text-[var(--muted)]/55 text-center leading-none border-t border-[var(--border)] mt-0.5 pt-1 pb-0.5">
+                  also in {otherCollectionCount} other collection{otherCollectionCount !== 1 ? "s" : ""}
                 </p>
               )}
             </div>
