@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-08 — Session 135: Color Browser "Also In N Other Collections" Footer
+
+### What was done
+- **Color Browser hover panel: "also in N other collections" footer** — when a collection filter is active, the swatch hover panel now shows a compact `also in N other collection(s)` footer line at the bottom whenever the hovered color appears in palettes from other collections beyond the active filter.
+  - Computed `otherCollectionCount` via a `Set` of distinct `collectionId` values among non-`inActiveCollection` entries that have a `collectionId` — deduplicates naturally so "also in 3 other collections" means 3 distinct collection groups, not 3 palettes.
+  - Footer is styled `text-[9px] text-[var(--muted)]/55` with a top border separator — visually subordinate to the palette rows above it, clearly summary/metadata rather than a clickable item.
+  - Footer is only rendered when `filteringByCollection && otherCollectionCount > 0` — invisible when not filtering or when the color exists exclusively within the active collection.
+  - Positioned below the `+N more` truncation line (if present) so reading order is: in-collection palettes → overflowed palettes count → cross-collection summary.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Count distinct collections, not palettes** — a color in 4 palettes all belonging to the same other collection reads as "also in 1 other collection," not "also in 4 other palettes." The collection is the semantic unit for Cady's workflow.
+- **Exclude uncollected palettes** — palettes without a `collectionId` are not counted. Saying "also in N uncollected" would be more confusing than helpful at this panel size.
+- **No click action on footer** — it's ambient info. Adding a click-to-clear-filter on this line would be redundant with the × button already in the dropdown header; simpler is better.
+
+### What's next (Session 136)
+- **Palette card: created vs updated distinction in freshness badge** — the freshness badge uses `createdAt` always; if `updatedAt` is meaningfully newer (>1h delta), show the badge using `updatedAt` and distinguish the tooltip: "Edited Jul 5" instead of "Created Jun 30"
+- **Color Browser: hue-band count stays in sync with collection filter** — when filtering by collection, the band-header counts (e.g. "Blues 14") still show total library counts; they should reflect the filtered view
+- **Palette search: highlight match in palette name inline** — when the search bar is active, matching substrings in palette names could be highlighted yellow (like the notes excerpt already does) for visual consistency
+
+---
+
 ## 2026-07-08 — Session 134: Inline Notes Preview Word Count Chip
 
 ### What was done
