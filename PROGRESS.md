@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-08 — Session 134: Inline Notes Preview Word Count Chip
+
+### What was done
+- **Inline notes preview word count chip** — the italic note preview below palette cards (the non-editing, read-only state) now shows a compact `Nw` chip flush-right in the same row, e.g. `12w`. Previously you had to click into edit mode to see any word count; now it's visible at a glance without interaction.
+  - Wrapped the `<p>` tag in a `<div className="flex items-end gap-1.5">` container so the chip aligns to the text baseline (bottom-aligned to the last line of the 2-line clamp)
+  - Chip is `text-[9px] text-[var(--muted)]/50 tabular-nums` — deliberately muted so the note text itself remains primary; the chip is ambient info, not chrome
+  - Hover tooltip: `"N words"` (pluralized correctly via `!== 1`)
+  - Word count formula `trim().split(/\s+/).filter(Boolean)` exactly matches the inline editor and full overlay — all three UIs now agree
+  - The excerpt view (search-highlight yellow box) is intentionally excluded — it's a distinct component whose density doesn't need word count
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing
+
+### Key decisions
+- **Chip placement: end of flex container, items-end** — `items-end` means single-line notes keep chip on the same baseline as the text; 2-line notes (line-clamp-2) keep the chip pinned to the bottom of the block, so it reads as "bottom-right" without needing `absolute` positioning
+- **Muted opacity (`/50`)** — the chip should not compete with the note text or the existing badges in the info row. At 50% opacity it reads as metadata, not content.
+- **No chip on missing notes** — the "Add a note…" ghost prompt has opacity-0 by default and only shows on hover; adding a "0w" chip there would be meaningless and potentially confusing.
+
+### What's next (Session 135)
+- **Color Browser: "also in N other collections" summary line** — when a collection filter is active, a compact `also in 2 other collections` footer at the bottom of the hover panel would surface cross-collection usage for the hovered color
+- **Palette card: created vs updated distinction in freshness badge** — the freshness badge uses `createdAt` always; if `updatedAt` is meaningfully newer (>1h delta), show the badge using `updatedAt` and distinguish the tooltip: "Edited Jul 5" instead of "Created Jun 30"
+- **Color Browser: hue-band count stays in sync with collection filter** — when filtering by collection, the band-header counts (e.g. "Blues 14") still show total library counts; they should reflect the filtered view
+
+---
+
 ## 2026-07-07 — Session 133: Inline Notes Word Count + Freshness Badge ISO Date Tooltip
 
 ### What was done
