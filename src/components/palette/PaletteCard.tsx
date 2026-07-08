@@ -1287,14 +1287,23 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 </div>
               );
             }
+            const noteWordCount = palette.notes.trim().split(/\s+/).filter(Boolean).length;
             return (
-              <p
-                className="text-[10px] italic text-[var(--muted)] mt-1 line-clamp-2 leading-snug cursor-text select-none hover:text-[var(--fg)] transition-colors"
+              <div
+                className="flex items-end gap-1.5 mt-1 cursor-text"
                 title="Click to edit note"
                 onClick={openInlineNotes}
               >
-                {highlightMatch(palette.notes, searchQuery)}
-              </p>
+                <p className="text-[10px] italic text-[var(--muted)] line-clamp-2 leading-snug select-none hover:text-[var(--fg)] transition-colors flex-1 min-w-0">
+                  {highlightMatch(palette.notes, searchQuery)}
+                </p>
+                <span
+                  className="text-[9px] text-[var(--muted)]/50 shrink-0 tabular-nums leading-none mb-px"
+                  title={`${noteWordCount} word${noteWordCount !== 1 ? "s" : ""}`}
+                >
+                  {noteWordCount}w
+                </span>
+              </div>
             );
           })() : (
             <p
