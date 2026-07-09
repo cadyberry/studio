@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-07-09 — Session 136: Color Browser Band Count Sync + Freshness Badge Edited/Created
+
+### What was done
+- **Color Browser: hue-band counts now sync with collection filter** — fixed a React useMemo stale-dependency bug. The `chromatics`/`neutrals` memo closed over `visibleColorIndex` (the collection-filtered subset) but declared `[colorIndex]` in its dependency array, meaning band-header counts like "Blues 14" never updated when a collection filter was active. Single-line fix: `[colorIndex]` → `[visibleColorIndex]`. Counts now reflect exactly what's visible.
+- **Freshness badge: created vs edited distinction** — `getFreshness` now accepts `updatedAt` alongside `createdAt`. If `updatedAt` is more than 1 hour newer than `createdAt`, the function uses `updatedAt` for the age calculation and sets `isEdited: true`. The hover tooltip changes from `"Created Jul 5, 2026"` to `"Edited Jul 5, 2026"`. Palettes that were created a month ago but edited recently now show a fresh badge correctly.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **>1 hour threshold for "edited"** — drag-to-reorder and minor swatch tweaks touch `updatedAt`; a 1-hour gap filters out those incidental updates so the badge only shows "Edited" for genuine revisits, not routine touch-ups.
+- **Use updatedAt for age calculation, not just tooltip** — if a palette was edited yesterday but created 3 weeks ago, the badge shows "1d" (based on edit time) rather than returning null (no badge, since creation is beyond the 21-day window). This lets recently-edited palettes surface in the freshness tier naturally.
+- **Band count fix is one line** — the memo body was already correct (iterating visibleColorIndex). Only the dependency array was wrong, so the fix is minimal and surgical.
+
+### What's next (Session 137)
+- **Palette search: highlight match in palette name inline** — `highlightMatch` is already called on `palette.name` in the info row, but matching palette name substrings should also be highlighted yellow in the palette name tile itself when the search bar is active (visual consistency with note excerpt highlighting)
+- **Color Browser: jump index letter pill color-coded by band** — the right-edge jump pills (R, O, Y, etc.) are all neutral; tinting each pill to its hue band's representative color would make the index much faster to scan at a glance
+- **Freshness badge: distinct icon for edited vs created** — the badge could show a tiny pencil dot or a different shape (e.g. pencil vs clock) to distinguish "edited recently" from "created recently" without depending on hover
+
+---
+
 ## 2026-07-08 — Session 135: Color Browser "Also In N Other Collections" Footer
 
 ### What was done
