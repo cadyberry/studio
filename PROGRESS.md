@@ -3662,3 +3662,26 @@
 - **Color Browser: color count in band jump index chip tooltips** — update `title={label}` on each chip to say "Reds · 12 colors" for quick orientation
 - **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
 - **Print check: "Caution → Safe" single-click mute** — now that Vivid is handled, consider adding a lighter mute for Caution swatches (clamp to C=0.12) for creators who want all-green palettes
+---
+
+## 2026-07-09 — Session 137: Color Browser Jump Index Pills Color-Coded by Hue Band
+
+### What was done
+- **Jump index pills color-coded by hue band** — the sticky right-edge letter index in the Color Browser (R, O, Y, YG, G, Cy, B, Pu, Pk, N) now shows each pill in its band's representative hue color:
+  - Added `BAND_COLOR` lookup table with 10 carefully chosen representative hex values, one per band (Reds `#e05252`, Oranges `#e07828`, Yellows `#c8a81a`, Yellow-Greens `#78b83a`, Greens `#1eb87a`, Cyans `#1ab8c0`, Blues `#3b70e8`, Purples `#8b52e0`, Pinks `#e04e8a`, Neutrals `#888888`)
+  - **Inactive pills**: band color as text color at 65% opacity — subtle, scannable, color is recognizable without dominating
+  - **Active pill**: band color as background fill, `getContrastColor()` for text to guarantee readability; soft outer glow ring in the same hue at 25% opacity gives a gentle halo effect
+  - **Hover**: `scale-110` + `opacity-90` — pills pop slightly on hover regardless of active state; no separate hover background color since the text color already identifies the band
+  - All styling done via inline `style` prop (not Tailwind classes) since colors are dynamic per-button
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Inline style, not Tailwind classes** — dynamic per-button colors can't be expressed with Tailwind's static class system without CSS variables or a JIT safelist; inline style is the correct tool here
+- **65% opacity for inactive** — the pills are a navigation aid, not content; full-opacity colored pills would compete visually with the swatch grid. 65% keeps them present and scannable without pulling focus
+- **Glow ring on active** — `boxShadow: "0 0 0 2px {color}40"` (40 = 25% alpha) gives the active pill a soft halo in its own hue, distinguishing it from neutral highlight rings used elsewhere in the UI
+- **Colors chosen at medium lightness and saturation** — to be visually distinct from each other while remaining clear in both light and dark themes; yellows use `#c8a81a` (slightly darkened) since full-chroma yellow is hard to read on white
+
+### What's next (Session 138)
+- **Palette search: highlight match in palette name tile** — when search is active, the palette name shown in the card header should highlight the matching substring in yellow, matching the note-excerpt highlight behavior
+- **Freshness badge: distinct pencil icon for edited vs created** — show a tiny pencil or a different icon to distinguish "edited recently" from "created recently" without needing to hover
+- **Jump index: smooth entrance animation** — stagger the pills on initial mount with a tiny vertical slide-in, matching the palette card entrance animations
