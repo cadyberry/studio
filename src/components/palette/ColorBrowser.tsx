@@ -102,7 +102,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
       }
     }
     return { neutrals: neutrals.sort((a, b) => a.lightness - b.lightness), chromatics };
-  }, [colorIndex]);
+  }, [visibleColorIndex]);
 
   const bands = useMemo(() => {
     const bandMap = new Map<string, ColorEntry[]>();
