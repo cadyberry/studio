@@ -59,6 +59,20 @@ const BAND_ABBREV: Record<string, string> = {
   Neutrals: "N",
 };
 
+// Representative hex for each hue band — used to tint the jump index pills
+const BAND_COLOR: Record<string, string> = {
+  Reds: "#e05252",
+  Oranges: "#e07828",
+  Yellows: "#c8a81a",
+  "Yellow-Greens": "#78b83a",
+  Greens: "#1eb87a",
+  Cyans: "#1ab8c0",
+  Blues: "#3b70e8",
+  Purples: "#8b52e0",
+  Pinks: "#e04e8a",
+  Neutrals: "#888888",
+};
+
 function getBand(hue: number): string {
   const h = ((hue % 360) + 360) % 360;
   for (const band of HUE_BANDS) {
@@ -463,16 +477,25 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
             {allSections.map((label) => {
               const isActive = activeBand === label;
               const count = sectionCounts.get(label) ?? 0;
+              const bandColor = BAND_COLOR[label];
               return (
                 <button
                   key={label}
                   onClick={() => scrollToBand(label)}
                   title={`${label} · ${count} color${count !== 1 ? "s" : ""}`}
-                  className={`w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none ${
+                  className="w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none hover:opacity-90 hover:scale-110"
+                  style={
                     isActive
-                      ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                  }`}
+                      ? {
+                          backgroundColor: bandColor ?? "var(--accent)",
+                          color: bandColor ? getContrastColor(bandColor) : "var(--accent-fg)",
+                          boxShadow: `0 0 0 2px ${bandColor ?? "var(--accent)"}40`,
+                        }
+                      : {
+                          color: bandColor ?? "var(--muted)",
+                          opacity: 0.65,
+                        }
+                  }
                 >
                   {BAND_ABBREV[label] ?? label.slice(0, 2)}
                 </button>
