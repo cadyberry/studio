@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-07-10 — Session 137: Name Search Highlight + Freshness Badge Edited Icon
+
+### What was done
+- **Palette name search highlight** — when the search query matches the palette name, the name container now gains a subtle `bg-yellow-50 dark:bg-yellow-900/20 rounded-[3px]` background with `-mx-1 px-1` padding. This gives palette-name matches visual parity with the amber box for swatch name matches and the yellow excerpt box for note matches. The `highlightMatch` mark inside the name was already working; the new tint makes the match visible at card-list glance without needing to read the marked text closely.
+- **Freshness badge edited icon** — palettes where `isEdited === true` (updated >1h after creation) now show a 7px `<Pencil>` icon to the left of the age label ("✎ 2d", "✎ new"). Previously the distinction was only visible on hover via the tooltip ("Edited Jun 30" vs "Created Jun 30"). Now a quick scan of the library distinguishes freshly-edited palettes from freshly-created ones at a glance.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing
+
+### Key decisions
+- **Background tint, not a new box** — the palette name is the card's primary title; wrapping it in a heavy box excerpt (like notes do) would be redundant and cluttered. A subtle tint signals "matched on name" without competing with the name itself.
+- **`-mx-1 px-1` padding trick** — avoids layout shift by keeping the flex container width unchanged while adding visual breathing room around the highlighted name.
+- **7px pencil, not text** — unicode pencil characters (✎) render inconsistently across platforms; the Lucide `Pencil` icon (already imported) scales pixel-perfectly at size 7 and matches the app's icon language. `flex-shrink-0` prevents it from being squeezed on narrow cards.
+
+### What's next (Session 138)
+- **Color Browser jump pills: active state ring** — the active pill already fills with the band color, but a thin translucent ring (`box-shadow: 0 0 0 2px color40`) around it would make the active position more legible when scrolling fast
+- **Palette card: search match type indicator** — when a card appears due to a swatch NAME or NOTE match (not palette name), a small "matched in: swatch" or "matched in: note" label could replace or complement the current amber/blue excerpt boxes with a single-line breadcrumb
+- **Inline notes: multi-line expand** — the inline notes preview (below the card, click-to-edit) is clamped to 2 lines; long notes get truncated. A "show more" affordance or a `max-h` expansion on click (before entering edit mode) could help
+
+---
+
 ## 2026-07-09 — Session 136: Color Browser Band Count Sync + Freshness Badge Edited/Created
 
 ### What was done
