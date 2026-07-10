@@ -474,31 +474,37 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
             style={{ top: 72 }}
             aria-label="Jump to color band"
           >
-            {allSections.map((label) => {
+            {allSections.map((label, index) => {
               const isActive = activeBand === label;
               const count = sectionCounts.get(label) ?? 0;
               const bandColor = BAND_COLOR[label];
               return (
-                <button
+                <motion.div
                   key={label}
-                  onClick={() => scrollToBand(label)}
-                  title={`${label} · ${count} color${count !== 1 ? "s" : ""}`}
-                  className="w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none hover:opacity-90 hover:scale-110"
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: bandColor ?? "var(--accent)",
-                          color: bandColor ? getContrastColor(bandColor) : "var(--accent-fg)",
-                          boxShadow: `0 0 0 2px ${bandColor ?? "var(--accent)"}40`,
-                        }
-                      : {
-                          color: bandColor ?? "var(--muted)",
-                          opacity: 0.65,
-                        }
-                  }
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04, duration: 0.18, ease: "easeOut" }}
                 >
-                  {BAND_ABBREV[label] ?? label.slice(0, 2)}
-                </button>
+                  <button
+                    onClick={() => scrollToBand(label)}
+                    title={`${label} · ${count} color${count !== 1 ? "s" : ""}`}
+                    className="w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none hover:opacity-90 hover:scale-110"
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: bandColor ?? "var(--accent)",
+                            color: bandColor ? getContrastColor(bandColor) : "var(--accent-fg)",
+                            boxShadow: `0 0 0 2px ${bandColor ?? "var(--accent)"}40`,
+                          }
+                        : {
+                            color: bandColor ?? "var(--muted)",
+                            opacity: 0.65,
+                          }
+                    }
+                  >
+                    {BAND_ABBREV[label] ?? label.slice(0, 2)}
+                  </button>
+                </motion.div>
               );
             })}
           </nav>
