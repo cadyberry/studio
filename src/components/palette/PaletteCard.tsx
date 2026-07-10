@@ -1051,7 +1051,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               spellCheck={false}
             />
           ) : (
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className={`flex items-center gap-1.5 min-w-0 rounded-[3px] ${searchQuery && palette.name.toLowerCase().includes(searchQuery.toLowerCase()) ? "bg-yellow-50 dark:bg-yellow-900/20 px-1 -mx-1" : ""}`}>
               {isPinned && <Pin size={9} className="text-orange-400 dark:text-orange-500 flex-shrink-0 fill-orange-100 dark:fill-orange-900/40" />}
               {palette.frozen && <Lock size={10} className="text-indigo-400 dark:text-indigo-500 flex-shrink-0" />}
               <div
@@ -1151,10 +1151,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             })()}
             {freshness && (
               <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${freshness.bgClass} ${freshness.textClass}`}
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium ${freshness.bgClass} ${freshness.textClass}`}
                 style={{ opacity: freshness.opacity }}
                 title={`${freshness.isEdited ? "Edited" : "Created"} ${formatDate(freshness.isEdited ? palette.updatedAt : palette.createdAt)}`}
               >
+                {freshness.isEdited && <Pencil size={7} className="flex-shrink-0" />}
                 {freshness.label}
               </span>
             )}
