@@ -3704,3 +3704,46 @@
 - **Palette search: highlight match in palette name tile** — when search is active, the palette name shown in the card header should highlight the matching substring in yellow, matching the note-excerpt highlight behavior
 - **Freshness badge: distinct pencil icon for edited vs created** — show a tiny pencil or a different icon to distinguish "edited recently" from "created recently" without needing to hover
 - **Jump index: smooth entrance animation** — stagger the pills on initial mount with a tiny vertical slide-in, matching the palette card entrance animations
+
+---
+
+## 2026-07-10 — Session 138: Palette Name Search Highlight + Freshness Badge Edited Icon
+
+### What was done
+- **Palette name search highlight** — when the search query matches a palette's name, the name now shows a subtle yellow background highlight (`bg-yellow-50 dark:bg-yellow-900/20`) with `-mx-1 px-1` padding. This gives visual parity with the amber swatch-name match box and yellow note-excerpt match box — all three match types now have consistent visual treatment. Layout is unaffected (negative x-margin compensates for the padding).
+- **Freshness badge edited icon** — the "edited recently" freshness badge now shows a 7px `Pencil` icon before the age label (e.g., "✏ 2d"). Previously, edited and created badges were identical except for text; now the pencil icon makes "edited" instantly distinguishable at a glance without requiring hover.
+- Changes landed in `PaletteCard.tsx` — 3 insertions, 2 deletions.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **Wrapper span approach** — the name highlight uses a `<span className="-mx-1 px-1 rounded ...">` that wraps only the name text, rather than styling the parent element. This prevents the highlight from touching adjacent elements (the freshness badge, the actions row above).
+- **Pencil icon at 7px** — the Pencil icon was already imported into PaletteCard for the notes editor trigger; reusing it for the badge avoids a new import. At 7px it sits cleanly alongside the age text without competing with it.
+
+### What's next (Session 139)
+- **Jump index: smooth entrance animation** — stagger the pills on initial mount with a tiny vertical slide-in
+- **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
+- **Print check: "Caution → Safe" single-click mute** — lighter mute for Caution swatches (clamp to C=0.12)
+
+---
+
+## 2026-07-10 — Session 139: Jump Index Pills Staggered Entrance Animation
+
+### What was done
+- **Staggered entrance animation for Color Browser jump index pills** — each pill (R, O, Y, YG, G, Cy, B, Pu, Pk, N) now slides in from `y=-6` with opacity `0→1` on mount, staggered at 40ms per pill:
+  - Wrapped each `<button>` in a `<motion.div>` with `initial={{ opacity: 0, y: -6 }}`, `animate={{ opacity: 1, y: 0 }}`, `transition={{ delay: index * 0.04, duration: 0.18, ease: "easeOut" }}`
+  - The wrapper div handles entrance cleanly without conflicting with the button's own CSS transition (`transition-all`), hover effects (`hover:opacity-90 hover:scale-110`), or active-state inline styles
+  - After the entrance animation completes (div at opacity=1), the button's own opacity (0.65 inactive / 1.0 active) takes over — multiplied by the wrapper's final opacity=1, giving the correct final appearance
+  - When the collection filter changes and the band list updates, pills re-mount and the entrance replays — a nice visual cue that the color set has changed
+- Added `index` parameter to `allSections.map((label, index) => ...)` — the only change needed beyond the wrapper element
+- `motion` was already imported at the top of `ColorBrowser.tsx`
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **`motion.div` wrapper vs `motion.button`** — using a wrapper div avoids any conflict between Framer Motion's animated opacity and the button's own inline-style opacity (0.65 for inactive, 1.0 for active). The div animates 0→1 once on mount; after that, the div is fully opaque and the button's CSS owns everything. If `motion.button` were used directly, the animated `opacity: 1` final value would override the button's `style={{ opacity: 0.65 }}`.
+- **40ms stagger** — matches the subtlety of the swatch grid's `scale: 0.85→1` entrance; fast enough to feel snappy, slow enough to read as a cascade. With 10 bands the total spread is 360ms, completing well before a user could start scrolling.
+- **y: -6 (not scale or x)** — the pills are a vertical list; a downward entrance (slide from above) feels directionally appropriate and matches the "things falling into place" idiom used in the palette card animations.
+
+### What's next (Session 140)
+- **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
+- **Print check: "Caution → Safe" single-click mute** — lighter mute for Caution swatches (clamp to C=0.12)
+- **Palette card: keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip listing available keyboard shortcuts for that card
