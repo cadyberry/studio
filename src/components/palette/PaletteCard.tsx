@@ -1112,7 +1112,42 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 {gamutClippedCount} clipped
               </span>
             )}
-            {(printRisk.vivid + printRisk.moderate > 0) ? (
+            {printRisk.vivid === 0 && printRisk.moderate > 0 ? (
+              /* Caution-only: split pill — left opens overlay, right mutes all caution → safe */
+              <div className="flex items-center rounded overflow-hidden text-[10px] font-medium tabular-nums bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                <button
+                  onClick={() => {
+                    setPrintCheckOpen((v) => {
+                      if (!v) {
+                        setTagging(false);
+                        setNotesOpen(false);
+                        setVariationsOpen(false);
+                      }
+                      return !v;
+                    });
+                  }}
+                  className="flex items-center gap-1 px-1.5 py-0.5 hover:bg-orange-200/60 dark:hover:bg-orange-800/30 transition-colors"
+                  title={`${printRisk.moderate} caution swatch${printRisk.moderate !== 1 ? "es" : ""} (oklch C 0.12–0.25) — click to review`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-orange-400" />
+                  {printRisk.moderate} caution
+                </button>
+                <div className="self-stretch w-px bg-orange-200 dark:bg-orange-700/50 shrink-0" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    muteAllCaution();
+                  }}
+                  title="One-click: clamp all caution swatches to C=0.12 (print-safe) — no overlay needed"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 hover:bg-emerald-100 hover:text-emerald-700 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-colors font-semibold"
+                >
+                  {cautionMutedAll
+                    ? <Check size={8} className="text-emerald-600 dark:text-emerald-400" />
+                    : <span className="leading-none">→ safe</span>
+                  }
+                </button>
+              </div>
+            ) : (printRisk.vivid + printRisk.moderate > 0) ? (
               <button
                 onClick={() => {
                   setPrintCheckOpen((v) => {
@@ -1124,14 +1159,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     return !v;
                   });
                 }}
-                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums transition-opacity hover:opacity-80 ${
-                  printRisk.vivid > 0
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
-                    : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                }`}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums transition-opacity hover:opacity-80 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
                 title="Click to see print risk details"
               >
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${printRisk.vivid > 0 ? "bg-rose-500" : "bg-orange-400"}`} />
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-rose-500" />
                 {printRisk.vivid + printRisk.moderate} print risk
               </button>
             ) : palette.colors.length > 0 && (
