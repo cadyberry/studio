@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-11 — Session 141: Caution Badge → Safe Quick-Mute Pill
+
+### What was done
+- **Print risk badge: caution-only split pill** — when a palette has moderate chroma swatches (oklch C 0.12–0.25) but no vivid ones, the info-row badge now renders as a two-part pill instead of a single button.
+  - **Left side** ("N caution" + orange dot): opens the full print-check overlay, same as before. Hover tints the left zone orange.
+  - **Hairline divider**: `self-stretch w-px bg-orange-200` separates the two actions visually without adding gap.
+  - **Right side** ("→ safe"): calls `muteAllCaution()` directly on click — clamps all caution swatches to C=0.12 with no overlay open. On success the palette re-renders immediately with updated colors, the badge transitions to the green "print safe" state, and `cautionMutedAll` briefly shows a `<Check>` icon for 1.4s before the badge is already showing "print safe".
+  - **Vivid risk unchanged**: when `printRisk.vivid > 0` (with or without moderate swatches), the badge remains a single rose "N print risk" button that opens the overlay — vivid swatches need deliberate review before muting.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing.
+
+### Key decisions
+- **Split only on caution-only case** — when there are also vivid swatches, "→ safe" would be ambiguous (muting caution to safe while vivid remain isn't truly print-safe). Keeping the rose single button for the mixed case avoids giving a false sense of completion.
+- **`e.stopPropagation()` on the right side** — prevents the click from bubbling up to any parent handlers that might interfere.
+- **Feedback is the badge state itself** — after muting, `printRisk.moderate` drops to 0 → the badge transitions to "print safe" green. No need for an in-badge "✓ Muted" label; the green badge is clearer feedback than a momentary checkmark.
+- **`self-stretch` divider** — the divider line spans the full pill height regardless of font-size changes, matching the pill's rendered height without hardcoding px values.
+
+### What's next (Session 142)
+- **Color Browser: section count badge** — a small `(N)` count inside each hue-band header (e.g. "Blues (14)") visible without expanding, so the scale of each band is legible at a glance
+- **Palette card: cover image from URL** — allow setting a palette's cover to an external image URL (in addition to the current upload flow), useful for pasting Midjourney or reference image links
+- **Print check: mixed badge split** — when vivid + caution both exist, could add a "mute caution" sub-action to the vivid badge header (inside the overlay) without requiring another click level
+
+---
+
 ## 2026-07-11 — Session 140: Palette Card Keyboard Shortcut Peek Overlay
 
 ### What was done
