@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-11 — Session 140: Palette Card Keyboard Shortcut Peek Overlay
+
+### What was done
+- **Keyboard shortcut peek overlay on palette cards** — holding `?` while hovering any palette card now shows a frosted-glass overlay listing all card-level keyboard shortcuts (D · Duplicate, H · Harmony View, E · Export, F2 · Rename, L · Lock/Unlock, P · Pin/Unpin, Del · Delete). The overlay appears instantly on keydown and dismisses the moment `?` is released — a pure "hold to peek" pattern with no persistent state.
+  - Overlay: `absolute inset-0 z-30` frosted glass (`backdrop-blur-[3px]`, `bg-[var(--surface)]/96`) with a compact shortcut grid. Each row shows a `<kbd>` chip + label. Keyboard icon + "Card Shortcuts" header; "release ? to close" footer.
+  - Shortcut label for L adapts to lock state (`palette.frozen ? "Unlock" : "Lock"`).
+  - Registered as a capture-phase keydown listener (`{ capture: true }`) so the `?` event is intercepted before the global keyboard-help modal (which is a bubble-phase listener) can fire. The two no longer conflict.
+  - keyup listener (bubble phase) clears `showKeyShortcuts` → overlay exits via `AnimatePresence`.
+- **Footer hint updated** — the one-liner at the bottom of each hovered card now ends with `· ? help` so the feature is discoverable before a user thinks to try the key.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **Capture phase, not stopImmediatePropagation** — both the card handler and the global `?` modal handler attach to `document`. Since event listeners on the same element fire in registration order and `stopImmediatePropagation` only stops later listeners in the same phase, the only reliable way to intercept `?` before the global modal is to register the card's handler in capture phase (fires before any bubble-phase listener, regardless of registration order).
+- **Hold-to-peek, not toggle** — a toggle shortcut overlay would conflict visually with the card's other overlays (print check, variations, notes) and require explicit dismissal. Hold-to-peek is instantaneous and disappears on its own; users naturally release the key when they've read what they need.
+- **`pointer-events-none` on overlay** — the overlay is purely informational; making it non-interactive means mouse events pass through to the card underneath, so drag, hover, and button states remain active during the peek.
+
+### What's next (Session 141)
+- **Print check: "Caution → Safe" quick mute from the print risk badge** — currently the badge in the info row only shows risk count; a single-click action to mute all caution swatches from the badge itself (without opening the full print-check overlay) would speed up the print-safe workflow
+- **Color Browser: section count badge** — a small `(N)` count inside each hue-band header (e.g. "Blues (14)") visible without expanding, so the scale of each band is legible at a glance
+- **Palette card: cover image from URL** — allow setting a palette's cover to an external image URL (in addition to the current upload flow), useful for pasting Midjourney or reference image links
+
+---
+
 ## 2026-07-10 — Session 137: Name Search Highlight + Freshness Badge Edited Icon
 
 ### What was done
