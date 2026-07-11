@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -176,6 +176,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [printMutedAll, setPrintMutedAll] = useState(false);
   const [cautionMutedIdx, setCautionMutedIdx] = useState<number | null>(null);
   const [cautionMutedAll, setCautionMutedAll] = useState(false);
+  const [showKeyShortcuts, setShowKeyShortcuts] = useState(false);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -242,10 +243,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             });
           }
           break;
+        case "?":
+          // stop propagation so the global ? modal doesn't also open
+          e.stopPropagation();
+          e.preventDefault();
+          setShowKeyShortcuts(true);
+          break;
       }
     };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    const upHandler = (e: KeyboardEvent) => {
+      if (e.key === "?") setShowKeyShortcuts(false);
+    };
+    // capture phase so ? intercept fires before the global keydown handler
+    document.addEventListener("keydown", handler, true);
+    document.addEventListener("keyup", upHandler);
+    return () => {
+      document.removeEventListener("keydown", handler, true);
+      document.removeEventListener("keyup", upHandler);
+    };
   }, []); // stable via refs
 
   // Sync inline name value when palette.name changes externally
@@ -1555,7 +1570,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
           {palette.frozen
             ? "L unlock"
-            : "D dup · E export · F2 name · H view · L lock · P pin · Del"}
+            : "D dup · E export · F2 name · H view · L lock · P pin · Del · ? help"}
         </span>
       </div>
 
@@ -1986,6 +2001,43 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Keyboard shortcuts peek overlay — visible while ? is held over the card */}
+      <AnimatePresence>
+        {showKeyShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.08 }}
+            className="absolute inset-0 z-30 bg-[var(--surface)]/96 backdrop-blur-[3px] flex flex-col px-3.5 py-3 pointer-events-none"
+          >
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Keyboard size={10} className="text-[var(--accent)] shrink-0" />
+              <span className="text-[9px] font-semibold text-[var(--foreground)] uppercase tracking-widest">Card Shortcuts</span>
+            </div>
+            <div className="flex flex-col gap-1 flex-1">
+              {([
+                { key: "D", label: "Duplicate" },
+                { key: "H", label: "Harmony View" },
+                { key: "E", label: "Export" },
+                { key: "F2", label: "Rename" },
+                { key: "L", label: palette.frozen ? "Unlock" : "Lock" },
+                { key: "P", label: "Pin / Unpin" },
+                { key: "Del", label: "Delete" },
+              ] as const).map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <kbd className="inline-flex items-center justify-center min-w-[1.5rem] h-[15px] px-1 rounded text-[8px] font-mono font-semibold bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground)] leading-none shadow-[0_1px_0_0_var(--border)] shrink-0">
+                    {key}
+                  </kbd>
+                  <span className="text-[10px] text-[var(--muted)]">{label}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[8px] text-[var(--muted)]/40 text-center mt-2 select-none">release ? to close</p>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Notes overlay */}
