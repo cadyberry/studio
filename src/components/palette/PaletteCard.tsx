@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -177,6 +177,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [cautionMutedIdx, setCautionMutedIdx] = useState<number | null>(null);
   const [cautionMutedAll, setCautionMutedAll] = useState(false);
   const [showKeyShortcuts, setShowKeyShortcuts] = useState(false);
+  const [coverUrlOpen, setCoverUrlOpen] = useState(false);
+  const [coverUrlValue, setCoverUrlValue] = useState(palette.coverUrl ?? "");
+  const [coverUrlError, setCoverUrlError] = useState(false);
+  const coverUrlInputRef = useRef<HTMLInputElement>(null);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -278,6 +282,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     if (!inlineNotesEditing) setInlineNotesValue(palette.notes ?? "");
   }, [palette.notes, inlineNotesEditing]);
 
+  // Sync cover URL input when palette.coverUrl changes externally
+  useEffect(() => {
+    if (!coverUrlOpen) setCoverUrlValue(palette.coverUrl ?? "");
+  }, [palette.coverUrl, coverUrlOpen]);
+
   // Ordered colors with stable keys for drag-to-reorder
   const [orderedColors, setOrderedColors] = useState<KeyedColor[]>(() =>
     palette.colors.map((c, i) => ({ ...c, _key: `${palette.id}-${i}` }))
@@ -323,6 +332,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setNaming({ type: "idle" });
     setInlineNotesEditing(false);
     setPrintCheckOpen(false);
+    setCoverUrlOpen(false);
     setNotesValue(palette.notes ?? "");
     setNotesOpen(true);
     setTimeout(() => {
@@ -374,6 +384,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setNotesOpen(false);
     setInlineNotesEditing(false);
     setPrintCheckOpen(false);
+    setCoverUrlOpen(false);
     setTagging(true);
     setTimeout(() => tagInputRef.current?.focus(), 50);
   };
@@ -536,6 +547,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setNaming({ type: "idle" });
     setNotesOpen(false);
     setPrintCheckOpen(false);
+    setCoverUrlOpen(false);
     setVariationsOpen(true);
   };
 
@@ -631,6 +643,37 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       setConfirming(true);
       setTimeout(() => setConfirming(false), 2000);
     }
+  };
+
+  const openCoverUrl = () => {
+    setTagging(false);
+    setTagInput("");
+    setNaming({ type: "idle" });
+    setNotesOpen(false);
+    setInlineNotesEditing(false);
+    setPrintCheckOpen(false);
+    setVariationsOpen(false);
+    setCoverUrlValue(palette.coverUrl ?? "");
+    setCoverUrlError(false);
+    setCoverUrlOpen(true);
+    setTimeout(() => { coverUrlInputRef.current?.focus(); coverUrlInputRef.current?.select(); }, 30);
+  };
+
+  const commitCoverUrl = () => {
+    const trimmed = coverUrlValue.trim();
+    if (trimmed && !trimmed.startsWith("http")) {
+      setCoverUrlError(true);
+      return;
+    }
+    updatePalette(palette.id, { coverUrl: trimmed || undefined });
+    setCoverUrlOpen(false);
+    setCoverUrlError(false);
+  };
+
+  const clearCoverUrl = () => {
+    updatePalette(palette.id, { coverUrl: undefined });
+    setCoverUrlValue("");
+    setCoverUrlOpen(false);
   };
 
   return (
@@ -935,6 +978,23 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-300 leading-none uppercase tracking-wide">locked</span>
           </div>
         )}
+
+        {/* Cover image thumbnail — visible when coverUrl is set */}
+        {palette.coverUrl && (
+          <div
+            className="absolute bottom-2 right-2 z-10 group/coverimg cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); openCoverUrl(); }}
+            title="Click to change or remove cover image"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={palette.coverUrl}
+              alt="Cover"
+              className="w-8 h-8 object-cover rounded-[4px] border border-white/40 shadow-md transition-opacity group-hover/coverimg:opacity-75"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Lightness sparkline — always-visible bar chart of per-swatch HSL lightness */}
@@ -1122,6 +1182,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                         setTagging(false);
                         setNotesOpen(false);
                         setVariationsOpen(false);
+                        setCoverUrlOpen(false);
                       }
                       return !v;
                     });
@@ -1472,6 +1533,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             <Tag size={13} />
           </Button>
           <Button
+            variant={coverUrlOpen || palette.coverUrl ? "outline" : "ghost"}
+            size="sm"
+            onClick={coverUrlOpen ? () => setCoverUrlOpen(false) : openCoverUrl}
+            title={palette.coverUrl ? "Change or remove cover image URL" : "Set cover image from URL"}
+            className={palette.coverUrl ? "text-[var(--accent)] border-[var(--accent)]/40" : ""}
+          >
+            <ImageIcon size={13} />
+          </Button>
+          <Button
             variant={notesOpen || palette.notes ? "outline" : "ghost"}
             size="sm"
             onClick={notesOpen ? commitNotes : openNotes}
@@ -1488,6 +1558,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   setTagging(false);
                   setNotesOpen(false);
                   setVariationsOpen(false);
+                  setCoverUrlOpen(false);
                 }
                 return !v;
               });
@@ -2067,6 +2138,80 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               ))}
             </div>
             <p className="text-[8px] text-[var(--muted)]/40 text-center mt-2 select-none">release ? to close</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cover URL overlay */}
+      <AnimatePresence>
+        {coverUrlOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                Cover Image
+              </span>
+              <button
+                onClick={() => setCoverUrlOpen(false)}
+                className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+              >
+                <X size={11} />
+              </button>
+            </div>
+            {coverUrlValue && (
+              <div className="mb-2 flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={coverUrlValue}
+                  alt="Preview"
+                  className="w-12 h-12 object-cover rounded-[4px] border border-[var(--border)] flex-shrink-0"
+                  onError={() => setCoverUrlError(true)}
+                  onLoad={() => setCoverUrlError(false)}
+                />
+                <p className={`text-[9px] truncate flex-1 min-w-0 font-mono ${coverUrlError ? "text-rose-400" : "text-[var(--muted)]"}`}>
+                  {coverUrlError ? "Image failed to load" : coverUrlValue}
+                </p>
+              </div>
+            )}
+            <input
+              ref={coverUrlInputRef}
+              type="url"
+              value={coverUrlValue}
+              onChange={(e) => { setCoverUrlValue(e.target.value); setCoverUrlError(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); commitCoverUrl(); }
+                if (e.key === "Escape") { e.preventDefault(); setCoverUrlOpen(false); }
+              }}
+              placeholder="https://example.com/image.jpg"
+              className={`w-full text-xs bg-[var(--surface-2)] border rounded-[var(--radius-sm)] px-2 py-1.5 outline-none transition-colors placeholder:text-[var(--muted)] ${
+                coverUrlError ? "border-rose-400 focus:border-rose-500" : "border-[var(--border)] focus:border-[var(--accent)]"
+              }`}
+              spellCheck={false}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[9px] text-[var(--muted)]">Paste any public image URL · Enter to save · Esc to cancel</p>
+              <div className="flex items-center gap-2">
+                {palette.coverUrl && (
+                  <button
+                    onClick={clearCoverUrl}
+                    className="text-[9px] text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+                <button
+                  onClick={commitCoverUrl}
+                  className="text-[9px] font-medium px-2 py-0.5 rounded bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90 transition-opacity"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

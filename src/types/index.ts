@@ -14,6 +14,7 @@ export interface Palette {
   frozen?: boolean;
   pinned?: boolean;
   notes?: string;
+  coverUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
