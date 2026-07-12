@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-07-12 — Session 142: Palette Card Cover Image from URL
+
+### What was done
+- **Cover image from URL on palette cards** — each palette card can now hold a reference image URL (`coverUrl` field added to `Palette` type):
+  - **Action button**: new `ImageIcon` button in the card action row (between Tags and Notes buttons). Active/accented when a coverUrl is set.
+  - **URL input overlay**: clicking the button opens a slide-in overlay (same style as Tags/Notes overlays) with a URL paste field. A live image preview (32×32 → 48×48) appears as you type so you can confirm the URL resolves before saving. Error state shows in red if the image fails to load.
+  - **Swatch strip thumbnail**: a 32×32 thumbnail floats at the bottom-right of the swatch strip when `coverUrl` is set; clicking it re-opens the overlay. Fades to 75% opacity on hover as a visual affordance.
+  - **Remove**: "Remove" link inside the overlay clears `coverUrl`.
+  - **Overlay coordination**: opening the cover URL overlay closes tags/notes/variations/print-check, and those overlays close cover URL when they open — consistent with existing panel behavior.
+- `coverUrl` stored in localStorage alongside all other palette fields; `updatePalette` handles persistence automatically.
+- Production build: clean Turbopack compile, zero TypeScript errors, 7 routes passing.
+
+### Key decisions
+- **`coverUrl` separate from `sourceImage`** — `sourceImage` is an auto-generated base64 thumbnail from the Extractor upload flow; `coverUrl` is a manually-entered reference URL. Keeping them separate lets both coexist (e.g., extracted palette with a different reference image).
+- **`onError` guard on `<img>`** — if the URL becomes stale or the image goes down, the thumbnail silently hides (`display: none`) rather than showing a broken-image icon.
+- **Live preview in overlay** — showing a live preview before Save eliminates the friction of entering a URL, saving, and then discovering it's wrong.
+- **Action button shows accent color when set** — makes it immediately visible at a glance which cards have a cover image, without adding a permanent badge.
+
+### What's next (Session 143)
+- **Print check: mixed badge split** — when vivid + caution both exist, add a "mute caution" sub-action inside the print-check overlay header (without an extra click level) for mixed cases
+- **Cover image: source-image display** — when `palette.sourceImage` (base64 thumbnail from Extractor) is set and no `coverUrl` is set, show it as the swatch-strip thumbnail too
+- **Color Browser: jump pills active ring** — the active pill already fills with band color; add a thin translucent ring (box-shadow) around it for faster visual scan when scrolling
+
+---
+
 ## 2026-07-11 — Session 141: Caution Badge → Safe Quick-Mute Pill
 
 ### What was done
