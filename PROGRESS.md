@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-12 — Session 143: Source Image Thumbnail on Palette Cards
+
+### What was done
+- **sourceImage displayed as swatch-strip thumbnail when no coverUrl is set** — palette cards now show a thumbnail in the bottom-right of the swatch strip from two sources, in priority order:
+  - **coverUrl (user-set, manual)**: shown as before — full opacity, white/40 border, clicking opens the URL overlay to change or remove it.
+  - **sourceImage (auto from Extractor)**: shown when `coverUrl` is absent — displayed at 60% opacity (rising to 85% on hover) with a lighter border, signaling it's an auto-detected reference rather than a manual choice. A tiny frosted-glass camera icon badge at top-right of the thumbnail distinguishes the two cases at a glance.
+  - Clicking either thumbnail opens the same coverUrl overlay, which lets users confirm the auto-source or replace it with a custom URL.
+  - `onError` guard still applies to both — if the image can't load it silently hides.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **coverUrl takes priority over sourceImage** — `const src = palette.coverUrl ?? palette.sourceImage` means once a user sets a manual URL, the auto thumbnail is hidden. No dual-thumbnail complexity.
+- **60% opacity for sourceImage, 100% for coverUrl** — visual language: faded = auto/passive, full = user intent. The camera icon reinforces this.
+- **Same click target for both** — opening the coverUrl overlay from the sourceImage thumbnail gives a natural upgrade path: "I see the source image, I can set a real URL here." No dead-end clicks.
+- **Inline SVG camera icon** — no new lucide dependency needed; a minimal 12×12 path is cleaner than importing `Camera` from lucide for a 7px decorative element.
+
+### What's next (Session 144)
+- **Print check: mixed badge split** — when vivid + caution both exist, add a "mute caution" sub-action in the print-check overlay header (without an extra click level) for faster mixed-risk handling
+- **Color Browser: jump pills active ring** — add a thin translucent ring (`box-shadow`) around the active pill for faster visual scan during scroll
+- **Trend Library "Use in new palette" flow** — clicking a trend palette seeds the Extractor with those hex codes
+
+---
+
 ## 2026-07-12 — Session 142: Palette Card Cover Image from URL
 
 ### What was done
