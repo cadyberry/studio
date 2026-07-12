@@ -979,22 +979,39 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           </div>
         )}
 
-        {/* Cover image thumbnail — visible when coverUrl is set */}
-        {palette.coverUrl && (
-          <div
-            className="absolute bottom-2 right-2 z-10 group/coverimg cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); openCoverUrl(); }}
-            title="Click to change or remove cover image"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={palette.coverUrl}
-              alt="Cover"
-              className="w-8 h-8 object-cover rounded-[4px] border border-white/40 shadow-md transition-opacity group-hover/coverimg:opacity-75"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
-          </div>
-        )}
+        {/* Cover image thumbnail — coverUrl (user-set) takes priority; falls back to sourceImage (auto from extractor) */}
+        {(palette.coverUrl || palette.sourceImage) && (() => {
+          const src = palette.coverUrl ?? palette.sourceImage!;
+          const isManual = !!palette.coverUrl;
+          return (
+            <div
+              className="absolute bottom-2 right-2 z-10 group/coverimg cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); openCoverUrl(); }}
+              title={isManual ? "Click to change or remove cover image" : "Extracted source image · Click to set a cover URL"}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt="Cover"
+                className={`w-8 h-8 object-cover rounded-[4px] shadow-md transition-opacity group-hover/coverimg:opacity-75 ${
+                  isManual
+                    ? "border border-white/40"
+                    : "border border-white/25 opacity-60 group-hover/coverimg:opacity-85"
+                }`}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              {/* Subtle camera icon overlay for auto-extracted source images */}
+              {!isManual && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-black/40 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+                  <svg width="7" height="7" viewBox="0 0 12 12" fill="none" className="text-white/80">
+                    <path d="M1 4.5C1 3.95 1.45 3.5 2 3.5h1l1-1.5h4l1 1.5h1c.55 0 1 .45 1 1V9c0 .55-.45 1-1 1H2c-.55 0-1-.45-1-1V4.5z" fill="currentColor"/>
+                    <circle cx="6" cy="6.5" r="1.5" fill="black" fillOpacity="0.5"/>
+                  </svg>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Lightness sparkline — always-visible bar chart of per-swatch HSL lightness */}
