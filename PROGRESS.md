@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-07-13 — Session 144: Mixed Print-Risk Badge Split Pill
+
+### What was done
+- **Print check: mixed badge split pill** — when a palette has BOTH vivid (oklch C>0.25) and caution (C 0.12–0.25) swatches, the info-row badge now renders as a two-part split pill instead of the previous single "N print risk" button:
+  - **Left zone** ("Nv · Mc"): shows vivid + caution counts separately; clicking opens the full print-check overlay for deliberate review.
+  - **Hairline divider**: `self-stretch w-px bg-rose-200` matches the caution-only pill pattern from session 141.
+  - **Right zone** ("→ caution"): calls `muteAllCaution()` directly — clamps all caution swatches to C=0.12 without opening the overlay. Shows a `<Check>` icon briefly after muting. Vivid swatches are intentionally untouched (they require review).
+  - Vivid-only case (no caution swatches) retains the existing single rose button, showing just the vivid count.
+- **Print-check overlay status pill** now reads "Nv · Mc risk" for the mixed case (instead of the generic "High print risk"), so the breakdown is visible even inside the overlay.
+- Production build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **"→ caution" not "→ safe"** — the right-zone label is "→ caution" rather than "→ safe" because muting caution swatches while vivid ones remain is not truly print-safe. The label honestly describes what the action does (mutes to the caution zone), not where the palette ends up overall.
+- **cautionMutedAll reused** — the existing feedback state from the caution-only case doubles as feedback for the mixed badge right zone, keeping the implementation minimal.
+- **Vivid count in badge** — "3v · 2c" is more informative than "5 print risk" and tells the user immediately whether the risks are severe (vivid) or advisory (caution) before opening the overlay.
+
+### What's next (Session 145)
+- **Color Browser: jump pills** — the active ring already exists (box-shadow added in a prior session); consider whether additional visual polish is warranted or this is done
+- **Palette card: swatch note quick-view** — hovering a swatch that has a `.note` field could show a tooltip with the note text (currently only a dot indicator is shown)
+- **Trend Library: mood tag filter** — filter trend palettes by mood keyword (e.g., "moody", "fresh") in addition to the existing season tabs
+
+---
+
 ## 2026-07-12 — Session 143: Source Image Thumbnail on Palette Cards
 
 ### What was done
