@@ -3864,3 +3864,29 @@
 - **Trend Library "Use in new palette" flow** — clicking a trend palette opens the extractor pre-seeded with those hex codes
 - **Print check: "Caution → Safe" single-click mute** — lighter mute for Caution swatches (clamp to C=0.12)
 - **Palette card: keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip listing available keyboard shortcuts for that card
+
+---
+
+## 2026-07-13 — Session 140: AI Color Story in Export Modal
+
+### What was done
+- **AI Color Story** — a new "Generate Color Story" button in the Export modal, powered by a new `/api/color-story` Claude Haiku route. For any saved palette, clicking Generate returns:
+  - **Vibe**: 1–2 sentence poetic mood description of the palette (e.g. "A sun-drenched coastal palette that whispers of salt air and linen…")
+  - **Products**: 3 POD product category suggestions where this palette would sell well (e.g. "botanical wall art", "beach accessories", "cozy home decor"), shown as pill tags
+  - **AI Prompt**: a 15–25 word Midjourney/Stable Diffusion style modifier capturing the palette's essence (e.g. "warm terracotta tones, dusty sage green, sun-bleached linen textures, organic earthy feel") — selectable text with a one-click Copy button
+  - A "Regenerate" link at the bottom lets creators get a fresh take
+- The API route enriches each hex code with its closest designer color name (using `getColorNameSuggestions` from utils) before sending to Claude, making the AI's output more grounded in color language
+- Loading state shows a spinning Loader2 icon; error state falls back to a friendly "Try again" button
+- All three previously noted "next" tasks (Trend Library Remix flow, Print Check Caution→Safe mute, keyboard shortcut overlay) were confirmed already implemented in prior sessions — session 140 leapfrogged to the next genuinely new capability
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing
+
+### Key decisions
+- **Claude Haiku** — matches the existing `name-palette` and `name-swatches` routes; fast and cheap for a 3-part 300-token response
+- **JSON extraction with regex fallback** — the API strips markdown code fences if Claude wraps its JSON output, making it robust against common model formatting habits
+- **Designer color names in the prompt** — sending "hex (#Coral)" instead of bare hex values gives Claude richer semantic signal; the resulting vibe descriptions are more specific and poetic
+- **Regenerate over one-shot** — creators might want a different angle on the same palette; the Regenerate link re-runs the API call and replaces the result in-place without reopening the modal
+
+### What's next (Session 141)
+- **Color Story for "Fork to Library" flow** — after generating a story, offer a "Tag these ideas" shortcut to save the product suggestions as palette tags
+- **Export as Procreate .swatches** — generate a Procreate-compatible swatch file (HSB JSON format) for iPad creators
+- **Palette card: hover to preview Color Story** — a small ✨ button on the card that triggers the AI story without opening the Export modal
