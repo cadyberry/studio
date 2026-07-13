@@ -2,11 +2,17 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone } from "lucide-react";
+import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Sparkles, Loader2, Check, RefreshCw, ShoppingBag } from "lucide-react";
 import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
+
+interface ColorStory {
+  vibe: string;
+  products: string[];
+  prompt: string;
+}
 
 interface ExportModalProps {
   palette: Palette | null;
@@ -16,6 +22,10 @@ interface ExportModalProps {
 export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [hoveredSwatch, setHoveredSwatch] = useState<number | null>(null);
+  const [storyLoading, setStoryLoading] = useState(false);
+  const [story, setStory] = useState<ColorStory | null>(null);
+  const [storyError, setStoryError] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const printSims = useMemo(
     () => (palette?.colors ?? []).map((c) => simulateCmykPrint(c.hex)),
@@ -26,6 +36,35 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const hasRisk = highCount + cautionCount > 0;
 
   if (!palette) return null;
+
+  const generateStory = async () => {
+    setStoryLoading(true);
+    setStoryError(false);
+    try {
+      const res = await fetch("/api/color-story", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          colors: palette.colors.map((c) => c.hex),
+          name: palette.name,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json() as ColorStory;
+      setStory(data);
+    } catch {
+      setStoryError(true);
+    } finally {
+      setStoryLoading(false);
+    }
+  };
+
+  const copyPrompt = () => {
+    if (!story) return;
+    navigator.clipboard.writeText(story.prompt);
+    setPromptCopied(true);
+    setTimeout(() => setPromptCopied(false), 1500);
+  };
 
   const flash = (key: string) => {
     setCopied(key);
@@ -248,6 +287,115 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                 </div>
               );
             })}
+
+            {/* AI Color Story */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">AI</span>
+                <div className="flex-1 h-px bg-[var(--border)]" />
+              </div>
+
+              <AnimatePresence mode="wait">
+                {!story && !storyLoading && (
+                  <motion.button
+                    key="generate-btn"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={generateStory}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-md bg-gradient-to-br from-violet-100 to-rose-100 dark:from-violet-950/40 dark:to-rose-950/40 flex items-center justify-center flex-shrink-0 group-hover:from-violet-200 group-hover:to-rose-200 dark:group-hover:from-violet-900/50 dark:group-hover:to-rose-900/50 transition-all">
+                      <Sparkles size={15} className="text-violet-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">
+                        {storyError ? "Try again" : "Generate Color Story"}
+                      </div>
+                      <div className="text-xs text-[var(--muted)] truncate">
+                        {storyError
+                          ? "Something went wrong — click to retry"
+                          : "Vibe · product ideas · AI art prompt"}
+                      </div>
+                    </div>
+                    {storyError && <RefreshCw size={13} className="text-[var(--muted)] shrink-0" />}
+                  </motion.button>
+                )}
+
+                {storyLoading && (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2.5 px-3 py-3"
+                  >
+                    <Loader2 size={14} className="animate-spin text-violet-400 shrink-0" />
+                    <span className="text-sm text-[var(--muted)]">Reading the palette&hellip;</span>
+                  </motion.div>
+                )}
+
+                {story && !storyLoading && (
+                  <motion.div
+                    key="story-result"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden bg-[var(--surface-2)]"
+                  >
+                    {/* Vibe */}
+                    <div className="px-3 pt-3 pb-2">
+                      <p className="text-xs leading-relaxed text-[var(--foreground)]">{story.vibe}</p>
+                    </div>
+
+                    {/* Product suggestions */}
+                    <div className="px-3 pb-2.5 flex flex-wrap gap-1.5">
+                      {story.products.map((product) => (
+                        <span
+                          key={product}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]"
+                        >
+                          <ShoppingBag size={9} className="shrink-0" />
+                          {product}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* AI prompt — copyable */}
+                    <div className="border-t border-[var(--border)] px-3 py-2.5 flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-[var(--muted)] mb-0.5 uppercase tracking-wider font-semibold">AI Prompt</p>
+                        <p className="text-xs font-mono text-[var(--foreground)] leading-snug select-all">{story.prompt}</p>
+                      </div>
+                      <button
+                        onClick={copyPrompt}
+                        className={`shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md border transition-all mt-px ${
+                          promptCopied
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                            : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]"
+                        }`}
+                        title="Copy prompt to clipboard"
+                      >
+                        {promptCopied ? <Check size={11} /> : <Copy size={11} />}
+                        {promptCopied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+
+                    {/* Regenerate */}
+                    <div className="border-t border-[var(--border)] px-3 py-1.5 flex justify-end">
+                      <button
+                        onClick={() => { setStory(null); generateStory(); }}
+                        className="flex items-center gap-1 text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                      >
+                        <RefreshCw size={9} />
+                        Regenerate
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </motion.div>
       </motion.div>
