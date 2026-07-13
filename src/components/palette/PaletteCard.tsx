@@ -1225,7 +1225,41 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   }
                 </button>
               </div>
-            ) : (printRisk.vivid + printRisk.moderate > 0) ? (
+            ) : (printRisk.vivid > 0 && printRisk.moderate > 0) ? (
+              /* Mixed: vivid + caution — split pill: left opens overlay, right quick-mutes caution */
+              <div className="flex items-center rounded overflow-hidden text-[10px] font-medium tabular-nums bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                <button
+                  onClick={() => {
+                    setPrintCheckOpen((v) => {
+                      if (!v) {
+                        setTagging(false);
+                        setNotesOpen(false);
+                        setVariationsOpen(false);
+                        setCoverUrlOpen(false);
+                      }
+                      return !v;
+                    });
+                  }}
+                  className="flex items-center gap-1 px-1.5 py-0.5 hover:bg-rose-200/60 dark:hover:bg-rose-800/30 transition-colors"
+                  title={`${printRisk.vivid} vivid swatch${printRisk.vivid !== 1 ? "es" : ""} + ${printRisk.moderate} caution — click to review`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-rose-500" />
+                  {printRisk.vivid}v · {printRisk.moderate}c
+                </button>
+                <div className="self-stretch w-px bg-rose-200 dark:bg-rose-700/50 shrink-0" />
+                <button
+                  onClick={(e) => { e.stopPropagation(); muteAllCaution(); }}
+                  title="One-click: clamp all caution swatches to C=0.12 — vivid swatches still need review"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 hover:bg-orange-100 hover:text-orange-700 dark:hover:bg-orange-900/30 dark:hover:text-orange-400 transition-colors font-semibold"
+                >
+                  {cautionMutedAll
+                    ? <Check size={8} className="text-emerald-600 dark:text-emerald-400" />
+                    : <span className="leading-none">→ caution</span>
+                  }
+                </button>
+              </div>
+            ) : (printRisk.vivid > 0) ? (
+              /* Vivid only: single rose button */
               <button
                 onClick={() => {
                   setPrintCheckOpen((v) => {
@@ -1241,7 +1275,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 title="Click to see print risk details"
               >
                 <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-rose-500" />
-                {printRisk.vivid + printRisk.moderate} print risk
+                {printRisk.vivid} print risk
               </button>
             ) : palette.colors.length > 0 && (
               <button
@@ -1984,10 +2018,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       <AnimatePresence>
         {printCheckOpen && (() => {
           const allSafe = printRisk.vivid === 0 && printRisk.moderate === 0;
-          const vividOnly = printRisk.vivid > 0;
+          const isMixed = printRisk.vivid > 0 && printRisk.moderate > 0;
           const trafficLight = allSafe
             ? { label: "All print-safe", dotClass: "bg-emerald-500", bgClass: "bg-emerald-50 dark:bg-emerald-950/30", textClass: "text-emerald-700 dark:text-emerald-400" }
-            : vividOnly
+            : isMixed
+            ? { label: `${printRisk.vivid}v · ${printRisk.moderate}c risk`, dotClass: "bg-rose-500", bgClass: "bg-rose-50 dark:bg-rose-950/30", textClass: "text-rose-700 dark:text-rose-400" }
+            : printRisk.vivid > 0
             ? { label: "High print risk", dotClass: "bg-rose-500", bgClass: "bg-rose-50 dark:bg-rose-950/30", textClass: "text-rose-700 dark:text-rose-400" }
             : { label: "Some caution", dotClass: "bg-orange-400", bgClass: "bg-orange-50 dark:bg-orange-950/30", textClass: "text-orange-700 dark:text-orange-400" };
 
