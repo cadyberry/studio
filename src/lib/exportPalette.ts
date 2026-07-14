@@ -623,3 +623,46 @@ export function exportAsDarkPortraitMoodBoard(palette: Palette): void {
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
+
+function rgbToHsb(r: number, g: number, b: number): { h: number; s: number; b: number } {
+  const nr = r / 255, ng = g / 255, nb = b / 255;
+  const max = Math.max(nr, ng, nb);
+  const min = Math.min(nr, ng, nb);
+  const delta = max - min;
+  let h = 0;
+  if (delta > 0) {
+    if (max === nr) h = ((ng - nb) / delta) % 6;
+    else if (max === ng) h = (nb - nr) / delta + 2;
+    else h = (nr - ng) / delta + 4;
+    h /= 6;
+    if (h < 0) h += 1;
+  }
+  return { h, s: max > 0 ? delta / max : 0, b: max };
+}
+
+// Procreate .swatches — ZIP archive containing Swatches.json with HSB values.
+// Padded to exactly 30 slots (Procreate's fixed palette size) with null.
+export async function exportAsProcreateSwatches(palette: Palette): Promise<void> {
+  const { default: JSZip } = await import("jszip");
+
+  const MAX_SWATCHES = 30;
+  const swatches: (object | null)[] = palette.colors.slice(0, MAX_SWATCHES).map((color) => {
+    const rgb = hexToRgb(color.hex);
+    if (!rgb) return null;
+    const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+    return { hue: hsb.h, saturation: hsb.s, brightness: hsb.b, alpha: 1.0, colorSpace: 0 };
+  });
+  while (swatches.length < MAX_SWATCHES) swatches.push(null);
+
+  const json = JSON.stringify({ name: palette.name, swatches });
+  const zip = new JSZip();
+  zip.file("Swatches.json", json);
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.swatches`;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}

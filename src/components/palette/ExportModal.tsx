@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Sparkles, Loader2, Check, RefreshCw, ShoppingBag } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Sparkles, Loader2, Check, RefreshCw, ShoppingBag } from "lucide-react";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -110,6 +110,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "Portrait format on near-black — for dark palettes shared as Stories",
       icon: Smartphone,
       onClick: () => { exportAsDarkPortraitMoodBoard(palette); },
+    },
+    {
+      key: "procreate",
+      label: "Download Procreate Swatches",
+      desc: "iPad-ready .swatches — import directly into Procreate",
+      icon: Tablet,
+      onClick: () => { void exportAsProcreateSwatches(palette); },
     },
     {
       key: "csv",
