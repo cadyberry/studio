@@ -823,12 +823,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     </button>
                   )}
                   {hasNote && (
-                    <div
-                      className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full pointer-events-none group-hover/swatch:opacity-0 transition-opacity"
-                      style={{
-                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.75)",
-                      }}
-                    />
+                    <>
+                      <div
+                        className="absolute inset-x-1 top-7 flex justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                      >
+                        <span
+                          className="text-[7.5px] leading-snug font-medium text-center line-clamp-3 px-1 py-0.5 rounded-[3px] w-full"
+                          style={{
+                            backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.52)" : "rgba(255,255,255,0.72)",
+                            color: getContrastColor(color.hex),
+                          }}
+                        >
+                          {color.note}
+                        </span>
+                      </div>
+                      <div
+                        className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full pointer-events-none group-hover/swatch:opacity-0 transition-opacity"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.75)",
+                        }}
+                      />
+                    </>
                   )}
                 </div>
               );
@@ -958,12 +973,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     <Pencil size={9} />
                   </button>
                   {hasNote && (
-                    <div
-                      className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full pointer-events-none group-hover/swatch:opacity-0 transition-opacity"
-                      style={{
-                        backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.75)",
-                      }}
-                    />
+                    <>
+                      <div
+                        className="absolute inset-x-1 top-7 flex justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                      >
+                        <span
+                          className="text-[7.5px] leading-snug font-medium text-center line-clamp-3 px-1 py-0.5 rounded-[3px] w-full"
+                          style={{
+                            backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.52)" : "rgba(255,255,255,0.72)",
+                            color: getContrastColor(color.hex),
+                          }}
+                        >
+                          {color.note}
+                        </span>
+                      </div>
+                      <div
+                        className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full pointer-events-none group-hover/swatch:opacity-0 transition-opacity"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.75)",
+                        }}
+                      />
+                    </>
                   )}
                 </Reorder.Item>
               );
