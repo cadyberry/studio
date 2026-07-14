@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-07-14 — Session 145: Swatch Note Quick-View Chip
+
+### What was done
+- **Swatch note quick-view chip** — hovering any swatch that has a `.note` now reveals the note text directly on the swatch, without needing to open the SwatchEditor:
+  - A frosted-glass chip (`inset-x-1 top-7`) fades in (`opacity-0 → opacity-100`) on `group-hover/swatch`, showing the note text at 7.5px with `line-clamp-3` (up to 3 lines, gracefully truncated)
+  - Background adapts to the swatch color via `getContrastColor`: dark semi-transparent (`rgba(0,0,0,0.52)`) on light swatches, light semi-transparent (`rgba(255,255,255,0.72)`) on dark swatches — same pattern as the name label
+  - The existing note-dot indicator (bottom-right) remains at rest, hides on hover — visually replaced by the chip during hover
+  - The hex code still appears at the bottom on hover, below the chip — clear information hierarchy: note → hex
+  - The chip sits at `top-7` (28px) which clears the shade/edit action buttons at `top-1` (4px + 20px height = 24px), so all hover elements are visible simultaneously without overlap
+  - Applied identically to both the frozen (static) and unfrozen (drag-to-reorder) swatch block variants
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Chip inside the swatch bounds (not a portal tooltip)** — the card has `overflow-hidden` which clips any absolutely-positioned elements that extend outside; using a chip within the swatch area avoids the need for a portal and keeps the implementation minimal
+- **`line-clamp-3`** — enough for most short notes; long notes are meaningfully previewed without overwhelming the swatch. Creators who need the full note can still open the SwatchEditor
+- **dot stays** — the dot remains visible at rest as the "has note" signal before hover; removing it would leave no indication that a note exists on non-hovered swatches
+
+### What's next (Session 146)
+- **Trend Library: mood tag filter** — filter trend palettes by mood keyword (e.g., "moody", "fresh") in addition to the existing season tabs
+- **Color Browser: color count in band headers** — show `(N)` count inside each hue-band section header so the scale of each band is legible at a glance
+- **Palette card: Color Story ✨ button** — trigger AI Color Story from the card without opening Export modal
+
+---
+
 ## 2026-07-13 — Session 144: Mixed Print-Risk Badge Split Pill
 
 ### What was done
