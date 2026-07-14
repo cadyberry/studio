@@ -3890,3 +3890,25 @@
 - **Color Story for "Fork to Library" flow** — after generating a story, offer a "Tag these ideas" shortcut to save the product suggestions as palette tags
 - **Export as Procreate .swatches** — generate a Procreate-compatible swatch file (HSB JSON format) for iPad creators
 - **Palette card: hover to preview Color Story** — a small ✨ button on the card that triggers the AI story without opening the Export modal
+
+---
+
+## 2026-07-14 — Session 141: Procreate .swatches Export
+
+### What was done
+- **Procreate .swatches export** — new "Download Procreate Swatches" row in the Export modal. Generates a ZIP archive containing `Swatches.json` in Procreate's native format: each color as an HSB object (hue, saturation, brightness, alpha, colorSpace — all 0.0–1.0), padded with `null` entries to Procreate's fixed 30-slot palette size. Creators tap the file on iPad and Procreate imports it immediately — no manual hex entry, no conversion.
+- `rgbToHsb` helper added to `exportPalette.ts` — converts RGB (0–255) to HSB (0.0–1.0) using max/delta arithmetic
+- `exportAsProcreateSwatches` async function uses JSZip (already a dependency via batch export) to build the ZIP in-browser and triggers a download with `.swatches` extension
+- "Procreate Swatches" entry added to the Download section of `ExportModal.tsx`, using the `Tablet` icon from Lucide
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing
+
+### Key decisions
+- **ZIP, not raw JSON** — Procreate requires the `.swatches` format to be a ZIP archive containing `Swatches.json`. A bare renamed JSON file is not importable.
+- **30-slot padding** — Procreate's palettes are always 30 colors; padding with `null` rather than omitting slots ensures the file structure matches Procreate's internal expectations.
+- **JSZip reuse** — no new dependency; JSZip is already dynamically imported by `batchExportZip`. Same pattern used here.
+- **`void` prefix on async onClick** — consistent with the TypeScript pattern used elsewhere; avoids unhandled Promise warnings without needing try/catch in the UI layer.
+
+### What's next (Session 142)
+- **Color Story → palette tags flow** — after generating an AI Color Story in the Export modal, offer a one-click "Tag these ideas" shortcut to save the product suggestions (e.g. "botanical wall art", "beach accessories") as palette tags
+- **Palette card: hover ✨ to preview Color Story** — trigger the AI color story from a small sparkle button on the card, without opening Export modal
+- **Export → Adobe Swatch Exchange (.ase)** — another pro creator export format; `.ase` is a binary format used by Illustrator, InDesign, and Photoshop
