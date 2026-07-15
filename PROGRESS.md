@@ -3936,3 +3936,24 @@
 - **Color Story → palette tags flow** — after generating an AI Color Story in the Export modal, offer a one-click "Tag these ideas" shortcut to save the product suggestions (e.g. "botanical wall art", "beach accessories") as palette tags
 - **Palette card: hover ✨ to preview Color Story** — trigger the AI color story from a small sparkle button on the card, without opening Export modal
 - **Export → Adobe Swatch Exchange (.ase)** — another pro creator export format; `.ase` is a binary format used by Illustrator, InDesign, and Photoshop
+
+---
+
+## 2026-07-15 — Session 142: Color Story → Palette Tags Flow
+
+### What was done
+- **"Tag these ideas" button in the AI Color Story panel** — after generating a Color Story in the Export modal, product suggestion pills now have a companion "Tag these ideas" button. Clicking it merges the AI-suggested product categories (e.g. "botanical wall art", "beach accessories", "cozy home decor") directly into the palette's tags, deduplicating against any tags already present.
+- **Live pill checkmarks** — each product suggestion pill shows a green checkmark when that suggestion is already a tag on the palette. Uses `usePaletteStore` directly in ExportModal so pill state reflects the live store (updates instantly after tagging, even before the modal closes).
+- **Disabled state when all tagged** — once all suggestions are already tags, the button goes to 40% opacity with a `cursor-not-allowed` and a tooltip explaining why. No misleading active state.
+- **Animated "N new tags added" confirmation** — after clicking, the button fades out and a "✓ N new tags added to palette" message fades in via AnimatePresence for 2s. If all products were already tagged, shows "✓ Already tagged" instead.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **`usePaletteStore` imported directly into ExportModal** — rather than passing an `onTagProducts` callback as a prop, reading live tags from the store allows the pill checkmarks to update immediately without any prop threading or parent re-render
+- **Deduplication is case-insensitive** — `p.toLowerCase()` vs `existingLower` set prevents "Botanical Wall Art" and "botanical wall art" from appearing as two separate tags
+- **IIFE inside JSX for `existingLower` and `allTagged`** — computed per-render inside the story block with `{(() => { ... })()}`, keeping the logic co-located with the JSX that needs it rather than polluting the component's top-level scope with variables that only apply when `story` is truthy
+
+### What's next (Session 143)
+- **Palette card: ✨ hover button to preview Color Story** — small sparkle button on the card triggers the AI color story without opening the Export modal
+- **Export → Adobe Swatch Exchange (.ase)** — binary format used by Illustrator/InDesign/Photoshop; another pro creator export
+- **Print check: "Caution → Safe" mute** — lighter C=0.12 clamp for Caution swatches
