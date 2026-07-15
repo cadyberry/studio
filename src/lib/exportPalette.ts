@@ -640,6 +640,83 @@ function rgbToHsb(r: number, g: number, b: number): { h: number; s: number; b: n
   return { h, s: max > 0 ? delta / max : 0, b: max };
 }
 
+// Adobe Swatch Exchange (.ase) — binary format understood by Illustrator, Photoshop & InDesign.
+// Structure: ASEF header → group-start block (palette name) → N color blocks → group-end block.
+// Each color block stores the swatch name (UTF-16 BE, null-terminated) + linear-light RGB floats.
+export function exportAsAse(palette: Palette): void {
+  function utf16Units(str: string): number[] {
+    const units: number[] = [];
+    for (let i = 0; i < str.length; i++) units.push(str.charCodeAt(i));
+    units.push(0);
+    return units;
+  }
+
+  const groupUnits = utf16Units(palette.name);
+  const entries = palette.colors.map((c) => {
+    const nameUnits = utf16Units(c.name ?? c.hex.toUpperCase());
+    const rgb = hexToRgb(c.hex);
+    return { nameUnits, r: rgb ? rgb.r / 255 : 0, g: rgb ? rgb.g / 255 : 0, b: rgb ? rgb.b / 255 : 0 };
+  });
+
+  // Per-block body sizes
+  const groupBodyLen = 2 + groupUnits.length * 2;
+  // color body: 2 (name_len) + nameUnits*2 (UTF-16) + 4 (model) + 12 (3 RGB floats) + 2 (color type)
+  const colorBodyLen = (e: { nameUnits: number[] }) => 2 + e.nameUnits.length * 2 + 4 + 12 + 2;
+
+  // Header 12 + group_start (6+body) + colors (6+body each) + group_end (6)
+  const totalSize =
+    12 +
+    (6 + groupBodyLen) +
+    entries.reduce((s, e) => s + 6 + colorBodyLen(e), 0) +
+    6;
+
+  const buf = new ArrayBuffer(totalSize);
+  const v = new DataView(buf);
+  let o = 0;
+
+  // "ASEF" magic
+  v.setUint8(o++, 0x41); v.setUint8(o++, 0x53); v.setUint8(o++, 0x45); v.setUint8(o++, 0x46);
+  // Version 1.0
+  v.setUint16(o, 1, false); o += 2;
+  v.setUint16(o, 0, false); o += 2;
+  // Block count: group-start + N colors + group-end
+  v.setUint32(o, 2 + entries.length, false); o += 4;
+
+  // Group Start (0xC001)
+  v.setUint16(o, 0xC001, false); o += 2;
+  v.setUint32(o, groupBodyLen, false); o += 4;
+  v.setUint16(o, groupUnits.length, false); o += 2;
+  for (const u of groupUnits) { v.setUint16(o, u, false); o += 2; }
+
+  // Color entries (0x0001)
+  for (const e of entries) {
+    v.setUint16(o, 0x0001, false); o += 2;
+    v.setUint32(o, colorBodyLen(e), false); o += 4;
+    v.setUint16(o, e.nameUnits.length, false); o += 2;
+    for (const u of e.nameUnits) { v.setUint16(o, u, false); o += 2; }
+    // Color model "RGB "
+    v.setUint8(o++, 0x52); v.setUint8(o++, 0x47); v.setUint8(o++, 0x42); v.setUint8(o++, 0x20);
+    // RGB float32 BE (0.0 – 1.0)
+    v.setFloat32(o, e.r, false); o += 4;
+    v.setFloat32(o, e.g, false); o += 4;
+    v.setFloat32(o, e.b, false); o += 4;
+    // Color type: 2 = normal
+    v.setUint16(o, 2, false); o += 2;
+  }
+
+  // Group End (0xC002), body length 0
+  v.setUint16(o, 0xC002, false); o += 2;
+  v.setUint32(o, 0, false); o += 4;
+
+  const blob = new Blob([buf], { type: "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.ase`;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 // Procreate .swatches — ZIP archive containing Swatches.json with HSB values.
 // Padded to exactly 30 slots (Procreate's fixed palette size) with null.
 export async function exportAsProcreateSwatches(palette: Palette): Promise<void> {

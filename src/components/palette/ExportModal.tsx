@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag } from "lucide-react";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -135,6 +135,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "iPad-ready .swatches — import directly into Procreate",
       icon: Tablet,
       onClick: () => { void exportAsProcreateSwatches(palette); },
+    },
+    {
+      key: "ase",
+      label: "Download Adobe Swatches (.ase)",
+      desc: "Imports into Illustrator, Photoshop & InDesign — swatch names included",
+      icon: Layers,
+      onClick: () => { exportAsAse(palette); },
     },
     {
       key: "csv",
