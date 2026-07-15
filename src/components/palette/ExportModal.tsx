@@ -2,11 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Sparkles, Loader2, Check, RefreshCw, ShoppingBag } from "lucide-react";
+import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag } from "lucide-react";
 import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
+import { usePaletteStore } from "@/store/paletteStore";
 
 interface ColorStory {
   vibe: string;
@@ -26,6 +27,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [story, setStory] = useState<ColorStory | null>(null);
   const [storyError, setStoryError] = useState(false);
   const [promptCopied, setPromptCopied] = useState(false);
+  const [tagged, setTagged] = useState(false);
+  const [taggedNewCount, setTaggedNewCount] = useState(0);
+
+  const updatePalette = usePaletteStore((s) => s.updatePalette);
+  const liveTags = usePaletteStore(
+    (s) => s.palettes.find((p) => p.id === (palette?.id ?? ""))?.tags ?? palette?.tags ?? []
+  );
 
   const printSims = useMemo(
     () => (palette?.colors ?? []).map((c) => simulateCmykPrint(c.hex)),
@@ -64,6 +72,16 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
     navigator.clipboard.writeText(story.prompt);
     setPromptCopied(true);
     setTimeout(() => setPromptCopied(false), 1500);
+  };
+
+  const tagProducts = () => {
+    if (!story || !palette) return;
+    const existingLower = new Set(liveTags.map((t) => t.toLowerCase()));
+    const newTags = story.products.filter((p) => !existingLower.has(p.toLowerCase()));
+    updatePalette(palette.id, { tags: [...liveTags, ...newTags] });
+    setTaggedNewCount(newTags.length);
+    setTagged(true);
+    setTimeout(() => setTagged(false), 2000);
   };
 
   const flash = (key: string) => {
@@ -357,16 +375,72 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                     </div>
 
                     {/* Product suggestions */}
-                    <div className="px-3 pb-2.5 flex flex-wrap gap-1.5">
-                      {story.products.map((product) => (
-                        <span
-                          key={product}
-                          className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]"
-                        >
-                          <ShoppingBag size={9} className="shrink-0" />
-                          {product}
-                        </span>
-                      ))}
+                    <div className="px-3 pb-2.5">
+                      {(() => {
+                        const existingLower = new Set(liveTags.map((t) => t.toLowerCase()));
+                        const allTagged = story.products.every((p) => existingLower.has(p.toLowerCase()));
+                        return (
+                          <>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {story.products.map((product) => {
+                                const isTagged = existingLower.has(product.toLowerCase());
+                                return (
+                                  <span
+                                    key={product}
+                                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                                      isTagged
+                                        ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                                        : "bg-[var(--surface)] border-[var(--border)] text-[var(--muted)]"
+                                    }`}
+                                  >
+                                    {isTagged ? (
+                                      <Check size={9} className="shrink-0" />
+                                    ) : (
+                                      <ShoppingBag size={9} className="shrink-0" />
+                                    )}
+                                    {product}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                            <AnimatePresence mode="wait">
+                              {tagged ? (
+                                <motion.p
+                                  key="tagged-confirm"
+                                  initial={{ opacity: 0, y: 2 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium"
+                                >
+                                  <Check size={9} className="shrink-0" />
+                                  {taggedNewCount > 0
+                                    ? `${taggedNewCount} new tag${taggedNewCount !== 1 ? "s" : ""} added to palette`
+                                    : "Already tagged"}
+                                </motion.p>
+                              ) : (
+                                <motion.button
+                                  key="tag-btn"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  onClick={tagProducts}
+                                  disabled={allTagged}
+                                  className={`flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md border transition-all ${
+                                    allTagged
+                                      ? "opacity-40 cursor-not-allowed border-[var(--border)] text-[var(--muted)]"
+                                      : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] hover:border-[var(--foreground)]/20"
+                                  }`}
+                                  title={allTagged ? "All suggestions are already tagged on this palette" : "Save product suggestions as palette tags"}
+                                >
+                                  <Tag size={9} className="shrink-0" />
+                                  Tag these ideas
+                                </motion.button>
+                              )}
+                            </AnimatePresence>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* AI prompt — copyable */}
