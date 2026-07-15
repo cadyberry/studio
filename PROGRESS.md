@@ -3957,3 +3957,28 @@
 - **Palette card: ✨ hover button to preview Color Story** — small sparkle button on the card triggers the AI color story without opening the Export modal
 - **Export → Adobe Swatch Exchange (.ase)** — binary format used by Illustrator/InDesign/Photoshop; another pro creator export
 - **Print check: "Caution → Safe" mute** — lighter C=0.12 clamp for Caution swatches
+
+---
+
+## 2026-07-15 — Session 143: Adobe Swatch Exchange (.ase) Export
+
+### What was done
+- **Adobe Swatch Exchange (.ase) export** — new "Download Adobe Swatches (.ase)" row in the Export modal. Clicking it generates an `.ase` file that imports directly into Illustrator, Photoshop, and InDesign — swatch names preserved, no manual hex entry needed.
+- `exportAsAse()` in `exportPalette.ts` writes a spec-compliant ASE 1.0 binary file using `ArrayBuffer`/`DataView`:
+  - File header: `ASEF` magic + version 1.0 + block count
+  - Group-start block (type `0xC001`) named after the palette — colors land in a named group in Adobe apps' Swatches panel
+  - One color block (type `0x0001`) per swatch: UTF-16 BE null-terminated name, `RGB ` color model identifier, three float32 BE values (0.0–1.0), color type = normal
+  - Group-end block (type `0xC002`)
+- `Layers` icon from Lucide added to the import list; signals the vector/design-tool context in the modal's download list
+- Export is synchronous and zero-dependency — no JSZip, no canvas — just a single DataView write over a pre-computed ArrayBuffer
+
+### Key decisions
+- **Group block wrapping** — Adobe apps display ungrouped `.ase` files as a flat list in the Swatches panel; wrapping the colors in a group named after the palette keeps the Swatches panel organized, especially when creators load multiple palettes
+- **Color type = normal (2)** — not spot (1) or global (0). Spot colors have print-production implications in Illustrator; normal lets creators use the colors freely without accidental spot-color overprint behavior
+- **RGB model, not CMYK** — the palette tool stores hex/RGB as its source of truth; CMYK values are a derived approximation that varies by ICC profile. Sending Adobe apps the linear-light RGB lets them apply their own color management, giving more accurate results than baking in our conversion
+- **`charCodeAt` not `codePointAt`** — for BMP characters (the full range of typical palette names), `charCodeAt` produces the correct UTF-16 code unit. Emoji/astral plane characters would need surrogate-pair handling, but that's not a realistic palette name case
+
+### What's next (Session 144)
+- **Palette card: ✨ hover button to preview Color Story** — small sparkle button on the card that triggers the AI color story without opening the Export modal
+- **Print check: "Caution → Safe" single-click mute** — lighter C=0.12 clamp for Caution swatches (currently only Vivid/C>0.25 gets a Mute button)
+- **Color Story: palette card quick-view panel** — same vibe + products + prompt in a slim card overlay, no modal needed
