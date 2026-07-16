@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check, Layers } from "lucide-react";
+import { Copy, Check, Layers, Search, X } from "lucide-react";
 import { getContrastColor } from "@/lib/utils";
 
 interface ColorEntry {
@@ -89,6 +89,8 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   const [hoveredHex, setHoveredHex] = useState<string | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [activeBand, setActiveBand] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Apply collection filter: keep only colors where at least one source palette is in the selected collection
@@ -99,11 +101,35 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     );
   }, [colorIndex, collectionFilter, collections, paletteLookup]);
 
+  // Apply text search: hex prefix match OR hue-band name match
+  const searchedColorIndex = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return visibleColorIndex;
+    const isHexSearch = /^#?[0-9a-f]{1,6}$/.test(q);
+    if (isHexSearch) {
+      const hexQ = q.startsWith("#") ? q.slice(1) : q;
+      return visibleColorIndex.filter((c) => c.hex.slice(1).toLowerCase().startsWith(hexQ));
+    }
+    // Name/keyword search: band label contains the query
+    return visibleColorIndex.filter((c) => {
+      const range = (() => {
+        const hex = c.hex.replace("#", "");
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        return Math.max(r, g, b) - Math.min(r, g, b);
+      })();
+      const isNeutral = range < 28;
+      const sectionLabel = isNeutral ? "neutrals" : getBand(c.hue).toLowerCase();
+      return sectionLabel.includes(q);
+    });
+  }, [visibleColorIndex, searchQuery]);
+
   // Separate neutrals (low chroma) from chromatic colors
   const { neutrals, chromatics } = useMemo(() => {
     const neutrals: ColorEntry[] = [];
     const chromatics: ColorEntry[] = [];
-    for (const c of visibleColorIndex) {
+    for (const c of searchedColorIndex) {
       const hex = c.hex.replace("#", "");
       const r = parseInt(hex.slice(0, 2), 16);
       const g = parseInt(hex.slice(2, 4), 16);
@@ -381,48 +407,90 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
       <div className="flex-1 min-w-0 space-y-6">
         <div className="flex items-center gap-3 flex-wrap">
           <p className="text-xs text-[var(--muted)]">
-            {visibleColorIndex.length}{collectionFilter !== "all" && colorIndex.length !== visibleColorIndex.length ? ` of ${colorIndex.length}` : ""} unique color{visibleColorIndex.length !== 1 ? "s" : ""} — click any swatch to find palettes that contain it
+            {searchQuery.trim()
+              ? <>{searchedColorIndex.length} <span className="text-[var(--foreground)]/70">match{searchedColorIndex.length !== 1 ? "es" : ""}</span> of {visibleColorIndex.length}</>
+              : <>{visibleColorIndex.length}{collectionFilter !== "all" && colorIndex.length !== visibleColorIndex.length ? ` of ${colorIndex.length}` : ""} unique color{visibleColorIndex.length !== 1 ? "s" : ""}</>
+            }{!searchQuery.trim() && <span className="hidden sm:inline"> — click any swatch to find palettes that contain it</span>}
           </p>
-          {collections && collections.length > 0 && onCollectionFilterChange && (
-            <div className="flex items-center gap-1.5 ml-auto">
-              <Layers size={11} className="text-[var(--muted)] flex-shrink-0" />
-              <select
-                value={collectionFilter}
-                onChange={(e) => onCollectionFilterChange(e.target.value)}
-                className="text-[11px] text-[var(--foreground)] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-0.5 leading-tight cursor-pointer hover:border-[var(--border-hover,var(--border))] transition-colors appearance-none pr-5"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
-                title="Filter colors by collection"
-              >
-                <option value="all">All collections</option>
-                {collections.map((col) => (
-                  <option key={col.id} value={col.id}>{col.name}</option>
-                ))}
-              </select>
-              {activeCollectionName && (
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            {/* Search bar */}
+            <div className="relative flex items-center">
+              <Search size={10} className="absolute left-2 text-[var(--muted)] pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setSearchQuery(""); searchInputRef.current?.blur(); } }}
+                placeholder="hex or color name…"
+                className="text-[11px] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-6 pr-6 py-0.5 leading-tight outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]/50 w-40"
+                spellCheck={false}
+              />
+              {searchQuery && (
                 <button
-                  onClick={() => onCollectionFilterChange("all")}
-                  className="text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors leading-none"
-                  title="Clear collection filter"
+                  onClick={() => { setSearchQuery(""); searchInputRef.current?.focus(); }}
+                  className="absolute right-1.5 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                  title="Clear search"
                 >
-                  ×
+                  <X size={10} />
                 </button>
               )}
             </div>
-          )}
+            {collections && collections.length > 0 && onCollectionFilterChange && (
+              <div className="flex items-center gap-1.5">
+                <Layers size={11} className="text-[var(--muted)] flex-shrink-0" />
+                <select
+                  value={collectionFilter}
+                  onChange={(e) => onCollectionFilterChange(e.target.value)}
+                  className="text-[11px] text-[var(--foreground)] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] px-2 py-0.5 leading-tight cursor-pointer hover:border-[var(--border-hover,var(--border))] transition-colors appearance-none pr-5"
+                  style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
+                  title="Filter colors by collection"
+                >
+                  <option value="all">All collections</option>
+                  {collections.map((col) => (
+                    <option key={col.id} value={col.id}>{col.name}</option>
+                  ))}
+                </select>
+                {activeCollectionName && (
+                  <button
+                    onClick={() => onCollectionFilterChange("all")}
+                    className="text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors leading-none"
+                    title="Clear collection filter"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {visibleColorIndex.length === 0 && collectionFilter !== "all" ? (
+        {searchedColorIndex.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm text-[var(--muted)]">
-              No colors in &ldquo;{activeCollectionName}&rdquo;
-            </p>
-            {onCollectionFilterChange && (
-              <button
-                onClick={() => onCollectionFilterChange("all")}
-                className="mt-2 text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--foreground)] transition-colors"
-              >
-                Show all collections
-              </button>
+            {searchQuery.trim() ? (
+              <>
+                <p className="text-sm text-[var(--muted)]">No colors match &ldquo;{searchQuery.trim()}&rdquo;</p>
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="mt-2 text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--foreground)] transition-colors"
+                >
+                  Clear search
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--muted)]">
+                  No colors in &ldquo;{activeCollectionName}&rdquo;
+                </p>
+                {onCollectionFilterChange && (
+                  <button
+                    onClick={() => onCollectionFilterChange("all")}
+                    className="mt-2 text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--foreground)] transition-colors"
+                  >
+                    Show all collections
+                  </button>
+                )}
+              </>
             )}
           </div>
         ) : (
