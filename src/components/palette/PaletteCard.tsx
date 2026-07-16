@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -181,6 +181,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [coverUrlValue, setCoverUrlValue] = useState(palette.coverUrl ?? "");
   const [coverUrlError, setCoverUrlError] = useState(false);
   const coverUrlInputRef = useRef<HTMLInputElement>(null);
+  const [colorStoryOpen, setColorStoryOpen] = useState(false);
+  const [colorStoryLoading, setColorStoryLoading] = useState(false);
+  const [colorStory, setColorStory] = useState<{ vibe: string; products: string[]; prompt: string } | null>(null);
+  const [colorStoryError, setColorStoryError] = useState(false);
+  const [colorStoryPromptCopied, setColorStoryPromptCopied] = useState(false);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -333,6 +338,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setInlineNotesEditing(false);
     setPrintCheckOpen(false);
     setCoverUrlOpen(false);
+    setColorStoryOpen(false);
     setNotesValue(palette.notes ?? "");
     setNotesOpen(true);
     setTimeout(() => {
@@ -385,6 +391,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setInlineNotesEditing(false);
     setPrintCheckOpen(false);
     setCoverUrlOpen(false);
+    setColorStoryOpen(false);
     setTagging(true);
     setTimeout(() => tagInputRef.current?.focus(), 50);
   };
@@ -653,10 +660,43 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setInlineNotesEditing(false);
     setPrintCheckOpen(false);
     setVariationsOpen(false);
+    setColorStoryOpen(false);
     setCoverUrlValue(palette.coverUrl ?? "");
     setCoverUrlError(false);
     setCoverUrlOpen(true);
     setTimeout(() => { coverUrlInputRef.current?.focus(); coverUrlInputRef.current?.select(); }, 30);
+  };
+
+  const fetchColorStory = async () => {
+    setColorStoryLoading(true);
+    setColorStoryError(false);
+    try {
+      const res = await fetch("/api/color-story", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ colors: palette.colors.map((c) => c.hex), name: palette.name }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json() as { vibe: string; products: string[]; prompt: string };
+      setColorStory(data);
+    } catch {
+      setColorStoryError(true);
+    } finally {
+      setColorStoryLoading(false);
+    }
+  };
+
+  const openColorStory = () => {
+    setTagging(false);
+    setTagInput("");
+    setNaming({ type: "idle" });
+    setNotesOpen(false);
+    setInlineNotesEditing(false);
+    setPrintCheckOpen(false);
+    setCoverUrlOpen(false);
+    setVariationsOpen(false);
+    setColorStoryOpen(true);
+    if (!colorStory && !colorStoryLoading) void fetchColorStory();
   };
 
   const commitCoverUrl = () => {
@@ -1567,6 +1607,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             )}
           </Button>
           <Button
+            variant={colorStoryOpen ? "outline" : "ghost"}
+            size="sm"
+            onClick={colorStoryOpen ? () => setColorStoryOpen(false) : openColorStory}
+            title="Color Story — AI vibe, product ideas & art prompt"
+            className={colorStoryOpen ? "text-violet-500 border-violet-300 dark:border-violet-700" : ""}
+          >
+            {colorStoryLoading ? (
+              <Loader2 size={13} className="animate-spin text-violet-400" />
+            ) : (
+              <Sparkles size={13} />
+            )}
+          </Button>
+          <Button
             variant={swatchNaming === "done" ? "outline" : "ghost"}
             size="sm"
             onClick={handleNameSwatches}
@@ -1640,6 +1693,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   setNotesOpen(false);
                   setVariationsOpen(false);
                   setCoverUrlOpen(false);
+                  setColorStoryOpen(false);
                 }
                 return !v;
               });
@@ -2295,6 +2349,139 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 </button>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Color Story overlay */}
+      <AnimatePresence>
+        {colorStoryOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-0 bottom-0 bg-[var(--surface)]/97 backdrop-blur-sm border-t border-[var(--border)] px-3 py-3"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Sparkles size={11} className="text-violet-400" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">Color Story</span>
+              </div>
+              <button
+                onClick={() => setColorStoryOpen(false)}
+                className="p-0.5 rounded hover:bg-[var(--surface-2)] text-[var(--muted)] transition-colors"
+              >
+                <X size={11} />
+              </button>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {colorStoryLoading && (
+                <motion.div
+                  key="cs-loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-2 py-2"
+                >
+                  <Loader2 size={12} className="animate-spin text-violet-400 shrink-0" />
+                  <span className="text-xs text-[var(--muted)]">Reading the palette&hellip;</span>
+                </motion.div>
+              )}
+
+              {colorStoryError && !colorStoryLoading && (
+                <motion.div
+                  key="cs-error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center justify-between py-1"
+                >
+                  <span className="text-xs text-[var(--muted)]">Something went wrong</span>
+                  <button
+                    onClick={() => void fetchColorStory()}
+                    className="flex items-center gap-1 text-[10px] font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  >
+                    <RefreshCw size={10} />
+                    Try again
+                  </button>
+                </motion.div>
+              )}
+
+              {colorStory && !colorStoryLoading && (
+                <motion.div
+                  key="cs-result"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <p className="text-xs leading-relaxed text-[var(--foreground)] mb-2">{colorStory.vibe}</p>
+
+                  {colorStory.products.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {colorStory.products.map((product) => {
+                        const alreadyTagged = (palette.tags ?? []).map((t) => t.toLowerCase()).includes(product.toLowerCase());
+                        return (
+                          <button
+                            key={product}
+                            onClick={() => {
+                              if (alreadyTagged) return;
+                              const existing = palette.tags ?? [];
+                              updatePalette(palette.id, { tags: [...existing, product.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")] });
+                            }}
+                            title={alreadyTagged ? "Already tagged" : `Add "${product}" as tag`}
+                            className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                              alreadyTagged
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 cursor-default"
+                                : "bg-[var(--surface-2)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
+                            }`}
+                          >
+                            {alreadyTagged ? <Check size={9} className="shrink-0" /> : <Plus size={9} className="shrink-0" />}
+                            {product}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="border-t border-[var(--border)] pt-2">
+                    <p className="text-[9px] text-[var(--muted)] font-semibold uppercase tracking-wider mb-1">AI Prompt</p>
+                    <div className="flex items-start gap-1.5">
+                      <p className="text-[10px] font-mono text-[var(--foreground)] leading-snug flex-1 min-w-0 select-all break-words">{colorStory.prompt}</p>
+                      <button
+                        onClick={() => {
+                          if (!colorStory) return;
+                          navigator.clipboard.writeText(colorStory.prompt);
+                          setColorStoryPromptCopied(true);
+                          setTimeout(() => setColorStoryPromptCopied(false), 1500);
+                        }}
+                        className={`shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md border transition-all mt-px ${
+                          colorStoryPromptCopied
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                            : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]"
+                        }`}
+                        title="Copy AI art prompt"
+                      >
+                        {colorStoryPromptCopied ? <Check size={10} /> : <Copy size={10} />}
+                        {colorStoryPromptCopied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-1.5">
+                    <button
+                      onClick={() => { setColorStory(null); void fetchColorStory(); }}
+                      className="flex items-center gap-1 text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <RefreshCw size={9} />
+                      Regenerate
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
