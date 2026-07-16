@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-07-16 — Session 147: Color Browser Search Bar
+
+### What was done
+- **Color Browser search bar** — a text input in the Color Browser header that filters the entire color grid in real time:
+  - **Hex search mode**: if the query is 1–6 hex characters (optionally prefixed with `#`), filters to colors whose hex code starts with that fragment. Typing `#ff` instantly shows all reddish colors; `3b7` narrows to specific blues.
+  - **Keyword/name search mode**: any other text is matched against hue band names (`reds`, `greens`, `blues`, `neutrals`, etc.). Typing "green" shows both Greens and Yellow-Greens; "cy" shows Cyans.
+  - **Live count**: the header stat switches from "N unique colors" to "N matches of M" while a query is active, giving instant feedback on filter breadth.
+  - **Clear button**: an `X` button appears inside the input when the query is non-empty; pressing Escape also clears and blurs.
+  - **Empty state**: when no colors match, shows "No colors match 'query'" with a "Clear search" link.
+  - Band structure (Reds / Oranges / Blues / etc.) is preserved during search — only bands with matching results are shown. Jump-index pills update in sync.
+- `Search` and `X` imported from `lucide-react`. No new dependencies.
+- Production build: clean Next.js compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Starts-with for hex, not includes** — `#ff6347` and `#ff0000` both start with `ff`, so typing `ff` gives a meaningful "show all reds" filter. An `includes` match would also surface colors like `#1affb0`, which is confusing.
+- **Band label match for keyword** — simple `sectionLabel.includes(query)` over the derived band name is fast, predictable, and matches how creators think ("I want blues"). No fuzzy matching; exact substring is clear.
+- **Keeps band structure during search** — collapsing to a flat grid on search would drop the hue-group context that makes the Color Browser useful. Showing only non-empty bands with counts is the minimal-change approach that still reads cleanly.
+- **Collection filter + search compose** — search applies on top of the active collection filter, so "show me all blues from the Spring Drop collection" is two steps: filter collection, type "blues".
+
+### What's next (Session 148)
+- **Trend Library: mood tag filter** — filter trend palettes by mood keyword (e.g. "moody", "fresh") in addition to season tabs
+- **Color Browser: search also matches palette names** — extend keyword search to include the names of palettes that contain each color
+- **Palette card: collection jump from info row** — the collection badge in the info row navigates to that collection when clicked
+
+---
+
 ## 2026-07-16 — Session 146: Color Story ✨ Inline Card Button
 
 ### What was done
