@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-07-16 — Session 146: Color Story ✨ Inline Card Button
+
+### What was done
+- **Color Story ✨ inline button on palette cards** — a `Sparkles` button in the card action row now triggers the AI Color Story without opening the Export modal:
+  - Clicking the Sparkles button opens an inline overlay (same frosted-glass panel pattern as Tags/Notes/CoverUrl overlays) and immediately starts the `/api/color-story` fetch
+  - **Loading state**: animated `Loader2` spinner inside the button itself while the API call is in flight
+  - **Story result**: vibe paragraph → product-idea chips → mono AI art prompt with a Copy button
+  - **Product chips are interactive**: clicking an untagged chip instantly adds it as a palette tag (slugified lowercase); chips already tagged show a `Check` icon and are non-clickable
+  - **Prompt copy**: one-click Copy button with brief "Copied" feedback; the prompt text is `select-all` so users can triple-click to grab it
+  - **Regenerate**: a small "↻ Regenerate" link re-fetches a fresh story without closing the panel
+  - **Error state**: compact "Something went wrong · Try again" row
+  - **Mutual exclusivity**: `openColorStory` closes all other overlays; all sibling openers (`openNotes`, `openTagging`, `openCoverUrl`, print-check toggle) now also set `colorStoryOpen = false`
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **On-card, not modal** — the Export modal is the right home for batch exports; Color Story is an inspiration tool that belongs one click away on the card, not buried two levels deep
+- **Product chips that write tags** — making the chips tappable (not just decorative) turns the AI output into a direct action: "I like 'puzzle' as an idea → tap → it's tagged." Removes the copy-paste step from ExportModal
+- **Story cached across open/close** — `colorStory` state persists while the card is mounted; re-opening the overlay shows the last result instantly rather than re-fetching. Regenerate is explicit
+
+### What's next (Session 147)
+- **Trend Library: mood tag filter** — filter trend palettes by mood keyword (e.g., "moody", "fresh") in addition to season tabs
+- **Palette card: collection jump from info row** — the collection badge in the info row could navigate to that collection (scroll + highlight) when clicked
+- **Color Browser: search bar** — add a text filter to search by hex or hue keyword within the Color Browser view
+
+---
+
 ## 2026-07-14 — Session 145: Swatch Note Quick-View Chip
 
 ### What was done
