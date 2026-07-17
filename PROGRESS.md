@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-07-17 — Session 149: Trend Library All-Seasons Tab
+
+### What was done
+- **"All Seasons" cross-season tab** in TrendLibrary — a new tab at the far left of the season row lets users search the entire trend catalog at once (all 41 palettes):
+  - **"All" tab** with a `Layers` icon and total palette count badge; sits before the individual season tabs
+  - **Rainbow gradient header** (`from-rose-200 via-violet-200 via-cyan-200 to-amber-200`) signals the multi-season context
+  - **Season badges** on each card in "All" mode — a tiny colored chip (e.g., "Spring" in green, "Winter" in blue) next to the palette name so creators can orient each result; badges are hidden in single-season views
+  - **Mood chips pooled from all seasons** — switching to "All" derives mood keywords from all 41 palettes, so cross-season vibes like "bold" and "moody" surface from the full catalog
+  - **Search placeholder** updates to "Search All Seasons palettes…" when in "All" mode
+  - **Switching season tabs clears** mood selection and text query as before; "All" → individual season also clears
+  - **Count stat**: "N of 41" shown when any filter is active in "All" mode
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **"All" as a UI tab only** — `SeasonTab = Season | "all"` is a local type in `TrendLibrary.tsx`; the data layer (`trendPalettes.ts`, `TREND_PALETTES`) is untouched
+- **Season badges only in "All" mode** — in single-season views, the badge would be redundant; showing them only in "All" reduces noise while still giving crucial context in the view where it matters
+- **`scrollbar-none` on tabs row** — both the tabs row and chips row now hide the scrollbar for a cleaner look (chips row already had it; tabs row gained it)
+
+### What's next (Session 150)
+- **Color Browser: search also matches palette names** — extend keyword search to include the names of palettes that contain each color
+- **Palette card: collection jump from info row** — the collection badge in the info row navigates to that collection when clicked
+- **Trend Library: "All" mood chips with season color accents** — when a mood chip is active in All mode, use the dominant season color for that keyword as a subtle tint
+
+---
+
 ## 2026-07-17 — Session 148: Trend Library Mood Tag Chips
 
 ### What was done
