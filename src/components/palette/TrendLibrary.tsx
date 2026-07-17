@@ -2,10 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check, Search, Clipboard } from "lucide-react";
+import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check, Search, Clipboard, Layers } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { TREND_PALETTES, SEASONS, SEASON_META, type Season } from "@/lib/trendPalettes";
 import { getContrastColor } from "@/lib/utils";
+
+type SeasonTab = Season | "all";
 
 interface TrendLibraryProps {
   onClose: () => void;
@@ -21,14 +23,24 @@ const SEASON_ICONS: Record<Season, React.FC<{ size?: number; className?: string 
   evergreen: Infinity,
 };
 
+const SEASON_BADGE_COLORS: Record<Season, string> = {
+  spring:    "bg-green-100 text-green-700",
+  summer:    "bg-amber-100 text-amber-700",
+  fall:      "bg-orange-100 text-orange-700",
+  winter:    "bg-blue-100 text-blue-700",
+  evergreen: "bg-violet-100 text-violet-700",
+};
+
 function TrendCard({
   palette,
   onFork,
   onUseInExtractor,
+  showSeason,
 }: {
   palette: (typeof TREND_PALETTES)[0];
   onFork: (colors: string[], name: string) => void;
   onUseInExtractor?: (colors: string[], name: string) => void;
+  showSeason?: boolean;
 }) {
   const [forked, setForked] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -76,7 +88,14 @@ function TrendCard({
       {/* Info + actions */}
       <div className="px-3 py-2.5 flex items-center gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{palette.name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold truncate">{palette.name}</p>
+            {showSeason && (
+              <span className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${SEASON_BADGE_COLORS[palette.season]}`}>
+                {SEASON_META[palette.season].label}
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-[var(--muted)] truncate">{palette.mood}</p>
         </div>
         <button
@@ -129,12 +148,17 @@ const SEASON_COUNTS: Record<Season, number> = SEASONS.reduce(
   {} as Record<Season, number>
 );
 
+const ALL_META = {
+  label: "All Seasons",
+  gradient: "from-rose-200 via-violet-200 via-cyan-200 to-amber-200",
+};
+
 export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: TrendLibraryProps) {
-  const [season, setSeason] = useState<Season>("evergreen");
+  const [season, setSeason] = useState<SeasonTab>("evergreen");
   const [query, setQuery] = useState("");
   const [selectedMoods, setSelectedMoods] = useState<Set<string>>(new Set());
 
-  const handleSeasonChange = (s: Season) => {
+  const handleSeasonChange = (s: SeasonTab) => {
     setSeason(s);
     setQuery("");
     setSelectedMoods(new Set());
@@ -148,12 +172,15 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
     });
   };
 
-  const seasonPalettes = TREND_PALETTES.filter((p) => p.season === season);
+  const isAllSeasons = season === "all";
+  const activePalettes = isAllSeasons
+    ? TREND_PALETTES
+    : TREND_PALETTES.filter((p) => p.season === season);
 
-  // Derive unique mood keywords for the current season, sorted by frequency desc then alpha
-  const seasonMoodWords = useMemo(() => {
+  // Derive unique mood keywords from active palette set, sorted by frequency desc then alpha
+  const moodWords = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const p of TREND_PALETTES.filter((x) => x.season === season)) {
+    for (const p of activePalettes) {
       for (const raw of p.mood.split("·")) {
         const w = raw.trim().toLowerCase();
         if (w) counts.set(w, (counts.get(w) ?? 0) + 1);
@@ -162,10 +189,11 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([word]) => word);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [season]);
 
   const q = query.trim().toLowerCase();
-  const filtered = seasonPalettes
+  const filtered = activePalettes
     .filter(
       (p) =>
         selectedMoods.size === 0 ||
@@ -178,8 +206,11 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
 
   const isFiltered = selectedMoods.size > 0 || q.length > 0;
 
-  const meta = SEASON_META[season];
-  const Icon = SEASON_ICONS[season];
+  const headerGradient = isAllSeasons
+    ? ALL_META.gradient
+    : SEASON_META[season as Season].gradient;
+  const headerLabel = isAllSeasons ? ALL_META.label : SEASON_META[season as Season].label;
+  const HeaderIcon = isAllSeasons ? Layers : SEASON_ICONS[season as Season];
 
   return (
     <AnimatePresence>
@@ -200,12 +231,12 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
           onClick={(e) => e.stopPropagation()}
         >
           {/* Season gradient header */}
-          <div className={`h-2 bg-gradient-to-r ${meta.gradient}`} />
+          <div className={`h-2 bg-gradient-to-r ${headerGradient}`} />
 
           {/* Title row */}
           <div className="px-5 pt-4 pb-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <Icon size={16} className="text-[var(--muted)]" />
+              <HeaderIcon size={16} className="text-[var(--muted)]" />
               <h2 className="text-base font-semibold">Trend Library</h2>
               <span className="text-xs text-[var(--muted)]">— seasonal palettes to fork</span>
             </div>
@@ -215,7 +246,23 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
           </div>
 
           {/* Season tabs */}
-          <div className="px-5 pb-3 flex gap-1 shrink-0 overflow-x-auto">
+          <div className="px-5 pb-3 flex gap-1 shrink-0 overflow-x-auto scrollbar-none">
+            {/* "All Seasons" tab */}
+            <button
+              onClick={() => handleSeasonChange("all")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                season === "all"
+                  ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-sm"
+                  : "text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <Layers size={11} />
+              All
+              <span className={`text-[10px] tabular-nums leading-none ${season === "all" ? "opacity-70" : "opacity-50"}`}>
+                {TREND_PALETTES.length}
+              </span>
+            </button>
+
             {SEASONS.map((s) => {
               const TabIcon = SEASON_ICONS[s];
               const isActive = s === season;
@@ -240,7 +287,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
           </div>
 
           {/* Mood tag chips */}
-          {seasonMoodWords.length > 0 && (
+          {moodWords.length > 0 && (
             <div className="px-5 pb-2 shrink-0 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
               {selectedMoods.size > 0 && (
                 <button
@@ -252,7 +299,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                   Clear
                 </button>
               )}
-              {seasonMoodWords.map((word) => {
+              {moodWords.map((word) => {
                 const active = selectedMoods.has(word);
                 return (
                   <button
@@ -279,7 +326,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={`Search ${SEASON_META[season].label} palettes…`}
+                placeholder={`Search ${headerLabel} palettes…`}
                 className="w-full pl-8 pr-8 py-1.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-all"
               />
               {query && (
@@ -328,11 +375,17 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                   className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                 >
                   {filtered.map((p) => (
-                    <TrendCard key={p.id} palette={p} onFork={onFork} onUseInExtractor={onUseInExtractor} />
+                    <TrendCard
+                      key={p.id}
+                      palette={p}
+                      onFork={onFork}
+                      onUseInExtractor={onUseInExtractor}
+                      showSeason={isAllSeasons}
+                    />
                   ))}
                   {isFiltered && (
                     <p className="col-span-full text-[10px] text-[var(--muted)] text-right pt-1 tabular-nums">
-                      {filtered.length} of {seasonPalettes.length}
+                      {filtered.length} of {activePalettes.length}
                     </p>
                   )}
                 </motion.div>
