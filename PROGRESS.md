@@ -2,6 +2,35 @@
 
 ---
 
+## 2026-07-17 — Session 148: Trend Library Mood Tag Chips
+
+### What was done
+- **Mood tag chips** in TrendLibrary — a horizontally scrollable row of clickable pill buttons (one per unique mood keyword in the current season) appears between the season tabs and the text search bar:
+  - Each mood string like "Bold · Vibrant · Playful" is split on `·` to extract individual keywords
+  - Keywords are deduplicated, sorted by frequency desc then alpha, and rendered as pills
+  - Chips are **multi-select** (OR logic): clicking "Moody" shows all palettes whose mood includes "Moody"; adding "Fresh" broadens to both
+  - Selected chips: accent background, shadow; unselected: surface-2 background, muted text
+  - A **Clear** pill appears at the left when any chips are active, allowing one-tap reset
+  - Chip filter **composes with text search** (AND): select "Warm" + type "harvest" → only warm palettes matching "harvest"
+  - Switching season tabs clears all selected chips (and the text query)
+  - **Empty state** updated to say "No palettes match the selected moods" when chips alone produce no results; "Clear filters" resets both chips and query
+  - **Result count** (`N of M`) now appears whenever any filter is active (chips OR text), not just when query is non-empty
+- `useMemo` imported and used to derive mood words per season (stable reference across renders)
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Chips derived from data, not hardcoded** — mood words come from `TREND_PALETTES` for the current season, so any new palettes added to trendPalettes.ts automatically surface in the chips UI without code changes
+- **OR logic across chips** — combining chips broadens the filter ("show me cozy OR moody") which is more discovery-friendly than AND; the text search then narrows from there if needed
+- **Horizontal scroll, no overflow wrap** — keeps the chips row compact and consistent with the season tabs row above it; `scrollbar-none` hides the scrollbar on desktop without sacrificing scroll on mobile
+- **"Clear" pill left-aligned** — the clear action is always visible and reachable without scrolling, even if 15 chips are selected
+
+### What's next (Session 149)
+- **Color Browser: search also matches palette names** — extend keyword search to include the names of palettes that contain each color
+- **Palette card: collection jump from info row** — the collection badge in the info row navigates to that collection when clicked
+- **Trend Library: cross-season search** — an "All seasons" tab that searches palettes across all seasons at once
+
+---
+
 ## 2026-07-16 — Session 147: Color Browser Search Bar
 
 ### What was done
