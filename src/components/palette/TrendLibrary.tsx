@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sprout, Sun, Leaf, Snowflake, Infinity, Check, Search, Clipboard } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -132,21 +132,51 @@ const SEASON_COUNTS: Record<Season, number> = SEASONS.reduce(
 export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: TrendLibraryProps) {
   const [season, setSeason] = useState<Season>("evergreen");
   const [query, setQuery] = useState("");
+  const [selectedMoods, setSelectedMoods] = useState<Set<string>>(new Set());
 
   const handleSeasonChange = (s: Season) => {
     setSeason(s);
     setQuery("");
+    setSelectedMoods(new Set());
+  };
+
+  const toggleMood = (mood: string) => {
+    setSelectedMoods((prev) => {
+      const next = new Set(prev);
+      if (next.has(mood)) next.delete(mood); else next.add(mood);
+      return next;
+    });
   };
 
   const seasonPalettes = TREND_PALETTES.filter((p) => p.season === season);
+
+  // Derive unique mood keywords for the current season, sorted by frequency desc then alpha
+  const seasonMoodWords = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of TREND_PALETTES.filter((x) => x.season === season)) {
+      for (const raw of p.mood.split("·")) {
+        const w = raw.trim().toLowerCase();
+        if (w) counts.set(w, (counts.get(w) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([word]) => word);
+  }, [season]);
+
   const q = query.trim().toLowerCase();
-  const filtered = q
-    ? seasonPalettes.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.mood.toLowerCase().includes(q)
-      )
-    : seasonPalettes;
+  const filtered = seasonPalettes
+    .filter(
+      (p) =>
+        selectedMoods.size === 0 ||
+        p.mood.split("·").some((m) => selectedMoods.has(m.trim().toLowerCase()))
+    )
+    .filter(
+      (p) =>
+        !q || p.name.toLowerCase().includes(q) || p.mood.toLowerCase().includes(q)
+    );
+
+  const isFiltered = selectedMoods.size > 0 || q.length > 0;
 
   const meta = SEASON_META[season];
   const Icon = SEASON_ICONS[season];
@@ -209,6 +239,38 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
             })}
           </div>
 
+          {/* Mood tag chips */}
+          {seasonMoodWords.length > 0 && (
+            <div className="px-5 pb-2 shrink-0 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              {selectedMoods.size > 0 && (
+                <button
+                  onClick={() => setSelectedMoods(new Set())}
+                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium bg-[var(--accent)] text-[var(--accent-fg)] transition-all"
+                  aria-label="Clear mood filters"
+                >
+                  <X size={9} />
+                  Clear
+                </button>
+              )}
+              {seasonMoodWords.map((word) => {
+                const active = selectedMoods.has(word);
+                return (
+                  <button
+                    key={word}
+                    onClick={() => toggleMood(word)}
+                    className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all ${
+                      active
+                        ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-sm"
+                        : "bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border)]"
+                    }`}
+                  >
+                    {word.charAt(0).toUpperCase() + word.slice(1)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Search input */}
           <div className="px-5 pb-3 shrink-0">
             <div className="relative">
@@ -243,17 +305,22 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                   exit={{ opacity: 0 }}
                   className="py-12 text-center"
                 >
-                  <p className="text-sm text-[var(--muted)]">No palettes match <span className="font-semibold text-[var(--foreground)]">&ldquo;{query}&rdquo;</span></p>
+                  <p className="text-sm text-[var(--muted)]">
+                    {q
+                      ? <>No palettes match <span className="font-semibold text-[var(--foreground)]">&ldquo;{query}&rdquo;</span></>
+                      : "No palettes match the selected moods"
+                    }
+                  </p>
                   <button
-                    onClick={() => setQuery("")}
+                    onClick={() => { setQuery(""); setSelectedMoods(new Set()); }}
                     className="mt-2 text-xs text-[var(--accent)] hover:underline"
                   >
-                    Clear search
+                    Clear filters
                   </button>
                 </motion.div>
               ) : (
                 <motion.div
-                  key={`${season}-${q}`}
+                  key={`${season}-${q}-${[...selectedMoods].sort().join(",")}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -263,7 +330,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                   {filtered.map((p) => (
                     <TrendCard key={p.id} palette={p} onFork={onFork} onUseInExtractor={onUseInExtractor} />
                   ))}
-                  {q && (
+                  {isFiltered && (
                     <p className="col-span-full text-[10px] text-[var(--muted)] text-right pt-1 tabular-nums">
                       {filtered.length} of {seasonPalettes.length}
                     </p>
