@@ -4088,3 +4088,27 @@
 - **Palette card: ✨ hover button to preview Color Story** — small sparkle button on the card that triggers the AI color story without opening the Export modal
 - **Print check: "Caution → Safe" single-click mute** — lighter C=0.12 clamp for Caution swatches (currently only Vivid/C>0.25 gets a Mute button)
 - **Color Story: palette card quick-view panel** — same vibe + products + prompt in a slim card overlay, no modal needed
+
+---
+
+## 2026-07-18 — Session 144: Color Story Hover Button on Swatch Strip
+
+### What was done
+- **✨ Color Story hover button on swatch strip** — a small sparkle pill button (`story` label + `Sparkles` icon) now appears centered at the bottom of every palette card's swatch strip when the card is hovered. Before this session, the only way to open Color Story from the card was the `Sparkles` icon buried in the ~15-button action bar — easily missed. The new pill is far more discoverable.
+- Button behavior:
+  - `opacity-0 group-hover:opacity-100` — invisible at rest, slides into view on card hover (consistent with the rest of the card's hover-reveal pattern)
+  - Translucent black/blur pill at rest (`bg-black/35 backdrop-blur-sm`) — legible over any swatch color
+  - Active state: solid violet (`bg-violet-500 text-white`) when the Color Story panel is open; toggles the panel closed if clicked while open
+  - Loading state: spinner replaces the Sparkles icon while the AI call is in-flight (same state shared with the action bar button)
+  - Works for both frozen and unfrozen palettes; positioned at center-bottom so it doesn't conflict with cover image thumbnail (bottom-right), frozen lock badge (bottom-left), crown/pin badges (top-right)
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing
+
+### Key decisions
+- **Center-bottom placement** — avoids all existing corner badges (cover image, lock, crown, pin) while remaining visually balanced and prominent
+- **Shared state with action bar** — `colorStoryLoading`, `colorStory`, `colorStoryOpen` are all shared between the swatch strip button and the action bar sparkles button; no duplicated fetch logic
+- **Pill with text label** — "story" label alongside the icon makes the button's purpose clear without a tooltip; pill shape differentiates it from the square swatch-level edit buttons (Pencil, Layers)
+
+### What's next (Session 145)
+- **Export → Adobe Swatch Exchange (.ase) via the Color Story panel** — "Export this palette" shortcut button inside the Color Story overlay
+- **Palette card: keyboard shortcut for Color Story** — map `S` key to open/toggle Color Story when hovering a card
+- **Palette card: cached Color Story** — persist the last generated color story in the palette store so it reappears instantly without a re-fetch when the card is re-hovered
