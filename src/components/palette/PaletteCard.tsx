@@ -1041,6 +1041,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           </Reorder.Group>
         )}
 
+        {/* ✨ Color Story quick-access button — hover-revealed, centered at the bottom of the swatch strip */}
+        <button
+          onClick={(e) => { e.stopPropagation(); colorStoryOpen ? setColorStoryOpen(false) : openColorStory(); }}
+          title="Color Story — AI vibe, product ideas & art prompt"
+          className={`absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium shadow transition-all duration-200 ${
+            colorStoryOpen
+              ? "bg-violet-500 text-white opacity-100 scale-100"
+              : "bg-black/35 dark:bg-white/15 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 hover:bg-violet-500/80"
+          }`}
+        >
+          {colorStoryLoading ? (
+            <Loader2 size={9} className="animate-spin shrink-0" />
+          ) : (
+            <Sparkles size={9} className="shrink-0" />
+          )}
+          <span className="leading-none whitespace-nowrap">story</span>
+        </button>
+
         {/* Frozen lock badge */}
         {palette.frozen && (
           <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/70 dark:bg-black/50 backdrop-blur-sm pointer-events-none">
