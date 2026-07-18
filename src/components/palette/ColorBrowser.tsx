@@ -110,7 +110,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
       const hexQ = q.startsWith("#") ? q.slice(1) : q;
       return visibleColorIndex.filter((c) => c.hex.slice(1).toLowerCase().startsWith(hexQ));
     }
-    // Name/keyword search: band label contains the query
+    // Name/keyword search: hue band label OR any containing palette name
     return visibleColorIndex.filter((c) => {
       const range = (() => {
         const hex = c.hex.replace("#", "");
@@ -121,7 +121,8 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
       })();
       const isNeutral = range < 28;
       const sectionLabel = isNeutral ? "neutrals" : getBand(c.hue).toLowerCase();
-      return sectionLabel.includes(q);
+      if (sectionLabel.includes(q)) return true;
+      return c.paletteNames.some((name) => name.toLowerCase().includes(q));
     });
   }, [visibleColorIndex, searchQuery]);
 
@@ -422,8 +423,8 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Escape") { setSearchQuery(""); searchInputRef.current?.blur(); } }}
-                placeholder="hex or color name…"
-                className="text-[11px] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-6 pr-6 py-0.5 leading-tight outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]/50 w-40"
+                placeholder="hex, hue, or palette name…"
+                className="text-[11px] bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-sm)] pl-6 pr-6 py-0.5 leading-tight outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)]/50 w-48"
                 spellCheck={false}
               />
               {searchQuery && (
