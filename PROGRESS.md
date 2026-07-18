@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-07-18 — Session 150: Color Browser Palette Name Search
+
+### What was done
+- **Extended Color Browser keyword search to match palette names** — typing any non-hex query now searches both hue band labels (Reds, Blues, etc.) AND the names of every palette that contains each color:
+  - Searching "spring" surfaces all unique colors from any palette whose name includes "spring" (e.g., "Spring Drop", "Early Spring Blooms")
+  - Searching "blues" still matches the Blues hue band as before; now also finds colors from palettes named anything containing "blues" (e.g., "Ocean Blues")
+  - The two match paths use OR logic — a color is shown if its band OR any palette name matches
+  - **Placeholder updated** from "hex or color name…" to "hex, hue, or palette name…" to telegraph the richer capability
+  - **Input widened** from `w-40` to `w-48` so the new placeholder is more readable
+  - Result count ("N matches of M"), empty state, and clear-X button all work unchanged
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **OR logic (band OR palette name)** — broadens results rather than narrowing, consistent with how the existing band-name search works; if a creator types "cozy", they get every color from any "Cozy Autumn" palette plus any hue band labeled "cozy" (none exist, but future-proof)
+- **Palette names already indexed on `ColorEntry`** — each `ColorEntry` carries `paletteNames: string[]` built during the library scan, so no extra data fetching or lookup was needed; the filter is pure in-memory
+- **No separate "palette name" mode** — a unified search bar is simpler to reason about; the match logic is additive (band OR palette), which means every previous search still works exactly as before
+
+### What's next (Session 151)
+- **Palette card: collection jump from info row** — the collection badge in the info row navigates to that collection when clicked
+- **Trend Library: "All" mood chips with season color accents** — when a mood chip is active in All mode, use the dominant season color for that keyword as a subtle tint
+- **Color Browser: result annotation** — when a palette-name match drives the result, a subtle badge or tooltip clarifies why the color appeared
+
+---
+
 ## 2026-07-17 — Session 149: Trend Library All-Seasons Tab
 
 ### What was done
