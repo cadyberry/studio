@@ -2,13 +2,17 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Palette, Collection, CohesionRecord } from "@/types";
+import type { Palette, Collection, CohesionRecord, ColorStory } from "@/types";
 import { generateId } from "@/lib/utils";
 
 interface PaletteStore {
   palettes: Palette[];
   collections: Collection[];
   cohesionHistory: Record<string, CohesionRecord[]>;
+
+  colorStoryCache: Record<string, ColorStory>;
+  setColorStoryCache: (paletteId: string, story: ColorStory) => void;
+  clearColorStoryCache: (paletteId: string) => void;
 
   recordCohesionScore: (collectionId: string, score: number, label: CohesionRecord["label"]) => void;
   getCohesionHistory: (collectionId: string) => CohesionRecord[];
@@ -34,6 +38,19 @@ export const usePaletteStore = create<PaletteStore>()(
       palettes: [],
       collections: [],
       cohesionHistory: {},
+      colorStoryCache: {},
+
+      setColorStoryCache: (paletteId, story) => {
+        set((s) => ({ colorStoryCache: { ...s.colorStoryCache, [paletteId]: story } }));
+      },
+
+      clearColorStoryCache: (paletteId) => {
+        set((s) => {
+          const next = { ...s.colorStoryCache };
+          delete next[paletteId];
+          return { colorStoryCache: next };
+        });
+      },
 
       recordCohesionScore: (collectionId, score, label) => {
         const now = new Date().toISOString();

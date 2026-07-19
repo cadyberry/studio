@@ -1,19 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag } from "lucide-react";
 import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
-import type { Palette } from "@/types";
+import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
-
-interface ColorStory {
-  vibe: string;
-  products: string[];
-  prompt: string;
-}
 
 interface ExportModalProps {
   palette: Palette | null;
@@ -31,9 +25,19 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [taggedNewCount, setTaggedNewCount] = useState(0);
 
   const updatePalette = usePaletteStore((s) => s.updatePalette);
+  const cachedStory = usePaletteStore((s) => s.colorStoryCache[palette?.id ?? ""] ?? null);
+  const setColorStoryCache = usePaletteStore((s) => s.setColorStoryCache);
   const liveTags = usePaletteStore(
     (s) => s.palettes.find((p) => p.id === (palette?.id ?? ""))?.tags ?? palette?.tags ?? []
   );
+
+  // Sync story from cache when palette changes (ExportModal is a persistent instance, not remounted)
+  useEffect(() => {
+    setStory(cachedStory);
+    setStoryError(false);
+  // cachedStory intentionally excluded — we only want to sync on palette change, not every cache update
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [palette?.id]);
 
   const printSims = useMemo(
     () => (palette?.colors ?? []).map((c) => simulateCmykPrint(c.hex)),
@@ -60,6 +64,7 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       if (!res.ok) throw new Error("Failed");
       const data = await res.json() as ColorStory;
       setStory(data);
+      setColorStoryCache(palette.id, data);
     } catch {
       setStoryError(true);
     } finally {

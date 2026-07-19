@@ -35,6 +35,12 @@ export interface CohesionRecord {
   label: "Fragmented" | "Developing" | "Cohesive" | "Unified";
 }
 
+export interface ColorStory {
+  vibe: string;
+  products: string[];
+  prompt: string;
+}
+
 export interface FilterPreset {
   id: string;
   name: string;

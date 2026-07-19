@@ -141,6 +141,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     updatePalette: s.updatePalette,
     addPalette: s.addPalette,
   }));
+  const cachedColorStory = usePaletteStore((s) => s.colorStoryCache[palette.id] ?? null);
+  const setColorStoryCache = usePaletteStore((s) => s.setColorStoryCache);
 
   // All unique tags in the library (for autocomplete)
   const allLibraryTags = usePaletteStore((s) => {
@@ -183,7 +185,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const coverUrlInputRef = useRef<HTMLInputElement>(null);
   const [colorStoryOpen, setColorStoryOpen] = useState(false);
   const [colorStoryLoading, setColorStoryLoading] = useState(false);
-  const [colorStory, setColorStory] = useState<{ vibe: string; products: string[]; prompt: string } | null>(null);
+  // Initialized from persisted cache so the story is instant on re-open
+  const [colorStory, setColorStory] = useState<{ vibe: string; products: string[]; prompt: string } | null>(() => cachedColorStory);
   const [colorStoryError, setColorStoryError] = useState(false);
   const [colorStoryPromptCopied, setColorStoryPromptCopied] = useState(false);
 
@@ -679,6 +682,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       if (!res.ok) throw new Error("Failed");
       const data = await res.json() as { vibe: string; products: string[]; prompt: string };
       setColorStory(data);
+      setColorStoryCache(palette.id, data);
     } catch {
       setColorStoryError(true);
     } finally {
