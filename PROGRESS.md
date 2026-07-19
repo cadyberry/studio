@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-07-19 — Session 151: Trend Library Season Chip Accents + Color Browser Match Annotation
+
+### What was done
+- **Trend Library "All" mode: mood chips now carry season color accents** — when a mood chip is selected while in "All Seasons" mode, it displays in the dominant season's color instead of the generic accent color:
+  - For each mood keyword, the component now computes which season has the most palettes using that word ("warm" → fall, "fresh" → spring, "icy" → winter, etc.)
+  - Active chips switch from `bg-[var(--accent)]` to the season-specific palette: green for spring, amber for summer, orange for fall, blue for winter, violet for evergreen
+  - A small colored dot appears inside the active chip, matching the season's signature color (`#4ade80` spring · `#fbbf24` summer · `#f97316` fall · `#60a5fa` winter · `#a78bfa` evergreen)
+  - Hovering an active chip shows a tooltip: `"Dominant season: Fall"` etc.
+  - In single-season modes, chips continue using the accent color as before — the season decoration only activates in "All" mode where it provides actual information
+- **Color Browser: palette-name match annotation** — when a search result appears because of a palette-name match (not a hex prefix or hue-band match), a subtle visual indicator clarifies why the color appeared:
+  - A small corner pip appears at the top-left of the swatch when hovering is not active
+  - On hover, the detail panel shows a "via Palette Name" header above the palette list, with Search icon, so the creator knows exactly which palette caused the color to surface
+  - Band-matched colors have no annotation (band context is self-evident from the section heading)
+  - The `searchedColorIndex` computation was refactored to also produce a `paletteMatchMap: Map<string, string[]>` tracking which palette names matched each hex — zero overhead for hex-search or no-search paths
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Dominant-season per mood word, not all seasons** — showing a single season color per chip is cleaner than multi-color or gradient chips; the dominant season is the most useful signal (creators asking "what are 'moody' palettes?" get fall-orange, which is accurate and informative)
+- **Pip at top-left, not bottom-right** — the bottom-right is already occupied by the palette count badge; top-left is visually distinct and doesn't compete
+- **Match header inside hover panel** — the hover panel is where palette context lives anyway; surfacing the "why did this appear?" answer there is natural and non-intrusive when not hovering
+
+### What's next (Session 152)
+- **Palette card: tag filter from info row** — clicking a tag badge jumps the filter to show only palettes with that tag (already has `onFilterByTag`, confirm it's fully wired)
+- **Color Browser: palette-name match glow ring** — instead of (or in addition to) the pip, add a subtle colored ring to palettes-matched swatches to make them scannable at a glance
+- **Trend Library: season chip "why" footer** — when a mood chip is active in "All" mode, show a small footer line: "Showing X palettes · strongest in Fall"
+
+---
+
 ## 2026-07-18 — Session 150: Color Browser Palette Name Search
 
 ### What was done
