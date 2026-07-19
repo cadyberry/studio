@@ -101,29 +101,41 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     );
   }, [colorIndex, collectionFilter, collections, paletteLookup]);
 
-  // Apply text search: hex prefix match OR hue-band name match
-  const searchedColorIndex = useMemo(() => {
+  // Apply text search: hex prefix match OR hue-band name match OR palette-name match
+  // paletteMatchMap: hex → matching palette names (only for palette-name-only matches)
+  const { searchedColorIndex, paletteMatchMap } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return visibleColorIndex;
+    if (!q) return { searchedColorIndex: visibleColorIndex, paletteMatchMap: new Map<string, string[]>() };
     const isHexSearch = /^#?[0-9a-f]{1,6}$/.test(q);
     if (isHexSearch) {
       const hexQ = q.startsWith("#") ? q.slice(1) : q;
-      return visibleColorIndex.filter((c) => c.hex.slice(1).toLowerCase().startsWith(hexQ));
+      return {
+        searchedColorIndex: visibleColorIndex.filter((c) => c.hex.slice(1).toLowerCase().startsWith(hexQ)),
+        paletteMatchMap: new Map<string, string[]>(),
+      };
     }
-    // Name/keyword search: hue band label OR any containing palette name
-    return visibleColorIndex.filter((c) => {
-      const range = (() => {
-        const hex = c.hex.replace("#", "");
-        const r = parseInt(hex.slice(0, 2), 16);
-        const g = parseInt(hex.slice(2, 4), 16);
-        const b = parseInt(hex.slice(4, 6), 16);
-        return Math.max(r, g, b) - Math.min(r, g, b);
-      })();
+    // Name/keyword: band label first, then palette name
+    const matched: ColorEntry[] = [];
+    const matchMap = new Map<string, string[]>();
+    for (const c of visibleColorIndex) {
+      const hex = c.hex.replace("#", "");
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      const range = Math.max(r, g, b) - Math.min(r, g, b);
       const isNeutral = range < 28;
       const sectionLabel = isNeutral ? "neutrals" : getBand(c.hue).toLowerCase();
-      if (sectionLabel.includes(q)) return true;
-      return c.paletteNames.some((name) => name.toLowerCase().includes(q));
-    });
+      if (sectionLabel.includes(q)) {
+        matched.push(c);
+        continue;
+      }
+      const matchingPaletteNames = c.paletteNames.filter((name) => name.toLowerCase().includes(q));
+      if (matchingPaletteNames.length > 0) {
+        matched.push(c);
+        matchMap.set(c.hex, matchingPaletteNames);
+      }
+    }
+    return { searchedColorIndex: matched, paletteMatchMap: matchMap };
   }, [visibleColorIndex, searchQuery]);
 
   // Separate neutrals (low chroma) from chromatic colors
@@ -232,6 +244,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     const isCopied = copiedHex === c.hex;
     const fg = getContrastColor(c.hex);
     const count = c.paletteIds.length;
+    const matchingPaletteNames = paletteMatchMap.get(c.hex);
 
     // Build properly aligned (id, palette) pairs; tag each with collection membership
     const paletteEntries = c.paletteIds
@@ -273,6 +286,18 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
       >
         {/* square aspect ratio */}
         <div className="w-full" style={{ paddingBottom: "100%" }} />
+
+        {/* Palette-name match indicator — corner pip when this color surfaced via palette search */}
+        {matchingPaletteNames && !isHovered && (
+          <div
+            className="absolute top-0.5 left-0.5 w-[6px] h-[6px] rounded-full pointer-events-none"
+            style={{
+              backgroundColor: fg === "#fafaf8" ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.35)",
+              boxShadow: "0 0 0 1px rgba(255,255,255,0.2)",
+            }}
+            title={`Palette match: ${matchingPaletteNames.slice(0, 3).join(", ")}${matchingPaletteNames.length > 3 ? ` +${matchingPaletteNames.length - 3} more` : ""}`}
+          />
+        )}
 
         {/* Count badge — shows when there are multiple palettes */}
         {count > 1 && !isHovered && (
@@ -320,6 +345,15 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
             style={{ minWidth: 156 }}
           >
             <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] shadow-2xl p-1.5 space-y-0.5">
+              {/* Palette-name search match header */}
+              {matchingPaletteNames && (
+                <div className="flex items-center gap-1 px-1 pb-0.5 mb-0.5 border-b border-[var(--border)]">
+                  <Search size={7} className="text-[var(--muted)] flex-shrink-0" />
+                  <span className="text-[8px] text-[var(--muted)] truncate leading-none">
+                    via <span className="font-semibold text-[var(--foreground)]/70">{matchingPaletteNames[0]}{matchingPaletteNames.length > 1 ? ` +${matchingPaletteNames.length - 1}` : ""}</span>
+                  </span>
+                </div>
+              )}
               {/* Collection context header — shown when a collection filter is active */}
               {filteringByCollection && (
                 <div className="flex items-center gap-1 px-1 pb-0.5 mb-0.5 border-b border-[var(--border)]">

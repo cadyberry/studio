@@ -31,6 +31,23 @@ const SEASON_BADGE_COLORS: Record<Season, string> = {
   evergreen: "bg-violet-100 text-violet-700",
 };
 
+// Chip colors for active mood chips in "All" mode — one per season
+const SEASON_CHIP_ACTIVE: Record<Season, string> = {
+  spring:    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  summer:    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  fall:      "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  winter:    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  evergreen: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
+};
+
+const SEASON_DOT_COLOR: Record<Season, string> = {
+  spring:    "#4ade80",
+  summer:    "#fbbf24",
+  fall:      "#f97316",
+  winter:    "#60a5fa",
+  evergreen: "#a78bfa",
+};
+
 function TrendCard({
   palette,
   onFork,
@@ -177,18 +194,31 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
     ? TREND_PALETTES
     : TREND_PALETTES.filter((p) => p.season === season);
 
-  // Derive unique mood keywords from active palette set, sorted by frequency desc then alpha
-  const moodWords = useMemo(() => {
+  // Derive unique mood keywords and (in All mode) the dominant season per keyword
+  const { moodWords, moodDominantSeason } = useMemo(() => {
     const counts = new Map<string, number>();
+    const seasonCounts = new Map<string, Map<Season, number>>();
     for (const p of activePalettes) {
       for (const raw of p.mood.split("·")) {
         const w = raw.trim().toLowerCase();
-        if (w) counts.set(w, (counts.get(w) ?? 0) + 1);
+        if (!w) continue;
+        counts.set(w, (counts.get(w) ?? 0) + 1);
+        if (isAllSeasons) {
+          if (!seasonCounts.has(w)) seasonCounts.set(w, new Map());
+          const sc = seasonCounts.get(w)!;
+          sc.set(p.season, (sc.get(p.season) ?? 0) + 1);
+        }
       }
     }
-    return [...counts.entries()]
+    const words = [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([word]) => word);
+    const dominantSeason = new Map<string, Season>();
+    for (const [word, sc] of seasonCounts) {
+      const top = [...sc.entries()].sort((a, b) => b[1] - a[1])[0];
+      if (top) dominantSeason.set(word, top[0]);
+    }
+    return { moodWords: words, moodDominantSeason: dominantSeason };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [season]);
 
@@ -301,16 +331,25 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
               )}
               {moodWords.map((word) => {
                 const active = selectedMoods.has(word);
+                const dominantSeason = isAllSeasons ? moodDominantSeason.get(word) : undefined;
+                const seasonLabel = dominantSeason ? SEASON_META[dominantSeason].label : undefined;
                 return (
                   <button
                     key={word}
                     onClick={() => toggleMood(word)}
-                    className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all ${
+                    title={active && seasonLabel ? `Dominant season: ${seasonLabel}` : undefined}
+                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all ${
                       active
-                        ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-sm"
+                        ? (dominantSeason ? `${SEASON_CHIP_ACTIVE[dominantSeason]} shadow-sm` : "bg-[var(--accent)] text-[var(--accent-fg)] shadow-sm")
                         : "bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border)]"
                     }`}
                   >
+                    {active && dominantSeason && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: SEASON_DOT_COLOR[dominantSeason] }}
+                      />
+                    )}
                     {word.charAt(0).toUpperCase() + word.slice(1)}
                   </button>
                 );
