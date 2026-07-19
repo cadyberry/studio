@@ -4136,3 +4136,30 @@
 - **Export → Adobe Swatch Exchange (.ase) via the Color Story panel** — "Export this palette" shortcut button inside the Color Story overlay
 - **Palette card: keyboard shortcut for Color Story** — map `S` key to open/toggle Color Story when hovering a card
 - **Palette card: cached Color Story** — persist the last generated color story in the palette store so it reappears instantly without a re-fetch when the card is re-hovered
+
+---
+
+## 2026-07-19 — Session 145: Cached Color Story
+
+### What was done
+- **Color Story cached in localStorage** — generated Color Stories are now persisted to a `colorStoryCache` in the Zustand store (backed by localStorage), keyed by palette ID. Previously, every time a creator hovered the ✨ story button or reopened the Export modal, the app made a fresh API call. Now the story appears instantly on re-open — no spinner, no waiting.
+- **Shared `ColorStory` type** — extracted the `{ vibe, products, prompt }` interface from ExportModal's local scope into `types/index.ts` so both PaletteCard and ExportModal reference the same type.
+- **Store additions** (`paletteStore.ts`):
+  - `colorStoryCache: Record<string, ColorStory>` — persisted map of palette ID → story
+  - `setColorStoryCache(paletteId, story)` — writes after a successful API call
+  - `clearColorStoryCache(paletteId)` — available for future "wipe and regenerate" flows
+- **PaletteCard** — `colorStory` local state initializes from `cachedColorStory` (lazy init), so on mount the card immediately has the story in memory. After fetch, `setColorStoryCache` persists it. "Regenerate" still clears local state and re-fetches; the new result is saved back to cache.
+- **ExportModal** — `useEffect` on `palette.id` syncs `story` state from cache whenever the target palette changes, fixing a pre-existing bug where stale story from palette A would bleed into palette B's export session. After fetch, saves to cache.
+- **No `updatedAt` pollution** — storing the story in a separate cache field (not on the Palette object) means generating a story does not update `updatedAt` or affect freshness badges. Clean separation of concerns.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Separate cache, not on Palette object** — `updatePalette` always sets `updatedAt = now()`. Storing the story directly on the palette would corrupt freshness badges. A standalone `colorStoryCache: Record<string, ColorStory>` is persisted by the same `persist` middleware but doesn't touch any palette's metadata.
+- **Lazy `useState` init from selector value** — `useState(() => cachedColorStory)` captures the store value at mount time (not a derived/stale closure). Since card IDs don't change while mounted, one-time initialization is sufficient; no `useEffect` sync needed.
+- **`useEffect` in ExportModal, not in PaletteCard** — ExportModal is a singleton that receives different `palette` props over its lifetime, so it needs an effect to reset on prop change. PaletteCard is keyed by palette.id and remounts for new palettes, so lazy init is enough.
+- **`clearColorStoryCache` not yet wired to "Regenerate"** — the "Regenerate" button sets `colorStory(null)` and re-fetches; the new result immediately overwrites the cache via `setColorStoryCache`. No need to explicitly clear first.
+
+### What's next (Session 146)
+- **Color Story: `S` keyboard shortcut** — map `S` key to open/toggle Color Story when hovering a card (already have `D`, `H`, `E`, `L`, `P` shortcuts)
+- **"Export this palette" shortcut inside Color Story overlay** — small "Export" button at the bottom of the Color Story panel to open the Export modal without closing the story first
+- **Palette card: Color Story indicator badge** — a small ✨ indicator in the header badge row when a cached story exists, so creators know a story is ready without hovering
