@@ -236,6 +236,17 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
 
   const isFiltered = selectedMoods.size > 0 || q.length > 0;
 
+  // Dominant season in filtered results — used for the "why" footer in All mode
+  const filteredSeasonInfo: { season: Season; count: number } | null = (() => {
+    if (!isAllSeasons || selectedMoods.size === 0 || filtered.length === 0) return null;
+    const counts = new Map<Season, number>();
+    for (const p of filtered) {
+      counts.set(p.season, (counts.get(p.season) ?? 0) + 1);
+    }
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    return sorted[0] ? { season: sorted[0][0] as Season, count: sorted[0][1] } : null;
+  })();
+
   const headerGradient = isAllSeasons
     ? ALL_META.gradient
     : SEASON_META[season as Season].gradient;
@@ -356,6 +367,32 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
               })}
             </div>
           )}
+
+          {/* "Why" footer — dominant season context in All mode with active chips */}
+          <AnimatePresence>
+            {filteredSeasonInfo && (
+              <motion.div
+                key="why-footer"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden shrink-0"
+              >
+                <p className="px-5 pb-2 text-[10px] text-[var(--muted)]">
+                  <span className="tabular-nums">{filtered.length}</span>
+                  {filtered.length === 1 ? " palette" : " palettes"}
+                  {" · strongest in "}
+                  <span
+                    className="font-semibold"
+                    style={{ color: SEASON_DOT_COLOR[filteredSeasonInfo.season] }}
+                  >
+                    {SEASON_META[filteredSeasonInfo.season].label}
+                  </span>
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Search input */}
           <div className="px-5 pb-3 shrink-0">
