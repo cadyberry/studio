@@ -3,7 +3,16 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Copy, Check, Layers, Search, X } from "lucide-react";
-import { getContrastColor } from "@/lib/utils";
+import { getContrastColor, hexToRgb, rgbToHsl, hslToHex } from "@/lib/utils";
+
+function getPaletteMatchRingColor(hex: string): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return "#8b5cf6bf";
+  const { h, s } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  // Boost saturation so the ring reads clearly against both dark and light swatches
+  const ringHex = hslToHex(h, Math.max(s, 0.65), 0.55);
+  return ringHex + "bf"; // ~75% opacity (8-digit hex)
+}
 
 interface ColorEntry {
   hex: string;
@@ -245,6 +254,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     const fg = getContrastColor(c.hex);
     const count = c.paletteIds.length;
     const matchingPaletteNames = paletteMatchMap.get(c.hex);
+    const matchRingColor = matchingPaletteNames ? getPaletteMatchRingColor(c.hex) : null;
 
     // Build properly aligned (id, palette) pairs; tag each with collection membership
     const paletteEntries = c.paletteIds
@@ -278,7 +288,16 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
         title={`${c.hex.toUpperCase()} — in ${count} palette${count !== 1 ? "s" : ""}: ${c.paletteNames.slice(0, 3).join(", ")}${count > 3 ? ` +${count - 3} more` : ""}`}
-        style={{ backgroundColor: c.hex }}
+        style={{
+          backgroundColor: c.hex,
+          ...(matchRingColor
+            ? {
+                boxShadow: isHovered
+                  ? `0 0 0 2px ${matchRingColor}, 0 4px 10px rgba(0,0,0,0.18)`
+                  : `0 0 0 2px ${matchRingColor}`,
+              }
+            : {}),
+        }}
         className="relative rounded-[var(--radius-sm)] cursor-pointer transition-transform hover:scale-105 hover:z-10 hover:shadow-md"
         onMouseEnter={() => setHoveredHex(c.hex)}
         onMouseLeave={() => setHoveredHex(null)}

@@ -237,14 +237,20 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
   const isFiltered = selectedMoods.size > 0 || q.length > 0;
 
   // Dominant season in filtered results — used for the "why" footer in All mode
-  const filteredSeasonInfo: { season: Season; count: number } | null = (() => {
+  const filteredSeasonInfo: {
+    season: Season;
+    count: number;
+    breakdown: Array<{ season: Season; count: number }>;
+  } | null = (() => {
     if (!isAllSeasons || selectedMoods.size === 0 || filtered.length === 0) return null;
     const counts = new Map<Season, number>();
     for (const p of filtered) {
       counts.set(p.season, (counts.get(p.season) ?? 0) + 1);
     }
-    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    return sorted[0] ? { season: sorted[0][0] as Season, count: sorted[0][1] } : null;
+    const breakdown = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([s, c]) => ({ season: s as Season, count: c }));
+    return breakdown[0] ? { season: breakdown[0].season, count: breakdown[0].count, breakdown } : null;
   })();
 
   const headerGradient = isAllSeasons
@@ -384,8 +390,11 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                   {filtered.length === 1 ? " palette" : " palettes"}
                   {" · strongest in "}
                   <span
-                    className="font-semibold"
+                    className="font-semibold cursor-default"
                     style={{ color: SEASON_DOT_COLOR[filteredSeasonInfo.season] }}
+                    title={filteredSeasonInfo.breakdown
+                      .map(({ season, count }) => `${SEASON_META[season].label} ${count}`)
+                      .join(" · ")}
                   >
                     {SEASON_META[filteredSeasonInfo.season].label}
                   </span>
