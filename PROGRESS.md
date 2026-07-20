@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-07-20 — Session 153: Palette-Name Match Glow Ring + Trend Footer Breakdown Tooltip
+
+### What was done
+- **Color Browser: hue-matched glow ring on palette-name match swatches** — swatches that surfaced because their palette's name matched the search query now display a 2px ring in their own hue (saturation boosted to ≥65%, lightness fixed at 55%, ~75% opacity). Previously, only a small neutral corner pip indicated a palette-name match — easy to miss in a dense grid. The ring is now the primary at-a-glance signal; the pip remains for near-distance reading. Ring color is derived via `hexToRgb` + `rgbToHsl` + `hslToHex` from utils. On hover, the ring persists with an added drop shadow (inline style for match swatches replaces Tailwind `hover:shadow-md`, which can't coexist with an inline `boxShadow`).
+- **Trend Library "why" footer: breakdown tooltip** — hovering the colored season name ("Fall", "Spring", etc.) in the "N palettes · strongest in X" footer now shows a native browser tooltip with the full per-season breakdown: e.g. `"Fall 5 · Spring 3 · Winter 2"`. The `filteredSeasonInfo` IIFE was refactored to return a full sorted `breakdown` array alongside the dominant season; the span gets a `title` derived from that array.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Ring via box-shadow, not outline or border** — `box-shadow: 0 0 0 2px {color}` doesn't affect layout (unlike border), doesn't clip inside the element (unlike outline in some browsers), and composes with additional drop-shadow values on the same property
+- **Saturation floor at 65%** — desaturated swatches (grays, near-whites) would produce a barely-visible ring at their natural saturation; the floor ensures the ring is always legible while still tracking the hue
+- **Native title attribute** — the season breakdown is a supplemental detail (one level deeper than the already-compact footer line). A native tooltip keeps the UI clean without adding tooltip state, portals, or Z-index management; the detail is helpful but not critical UX
+
+### What's next (Session 154)
+- **Color Story: `S` keyboard shortcut** — map `S` key to open/toggle Color Story when hovering a palette card (already have `D`, `H`, `E`, `L`, `P` shortcuts)
+- **Export modal: "Export this palette" shortcut inside the Color Story panel** — small button at the bottom of the Color Story panel to open the Export modal without closing the story first
+- **Palette card: Color Story indicator badge** — small ✨ dot in the badge row when a cached color story exists, so creators know a story is ready to view without hovering
+
+---
+
 ## 2026-07-20 — Session 152: Trend Library Season "Why" Footer
 
 ### What was done
