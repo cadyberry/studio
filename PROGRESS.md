@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-21 — Session 155: Collection Jump Scroll + Compare C Keyboard Shortcut
+
+### What was done
+- **Collection jump: sidebar scroll + view mode switch** — `jumpToCollection` previously set `activeCollection` and flashed the sidebar item, but didn't scroll it into view or switch out of "colors" view mode. Now it calls `setViewMode("palettes")`, adds a 80ms deferred `scrollIntoView({ behavior: "smooth", block: "nearest" })`, and each collection sidebar item gets `id="col-{id}"` so the DOM target exists. Clicking the collection badge on any palette card now reliably snaps both the filter AND the visible sidebar into the right state.
+- **Compare: `C` keyboard shortcut on hovered cards** — added `onCompareRef` and a `case "c"/"C"` to the card's keyboard handler. First `C` press sets the compare anchor; hovering a second card and pressing `C` opens CompareModal. Updated the compare hint banner copy to say "hover another palette and press C or click the icon." Added `C` to the per-card `?` peek overlay and the footer hint strip.
+- **Global `?` help modal: added missing S, P, C shortcuts** — the KeyboardHelpModal "Palette Card" section was missing `S` (Color Story), `P` (Pin/Unpin), and `C` (Compare) — all added.
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **`block: "nearest"` for sidebar scroll** — avoids jumping the whole page when the collection is already partially visible; only scrolls the minimum needed to fully reveal the item
+- **C triggers `onCompare(pal)` directly** — the two-step compare flow (anchor → target) is already handled in page.tsx's `onCompare` callback; the shortcut just passes through to the same handler, keeping logic in one place
+- **Refs pattern for `onCompare`** — consistent with all other card shortcuts; zero re-registrations across renders
+
+### What's next (Session 156)
+- **Trend Library: download palette from trend card** — one-click import of any trend palette into the library (add it as a saved palette with the `trend` tag)
+- **Palette card: compare mode UX polish** — when in compare-anchor state, hovering non-anchor cards could show a subtle "click to compare" badge rather than only relying on the hint banner
+- **Library: multi-select bulk assign to collection** — when 2+ palettes are selected, add a "Move to collection…" action to the selection toolbar
+
+---
+
 ## 2026-07-21 — Session 154: Color Story S Shortcut + Export Button in Panel + Indicator Badge
 
 ### What was done
