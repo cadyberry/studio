@@ -34,9 +34,12 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     title: "Palette Card  (hover to activate)",
     shortcuts: [
       { keys: ["D"], label: "Duplicate palette" },
+      { keys: ["C"], label: "Compare — set anchor, then pick second palette" },
       { keys: ["H"], label: "Open Harmony View" },
       { keys: ["E"], label: "Open Export" },
+      { keys: ["S"], label: "Open / close Color Story" },
       { keys: ["L"], label: "Toggle lock / unlock" },
+      { keys: ["P"], label: "Pin / unpin palette" },
       { keys: ["F2"], label: "Rename inline" },
       { keys: ["Del"], label: "Delete (press twice to confirm)" },
     ],

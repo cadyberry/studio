@@ -172,7 +172,11 @@ export default function Home() {
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
+    setViewMode("palettes");
     setFlashedCollectionId(id);
+    setTimeout(() => {
+      document.getElementById(`col-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 80);
     setTimeout(() => setFlashedCollectionId(null), 820);
   }, []);
 
@@ -917,6 +921,7 @@ export default function Home() {
                     return (
                       <div
                         key={c.id}
+                        id={`col-${c.id}`}
                         className="group/col relative flex items-center gap-1"
                         onMouseEnter={() => !isRenaming && setHoveredCollectionId(c.id)}
                         onMouseLeave={() => setHoveredCollectionId(null)}
@@ -1852,8 +1857,10 @@ export default function Home() {
                   <div className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-sm)] border border-violet-300 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 text-sm">
                     <ArrowLeftRight size={13} className="text-violet-500 shrink-0" />
                     <span className="text-violet-700 dark:text-violet-400 text-xs">
-                      Comparing <strong className="font-semibold">{compareAnchor.name}</strong> — click{" "}
-                      <ArrowLeftRight size={10} className="inline -mt-0.5 mx-0.5" /> on another palette to compare
+                      Comparing <strong className="font-semibold">{compareAnchor.name}</strong> — hover another palette and press{" "}
+                      <kbd className="inline-flex items-center justify-center w-4 h-3.5 rounded text-[8px] font-mono font-semibold bg-violet-100 dark:bg-violet-900/50 border border-violet-300 dark:border-violet-700 leading-none mx-0.5">C</kbd>{" "}
+                      or click{" "}
+                      <ArrowLeftRight size={10} className="inline -mt-0.5 mx-0.5" /> to compare
                     </span>
                     <button
                       onClick={() => setCompareAnchor(null)}

@@ -206,6 +206,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   deletePaletteRef.current = deletePalette;
   const onPinRef = useRef(onPin);
   onPinRef.current = onPin;
+  const onCompareRef = useRef(onCompare);
+  onCompareRef.current = onCompare;
   const colorStoryOpenRef = useRef(false);
   const openColorStoryRef = useRef<() => void>(() => {});
 
@@ -239,6 +241,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         case "h": case "H":
           e.preventDefault();
           onHarmonyRef.current(pal);
+          break;
+        case "c": case "C":
+          if (onCompareRef.current) { e.preventDefault(); onCompareRef.current(pal); }
           break;
         case "p": case "P":
           if (onPinRef.current) { e.preventDefault(); onPinRef.current(pal); }
@@ -1846,7 +1851,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
           {palette.frozen
             ? "L unlock"
-            : "D dup · E export · H view · S story · F2 name · L lock · P pin · Del · ? help"}
+            : "D dup · C cmp · E export · H view · S story · F2 name · L lock · P pin · Del · ? help"}
         </span>
       </div>
 
@@ -2298,6 +2303,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             <div className="flex flex-col gap-1 flex-1">
               {([
                 { key: "D", label: "Duplicate" },
+                { key: "C", label: "Compare" },
                 { key: "H", label: "Harmony View" },
                 { key: "E", label: "Export" },
                 { key: "S", label: "Color Story" },
