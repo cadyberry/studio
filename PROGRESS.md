@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-21 — Session 154: Color Story S Shortcut + Export Button in Panel + Indicator Badge
+
+### What was done
+- **Color Story `S` keyboard shortcut** — pressing `S` while hovering a palette card now toggles the Color Story panel open/closed. Uses the existing ref pattern (`colorStoryOpenRef` + `openColorStoryRef`) so the handler always reads live state without re-registering the effect. `S` is added to both the footer keyboard hint strip and the `?` shortcuts peek overlay.
+- **Export button inside Color Story panel** — the bottom action row of the Color Story panel now has two controls: "Regenerate" (left, existing) and "Export" (right, new). The Export button closes Color Story and opens the Export modal, so creators can act on a vibe they just read without losing their flow. Uses violet text to match the Color Story brand color.
+- **Color Story indicator badge** — a small ✨ "story" badge appears in the info row (alongside collection, tags, freshness) when a color story is cached for the palette AND the panel is currently closed. Gives creators at-a-glance awareness that a story is ready to view without having to hover for the button. Disappears when the panel is open (redundant while reading the story itself).
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Refs for keyboard handler** — `colorStoryOpenRef.current` is updated in the component body right after `openColorStory` is defined; this is safe because the component body runs synchronously before the effect callback fires, so the handler always sees the current open/closed state
+- **`setColorStoryOpen(false)` is stable** — React's state setter never changes identity, so it can be called directly from the keyboard effect closure without a ref
+- **Badge hides when panel is open** — showing "story" while the story is already open is redundant; the badge's purpose is to signal "story ready, you haven't looked yet", not "story loaded"
+
+### What's next (Session 155)
+- **Collection jump from info row collection badge** — clicking the collection badge in the info row should jump the library view to show only that collection (already wired partially via `onJumpToCollection`)
+- **Palette card: compare mode** — select 2+ palettes and open Compare modal with keyboard shortcut `C`
+- **Trend Library: download palette from trend card** — one-click export from any trend palette card into the library
+
+---
+
 ## 2026-07-20 — Session 153: Palette-Name Match Glow Ring + Trend Footer Breakdown Tooltip
 
 ### What was done
