@@ -206,6 +206,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   deletePaletteRef.current = deletePalette;
   const onPinRef = useRef(onPin);
   onPinRef.current = onPin;
+  const colorStoryOpenRef = useRef(false);
+  const openColorStoryRef = useRef<() => void>(() => {});
 
   // Keyboard shortcuts — active when this card is hovered, no text field is focused
   useEffect(() => {
@@ -244,6 +246,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         case "e": case "E":
           e.preventDefault();
           onExportRef.current(pal);
+          break;
+        case "s": case "S":
+          e.preventDefault();
+          if (colorStoryOpenRef.current) { setColorStoryOpen(false); } else { openColorStoryRef.current(); }
           break;
         case "Delete":
           if (!pal.frozen) {
@@ -702,6 +708,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setColorStoryOpen(true);
     if (!colorStory && !colorStoryLoading) void fetchColorStory();
   };
+  colorStoryOpenRef.current = colorStoryOpen;
+  openColorStoryRef.current = openColorStory;
 
   const commitCoverUrl = () => {
     const trimmed = coverUrlValue.trim();
@@ -1494,6 +1502,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 </span>
               );
             })}
+            {cachedColorStory && !colorStoryOpen && (
+              <span
+                title="Color story ready — press S or click ✨ to view"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-500 dark:bg-violet-950/30 dark:text-violet-400 cursor-default select-none"
+              >
+                <Sparkles size={8} className="shrink-0" />
+                story
+              </span>
+            )}
           </div>
           {inlineNotesEditing ? (
             <div className="mt-1.5">
@@ -1829,7 +1846,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
           {palette.frozen
             ? "L unlock"
-            : "D dup · E export · F2 name · H view · L lock · P pin · Del · ? help"}
+            : "D dup · E export · H view · S story · F2 name · L lock · P pin · Del · ? help"}
         </span>
       </div>
 
@@ -2283,6 +2300,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 { key: "D", label: "Duplicate" },
                 { key: "H", label: "Harmony View" },
                 { key: "E", label: "Export" },
+                { key: "S", label: "Color Story" },
                 { key: "F2", label: "Rename" },
                 { key: "L", label: palette.frozen ? "Unlock" : "Lock" },
                 { key: "P", label: "Pin / Unpin" },
@@ -2492,13 +2510,21 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     </div>
                   </div>
 
-                  <div className="flex justify-end mt-1.5">
+                  <div className="flex items-center justify-between mt-1.5">
                     <button
                       onClick={() => { setColorStory(null); void fetchColorStory(); }}
                       className="flex items-center gap-1 text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
                     >
                       <RefreshCw size={9} />
                       Regenerate
+                    </button>
+                    <button
+                      onClick={() => { setColorStoryOpen(false); onExport(palette); }}
+                      className="flex items-center gap-1 text-[10px] font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                      title="Export this palette"
+                    >
+                      <Download size={9} />
+                      Export
                     </button>
                   </div>
                 </motion.div>
