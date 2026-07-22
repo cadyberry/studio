@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-22 — Session 157: Trend Library "Save" UX
+
+### What was done
+- **Renamed "Fork" → "Save"** throughout TrendLibrary — button label, subtitle text ("seasonal palettes to save"), footer hint ("Save adds to your library"), prop names (`onFork`→`onSave`), and internal state (`forked`/`setForked`→`saved`/`setSaved`). The old "Fork" label was developer-y jargon; "Save" communicates the action clearly for a creator audience.
+- **Modal stays open after saving** — the previous `onFork` wiring in page.tsx already didn't close the modal (only `onUseInExtractor` did), so the behavior is now correct: creators can browse and save multiple trend palettes in one session without reopening. Verified by tracing the callback chain.
+- **Session save counter** — `TrendLibrary` now tracks `sessionSaveCount` internally. After the first save, an emerald `✓ N saved this session` chip appears in the footer alongside the hint text. Uses tabular-nums and `Check` icon (10px) — visually quiet but immediately affirming. Resets to zero each time the modal is opened (component mount). Gives Cady feedback when batch-saving palettes from a trend browse session.
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Counter lives in TrendLibrary, not page.tsx** — the count is session/modal-scoped (it resets when the modal closes), so it belongs in TrendLibrary's own state rather than in the parent. The parent doesn't need to know how many were saved.
+- **Emerald color for counter** — matches the per-card "Saved" button feedback color; visual consistency ties the footer count to the individual card confirmations.
+- **`if (saved) return` guard stays** — prevents double-saving if a user clicks rapidly before the 2s reset. No change in behavior, just renamed.
+
+### What's next (Session 158)
+- **Library: pinned palette sticky rows** — pinned palettes float to the top of the grid (or a dedicated "Pinned" section) regardless of the active sort order
+- **Color Browser: swatch grid density toggle** — small/medium/large swatch size option so creators who want more color at once can see it
+- **Palette search: highlight match in palette name inline** — `highlightMatch` is already called on `palette.name` in the info row, but matching palette name substrings should also be highlighted yellow in the palette name tile itself when the search bar is active
+
+---
+
 ## 2026-07-22 — Session 156: Compare Mode Anchor Badge on Non-Anchor Cards
 
 ### What was done
