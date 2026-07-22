@@ -11,7 +11,7 @@ type SeasonTab = Season | "all";
 
 interface TrendLibraryProps {
   onClose: () => void;
-  onFork: (colors: string[], name: string) => void;
+  onSave: (colors: string[], name: string) => void;
   onUseInExtractor?: (colors: string[], name: string) => void;
 }
 
@@ -50,23 +50,23 @@ const SEASON_DOT_COLOR: Record<Season, string> = {
 
 function TrendCard({
   palette,
-  onFork,
+  onSave,
   onUseInExtractor,
   showSeason,
 }: {
   palette: (typeof TREND_PALETTES)[0];
-  onFork: (colors: string[], name: string) => void;
+  onSave: (colors: string[], name: string) => void;
   onUseInExtractor?: (colors: string[], name: string) => void;
   showSeason?: boolean;
 }) {
-  const [forked, setForked] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleFork = () => {
-    if (forked) return;
-    onFork(palette.colors, palette.name);
-    setForked(true);
-    setTimeout(() => setForked(false), 2000);
+  const handleSave = () => {
+    if (saved) return;
+    onSave(palette.colors, palette.name);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const handleCopyHex = () => {
@@ -136,21 +136,21 @@ function TrendCard({
           </button>
         )}
         <button
-          onClick={handleFork}
+          onClick={handleSave}
           className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-md border transition-all ${
-            forked
+            saved
               ? "bg-emerald-50 border-emerald-200 text-emerald-700"
               : "border-[var(--border)] hover:bg-[var(--surface-2)] text-[var(--foreground)]"
           }`}
         >
           <span className="flex items-center gap-1">
-            {forked ? (
+            {saved ? (
               <>
                 <Check size={11} />
                 Saved
               </>
             ) : (
-              "Fork"
+              "Save"
             )}
           </span>
         </button>
@@ -170,10 +170,16 @@ const ALL_META = {
   gradient: "from-rose-200 via-violet-200 via-cyan-200 to-amber-200",
 };
 
-export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: TrendLibraryProps) {
+export default function TrendLibrary({ onClose, onSave, onUseInExtractor }: TrendLibraryProps) {
   const [season, setSeason] = useState<SeasonTab>("evergreen");
   const [query, setQuery] = useState("");
   const [selectedMoods, setSelectedMoods] = useState<Set<string>>(new Set());
+  const [sessionSaveCount, setSessionSaveCount] = useState(0);
+
+  const handleSave = (colors: string[], name: string) => {
+    onSave(colors, name);
+    setSessionSaveCount((n) => n + 1);
+  };
 
   const handleSeasonChange = (s: SeasonTab) => {
     setSeason(s);
@@ -285,7 +291,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
             <div className="flex items-center gap-2">
               <HeaderIcon size={16} className="text-[var(--muted)]" />
               <h2 className="text-base font-semibold">Trend Library</h2>
-              <span className="text-xs text-[var(--muted)]">— seasonal palettes to fork</span>
+              <span className="text-xs text-[var(--muted)]">— seasonal palettes to save</span>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X size={14} />
@@ -463,7 +469,7 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
                     <TrendCard
                       key={p.id}
                       palette={p}
-                      onFork={onFork}
+                      onSave={handleSave}
                       onUseInExtractor={onUseInExtractor}
                       showSeason={isAllSeasons}
                     />
@@ -479,10 +485,16 @@ export default function TrendLibrary({ onClose, onFork, onUseInExtractor }: Tren
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-3 border-t border-[var(--border-subtle)] shrink-0">
+          <div className="px-5 py-3 border-t border-[var(--border-subtle)] shrink-0 flex items-center justify-between gap-3">
             <p className="text-[10px] text-[var(--muted)]">
-              <strong className="font-semibold">Fork</strong> saves directly to your library · <strong className="font-semibold">Remix</strong> opens it in the extractor to customize first
+              <strong className="font-semibold">Save</strong> adds to your library · <strong className="font-semibold">Remix</strong> opens in extractor to customize first
             </p>
+            {sessionSaveCount > 0 && (
+              <span className="shrink-0 flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap">
+                <Check size={10} />
+                {sessionSaveCount} saved this session
+              </span>
+            )}
           </div>
         </motion.div>
       </motion.div>

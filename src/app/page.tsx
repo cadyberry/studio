@@ -2154,7 +2154,7 @@ export default function Home() {
       {showTrendLibrary && (
         <TrendLibrary
           onClose={() => setShowTrendLibrary(false)}
-          onFork={(colors, name) => {
+          onSave={(colors, name) => {
             addPalette({ name, colors: colors.map((hex) => ({ hex })), tags: ["trend"] });
           }}
           onUseInExtractor={(colors, name) => {
