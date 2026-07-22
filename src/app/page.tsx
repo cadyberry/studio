@@ -2093,6 +2093,7 @@ export default function Home() {
                           }
                         }}
                         isCompareAnchor={compareAnchor?.id === palette.id}
+                        compareActive={!!compareAnchor}
                         onDuplicate={(p) => { const copy = duplicatePalette(p.id); if (copy) setRenameTarget(copy); }}
                         isSelected={selectedIds.has(palette.id)}
                         selectionActive={selectedIds.size > 0}

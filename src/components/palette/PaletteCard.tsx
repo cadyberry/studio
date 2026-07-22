@@ -123,6 +123,7 @@ interface PaletteCardProps {
   activeTag?: string;
   onCompare?: (palette: Palette) => void;
   isCompareAnchor?: boolean;
+  compareActive?: boolean;
   onPin?: (palette: Palette) => void;
   isPinned?: boolean;
   isHighlighted?: boolean;
@@ -135,7 +136,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -747,7 +748,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         isCover ? "border-amber-300 shadow-sm ring-1 ring-amber-200/60" :
         palette.frozen ? "border-indigo-200 dark:border-indigo-800/60 ring-1 ring-indigo-100/60 dark:ring-indigo-900/40" :
         isPinned ? "border-orange-200 dark:border-orange-800/60 ring-1 ring-orange-100/60 dark:ring-orange-900/30" :
-        isSelected ? "border-[var(--accent)] shadow-sm" : "border-[var(--border)]"
+        isSelected ? "border-[var(--accent)] shadow-sm" :
+        (compareActive && !isCompareAnchor) ? "border-violet-200 dark:border-violet-800/50 ring-1 ring-violet-200/40 dark:ring-violet-800/30" :
+        "border-[var(--border)]"
       } ${className ?? ""}`}
     >
       {/* Selection checkbox */}
@@ -764,6 +767,18 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           }`}
         >
           {isSelected && <Check size={11} className="text-[var(--accent-fg)]" />}
+        </button>
+      )}
+
+      {/* Compare target badge — center-top hover pill when compare mode is active */}
+      {compareActive && !isCompareAnchor && onCompare && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onCompare(palette); }}
+          title="Click or press C to compare with the anchored palette"
+          className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium shadow-sm transition-all duration-200 bg-violet-500/90 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 whitespace-nowrap"
+        >
+          <ArrowLeftRight size={9} className="shrink-0" />
+          <span className="leading-none">compare</span>
         </button>
       )}
 
