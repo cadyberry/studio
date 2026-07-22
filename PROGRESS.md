@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-07-22 — Session 156: Compare Mode Anchor Badge on Non-Anchor Cards
+
+### What was done
+- **"⇄ compare" hover pill on non-anchor cards** — when a compare anchor is set, every other palette card now shows a violet `⇄ compare` pill at the center-top of its swatch strip when hovered. The pill uses the same `opacity-0 group-hover:opacity-100` reveal pattern as the Color Story button, keeping the UI calm at rest. Clicking it calls `onCompare(palette)` — identical to pressing `C` or the action bar button.
+- **Subtle violet ring on candidate cards** — non-anchor cards in compare mode get a `border-violet-200 ring-1 ring-violet-200/40` border (dark: `border-violet-800/50 ring-violet-800/30`), giving an ambient at-rest signal that these cards are all valid compare targets. The anchor card is excluded via `!isCompareAnchor`.
+- Added `compareActive?: boolean` prop to `PaletteCard` and `compareActive={!!compareAnchor}` in `page.tsx`; pill positioned at `top-2 left-1/2 -translate-x-1/2 z-20` to avoid all existing corner badges (crown top-right, pin top-right, selection checkbox top-left, story/lock bottom).
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Center-top placement** — the only spot clear of all four existing corner badges; `top-2 left-1/2 -translate-x-1/2` is unoccupied in every card state (cover, frozen, pinned, selected)
+- **z-20 not z-10** — the swatch strip sits inside `overflow-hidden`; z-20 ensures the pill floats above swatch content without being clipped
+- **Ambient ring always-visible, pill hover-only** — the ring tells you "compare mode is active" without any action needed; the pill reveals the affordance only on hover, keeping the grid visually quiet until a card is actively being considered
+- **`isCompareAnchor` guard** — the anchor card already has a violet action-bar button showing its anchored state; showing the "compare" pill on it too would be misleading
+
+### What's next (Session 157)
+- **Trend Library: "Save to Library" UX** — rename "Fork" to "Save", keep the modal open after saving (don't close it), show a session counter "N saved this session" so creators can save multiple palettes in one browse
+- **Library: pinned palette sticky rows** — pinned palettes float to the top of the grid (or a dedicated "Pinned" section) regardless of the active sort order
+- **Color Browser: swatch grid density toggle** — small/medium/large swatch size option so creators who want more color at once can see it
+
+---
+
 ## 2026-07-21 — Session 155: Collection Jump Scroll + Compare C Keyboard Shortcut
 
 ### What was done
