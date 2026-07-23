@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -515,6 +515,8 @@ export default function Home() {
     }
     return [...pinnedItems, ...rest];
   })();
+  const pinnedDisplay = displayList.filter((p) => p.pinned);
+  const unpinnedDisplay = displayList.filter((p) => !p.pinned);
 
   // Color Browser: all unique hex values from currently-filtered palettes, sorted by oklch hue
   const colorIndex = useMemo(() => {
@@ -2064,7 +2066,89 @@ export default function Home() {
             ) : (
               <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence mode="popLayout">
-                  {displayList.map((palette) => {
+                  {pinnedDisplay.length > 0 && (
+                    <motion.div
+                      key="__pinned-label"
+                      layout
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="col-span-full flex items-center gap-2 py-0.5"
+                    >
+                      <Pin size={10} style={{ color: "#f97316", flexShrink: 0 }} />
+                      <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#f97316" }}>Pinned</span>
+                      <div className="flex-1 h-px" style={{ background: "rgba(249,115,22,0.2)" }} />
+                      <span className="text-[10px] tabular-nums" style={{ color: "var(--muted)" }}>{pinnedDisplay.length}</span>
+                    </motion.div>
+                  )}
+                  {pinnedDisplay.map((palette) => {
+                    const isCoverPalette = activeCollection !== "all" && palette.id === coverPaletteId;
+                    const palCollectionName = palette.collectionId
+                      ? (collections.find((c) => c.id === palette.collectionId)?.name)
+                      : undefined;
+                    const palCollectionSize = palette.collectionId
+                      ? palettes.filter((p) => p.collectionId === palette.collectionId).length
+                      : undefined;
+                    return (
+                      <PaletteCard
+                        key={palette.id}
+                        cardId={`pc-${palette.id}`}
+                        palette={palette}
+                        onExport={setExportTarget}
+                        onRename={setRenameTarget}
+                        onAssignCollection={setCollectionTarget}
+                        onHarmony={setHarmonyTarget}
+                        onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
+                        onShadeScale={(p, i) => setShadeTarget({ hex: p.colors[i].hex, name: p.colors[i].name })}
+                        onCompare={(p) => {
+                          if (!compareAnchor) {
+                            setCompareAnchor(p);
+                          } else if (compareAnchor.id === p.id) {
+                            setCompareAnchor(null);
+                          } else {
+                            setCompareTarget(p);
+                          }
+                        }}
+                        isCompareAnchor={compareAnchor?.id === palette.id}
+                        compareActive={!!compareAnchor}
+                        onDuplicate={(p) => { const copy = duplicatePalette(p.id); if (copy) setRenameTarget(copy); }}
+                        isSelected={selectedIds.has(palette.id)}
+                        selectionActive={selectedIds.size > 0}
+                        onSelect={toggleSelect}
+                        colorMatchHex={validColorSearch ?? undefined}
+                        isCover={isCoverPalette}
+                        onSetCover={activeCollection !== "all" ? handleSetCover : undefined}
+                        className={isCoverPalette ? "sm:col-span-2" : ""}
+                        searchQuery={search || undefined}
+                        collectionName={palCollectionName}
+                        collectionSize={palCollectionSize}
+                        onJumpToCollection={jumpToCollection}
+                        onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
+                        onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}
+                        activeTag={activeTag !== "all" ? activeTag : undefined}
+                        onPin={(p) => togglePin(p.id)}
+                        isPinned={!!palette.pinned}
+                        isHighlighted={palette.id === highlightedPaletteId}
+                      />
+                    );
+                  })}
+                  {pinnedDisplay.length > 0 && unpinnedDisplay.length > 0 && (
+                    <motion.div
+                      key="__library-label"
+                      layout
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="col-span-full flex items-center gap-2 py-0.5 mt-1"
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--muted)" }}>Library</span>
+                      <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+                      <span className="text-[10px] tabular-nums" style={{ color: "var(--muted)" }}>{unpinnedDisplay.length}</span>
+                    </motion.div>
+                  )}
+                  {unpinnedDisplay.map((palette) => {
                     const isCoverPalette = activeCollection !== "all" && palette.id === coverPaletteId;
                     const palCollectionName = palette.collectionId
                       ? (collections.find((c) => c.id === palette.collectionId)?.name)
