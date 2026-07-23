@@ -46,6 +46,7 @@ export interface FilterPreset {
   name: string;
   collection: string;
   tag: string;
+  tags?: string[];
   mood: string;
   freezeFilter: "all" | "locked";
   printReadyOnly: boolean;

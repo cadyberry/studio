@@ -110,7 +110,7 @@ export default function Home() {
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [trendSeed, setTrendSeed] = useState<{ hex: string; name: string } | undefined>();
   const [showImport, setShowImport] = useState(false);
-  const [activeTag, setActiveTag] = useState<string>("all");
+  const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first">("newest");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
@@ -362,34 +362,38 @@ export default function Home() {
 
   const isFilterActive =
     activeCollection !== "all" ||
-    activeTag !== "all" ||
+    activeTags.length > 0 ||
     activeMood !== "all" ||
     activeFreezeFilter !== "all" ||
     printReadyOnly ||
     activeColorCount !== "all" ||
     sortBy !== "newest";
 
-  const activePresetId = useMemo(
-    () =>
-      filterPresets.find(
-        (p) =>
-          p.collection === activeCollection &&
-          p.tag === activeTag &&
-          p.mood === activeMood &&
-          p.freezeFilter === activeFreezeFilter &&
-          p.printReadyOnly === printReadyOnly &&
-          p.colorCount === activeColorCount &&
-          p.sortBy === sortBy
-      )?.id ?? null,
-    [filterPresets, activeCollection, activeTag, activeMood, activeFreezeFilter, printReadyOnly, activeColorCount, sortBy]
-  );
+  const activePresetId = useMemo(() => {
+    const sortedActive = [...activeTags].sort();
+    return filterPresets.find((p) => {
+      const presetTags = p.tags ?? (p.tag === "all" || !p.tag ? [] : [p.tag]);
+      const sortedPreset = [...presetTags].sort();
+      return (
+        p.collection === activeCollection &&
+        sortedActive.length === sortedPreset.length &&
+        sortedActive.every((t, i) => t === sortedPreset[i]) &&
+        p.mood === activeMood &&
+        p.freezeFilter === activeFreezeFilter &&
+        p.printReadyOnly === printReadyOnly &&
+        p.colorCount === activeColorCount &&
+        p.sortBy === sortBy
+      );
+    })?.id ?? null;
+  }, [filterPresets, activeCollection, activeTags, activeMood, activeFreezeFilter, printReadyOnly, activeColorCount, sortBy]);
 
   const savePreset = useCallback((name: string) => {
     const preset: FilterPreset = {
       id: crypto.randomUUID(),
       name,
       collection: activeCollection,
-      tag: activeTag,
+      tag: activeTags.length === 1 ? activeTags[0] : "all",
+      tags: activeTags,
       mood: activeMood,
       freezeFilter: activeFreezeFilter,
       printReadyOnly,
@@ -400,11 +404,11 @@ export default function Home() {
     setFilterPresets((prev) => [...prev, preset]);
     setSavePresetOpen(false);
     setPresetNameInput("");
-  }, [activeCollection, activeTag, activeMood, activeFreezeFilter, printReadyOnly, activeColorCount, sortBy]);
+  }, [activeCollection, activeTags, activeMood, activeFreezeFilter, printReadyOnly, activeColorCount, sortBy]);
 
   const applyPreset = useCallback((preset: FilterPreset) => {
     setActiveCollection(preset.collection);
-    setActiveTag(preset.tag);
+    setActiveTags(preset.tags ?? (preset.tag === "all" || !preset.tag ? [] : [preset.tag]));
     setActiveMood(preset.mood as PaletteMood | "all");
     setActiveFreezeFilter(preset.freezeFilter);
     setPrintReadyOnly(preset.printReadyOnly);
@@ -420,11 +424,11 @@ export default function Home() {
     const matchesCollection =
       activeCollection === "all" || p.collectionId === activeCollection;
     const matchesTag =
-      activeTag === "all"
+      activeTags.length === 0
         ? true
-        : activeTag === "__mine__"
+        : activeTags[0] === "__mine__"
         ? !p.tags?.length
-        : p.tags?.includes(activeTag);
+        : activeTags.some((t) => p.tags?.includes(t));
 
     if (validColorSearch) {
       const minDelta = Math.min(...p.colors.map((c) => deltaE(c.hex, validColorSearch)));
@@ -618,6 +622,17 @@ export default function Home() {
     setBulkDeleteConfirm(false);
   }, [sorted]);
 
+  const toggleTag = useCallback((tag: string) => {
+    if (tag === "all") { setActiveTags([]); return; }
+    if (tag === "__mine__") { setActiveTags(["__mine__"]); return; }
+    setActiveTags((prev) => {
+      const withoutMine = prev.filter((t) => t !== "__mine__");
+      return withoutMine.includes(tag)
+        ? withoutMine.filter((t) => t !== tag)
+        : [...withoutMine, tag];
+    });
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -806,9 +821,9 @@ export default function Home() {
                 <div className="mt-2 flex flex-wrap gap-x-2.5 gap-y-0.5 pl-1">
                   {untaggedCount > 0 && (
                     <button
-                      onClick={() => setActiveTag("__mine__")}
+                      onClick={() => toggleTag("__mine__")}
                       className={`text-[11px] transition-colors ${
-                        activeTag === "__mine__"
+                        activeTags[0] === "__mine__"
                           ? "text-[var(--accent)] font-medium"
                           : "text-[var(--muted)] hover:text-[var(--foreground)]"
                       }`}
@@ -823,9 +838,9 @@ export default function Home() {
                     return (
                       <button
                         key={tag}
-                        onClick={() => setActiveTag(tag)}
+                        onClick={() => toggleTag(tag)}
                         className={`flex items-center gap-1 text-[11px] transition-colors ${
-                          activeTag === tag
+                          activeTags.includes(tag)
                             ? `${specialStyle?.sidebarActiveText ?? "text-[var(--accent)]"} font-medium`
                             : "text-[var(--muted)] hover:text-[var(--foreground)]"
                         }`}
@@ -1551,11 +1566,11 @@ export default function Home() {
                             const style = SPECIAL_TAG_STYLES[tag];
                             if (!style) return null;
                             const count = baseFiltered.filter((p) => p.tags?.includes(tag)).length;
-                            const isActive = activeTag === tag;
+                            const isActive = activeTags.includes(tag);
                             return (
                               <button
                                 key={tag}
-                                onClick={() => setActiveTag(isActive ? "all" : tag)}
+                                onClick={() => toggleTag(tag)}
                                 title={`${isActive ? "Clear" : "Show only"} ${tag} palettes`}
                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
                                   isActive ? style.activeClass : style.inactiveClass
@@ -1612,11 +1627,27 @@ export default function Home() {
                       })),
                     ].map(({ key, label, count }) => {
                       const specialStyle = SPECIAL_TAG_STYLES[key];
-                      const isActive = activeTag === key;
+                      const isActive =
+                        key === "all"
+                          ? activeTags.length === 0
+                          : key === "__mine__"
+                          ? activeTags[0] === "__mine__"
+                          : activeTags.includes(key);
                       return (
                         <button
                           key={key}
-                          onClick={() => setActiveTag(key)}
+                          onClick={() => toggleTag(key)}
+                          title={
+                            key === "all"
+                              ? "Show all palettes"
+                              : isActive
+                              ? activeTags.length > 1
+                                ? `Remove "${label}" from filter`
+                                : `Clear "${label}" filter`
+                              : activeTags.length > 0 && key !== "__mine__"
+                              ? `Also show "${label}" palettes`
+                              : `Filter by "${label}"`
+                          }
                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
                             isActive
                               ? (specialStyle?.activeClass ?? "bg-[var(--accent)] text-[var(--accent-fg)] border-[var(--accent)] shadow-sm")
@@ -1636,6 +1667,11 @@ export default function Home() {
                         </button>
                       );
                     })}
+                    {activeTags.length > 1 && (
+                      <span className="flex items-center text-[10px] text-[var(--muted)] pl-0.5 select-none">
+                        → {sorted.length} palettes
+                      </span>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1949,19 +1985,20 @@ export default function Home() {
                       <X size={10} className="ml-0.5 shrink-0" />
                     </button>
                   )}
-                  {activeTag !== "all" && (
+                  {activeTags.map((tag) => (
                     <button
-                      onClick={() => setActiveTag("all")}
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: activeTag === "__mine__" ? "#a1a1aa" : getTagDotColor(activeTag) }}
+                        style={{ backgroundColor: tag === "__mine__" ? "#a1a1aa" : getTagDotColor(tag) }}
                       />
-                      {activeTag === "__mine__" ? "Mine" : activeTag.charAt(0).toUpperCase() + activeTag.slice(1)}
+                      {tag === "__mine__" ? "Mine" : tag.charAt(0).toUpperCase() + tag.slice(1)}
                       <X size={10} className="shrink-0" />
                     </button>
-                  )}
+                  ))}
                   {activeMood !== "all" && (
                     <button
                       onClick={() => setActiveMood("all")}
@@ -2035,7 +2072,7 @@ export default function Home() {
                   size="sm"
                   onClick={() => {
                     setSearch("");
-                    setActiveTag("all");
+                    setActiveTags([]);
                     setActiveMood("all");
                     setActiveFreezeFilter("all");
                     setActiveColorCount("all");
@@ -2125,8 +2162,8 @@ export default function Home() {
                         collectionSize={palCollectionSize}
                         onJumpToCollection={jumpToCollection}
                         onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
-                        onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}
-                        activeTag={activeTag !== "all" ? activeTag : undefined}
+                        onFilterByTag={(tag) => toggleTag(tag)}
+                        activeTags={activeTags.length > 0 ? activeTags : undefined}
                         onPin={(p) => togglePin(p.id)}
                         isPinned={!!palette.pinned}
                         isHighlighted={palette.id === highlightedPaletteId}
@@ -2191,8 +2228,8 @@ export default function Home() {
                         collectionSize={palCollectionSize}
                         onJumpToCollection={jumpToCollection}
                         onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
-                        onFilterByTag={(tag) => setActiveTag(activeTag === tag ? "all" : tag)}
-                        activeTag={activeTag !== "all" ? activeTag : undefined}
+                        onFilterByTag={(tag) => toggleTag(tag)}
+                        activeTags={activeTags.length > 0 ? activeTags : undefined}
                         onPin={(p) => togglePin(p.id)}
                         isPinned={!!palette.pinned}
                         isHighlighted={palette.id === highlightedPaletteId}

@@ -120,7 +120,7 @@ interface PaletteCardProps {
   onJumpToCollection?: (collectionId: string) => void;
   onClearCollection?: () => void;
   onFilterByTag?: (tag: string) => void;
-  activeTag?: string;
+  activeTags?: string[];
   onCompare?: (palette: Palette) => void;
   isCompareAnchor?: boolean;
   compareActive?: boolean;
@@ -136,7 +136,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTag, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -1470,7 +1470,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </span>
             )}
             {palette.tags?.map((tag) => {
-              const isActiveFilter = !!activeTag && tag === activeTag;
+              const isActiveFilter = !!activeTags?.includes(tag);
               if (onFilterByTag) {
                 const baseClass =
                   tag === "trend"
