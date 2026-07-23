@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-07-23 — Session 159: Palette Tag Multi-Select
+
+### What was done
+- **Tag multi-select filter** — creators can now activate multiple tags simultaneously to see palettes that match ANY of them. Previously only one tag could be active at a time; a creator with "botanical" and "coastal" palettes had no way to filter for either without two separate searches.
+- **Toggle behavior** — clicking an inactive tag adds it to the active set; clicking an active tag removes it. Clicking "All" clears the set. Clicking "Mine" is exclusive (clears other tags and shows only untagged palettes).
+- **State change** — `activeTag: string` ("all" | "__mine__" | tag) replaced by `activeTags: string[]` (empty = no filter, OR logic across elements).
+- **Filter chips in "no results" view** — each active tag now renders its own dismissible chip (instead of one chip for a single tag).
+- **Multi-tag result count indicator** — when 2+ tags are active in the tag pill row, a small `→ N palettes` label shows the combined result count so creators can see the OR union at a glance.
+- **Filter preset backward compat** — `FilterPreset.tags?: string[]` added; legacy presets with `tag: string` are read gracefully. When saving a preset, `tags: activeTags` is stored.
+- **PaletteCard tag chips** — `activeTag?: string` prop renamed to `activeTags?: string[]`; tag chip highlighting now checks `activeTags.includes(tag)` so all active tags show their highlighted state on cards.
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **OR logic, not AND** — showing palettes that match ANY active tag is far more useful for filtering broad creative categories. AND would produce empty results as soon as two non-overlapping tags are selected.
+- **`__mine__` stays exclusive** — "Mine" (untagged palettes) is conceptually incompatible with tag filters; it clears other active tags when selected, and regular tag clicks clear `__mine__`. No ambiguity.
+- **Empty array = "all"** — zero-length `activeTags` means no tag filter, matching the previous "all" sentinel string. This is more composable and avoids a magic string.
+- **`toggleTag` callback** — extracted from inline logic so it can be shared across sidebar inventory, main panel pills, color-search special tag pills, and PaletteCard calls without duplicating the toggle/exclusive logic.
+
+### What's next (Session 160)
+- **Color Browser: swatch grid density toggle** — small/medium/large swatch size option so creators can see more or fewer colors at once
+- **Palette card: keyboard shortcut overlay** — hold `?` over a card to see a tooltip of all available shortcuts
+- **Palette card: drag-to-reorder swatches** — rearrange colors within a palette by dragging them
+
+---
+
 ## 2026-07-22 — Session 157: Trend Library "Save" UX
 
 ### What was done
