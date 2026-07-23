@@ -4315,3 +4315,33 @@
 - **Color Story: `S` keyboard shortcut** — map `S` key to open/toggle Color Story when hovering a card (already have `D`, `H`, `E`, `L`, `P` shortcuts)
 - **"Export this palette" shortcut inside Color Story overlay** — small "Export" button at the bottom of the Color Story panel to open the Export modal without closing the story first
 - **Palette card: Color Story indicator badge** — a small ✨ indicator in the header badge row when a cached story exists, so creators know a story is ready without hovering
+
+---
+
+## 2026-07-23 — Session 158: Pinned Palette Section Headers
+
+### What was done
+- **Pinned / Library section dividers in the palette grid** — when one or more palettes are pinned, the grid now shows a clear two-section layout:
+  - **"PINNED" row** — an orange pin icon + "PINNED" label in small uppercase with a hairline orange rule (20% opacity) and a count badge on the right. Appears only when `pinnedDisplay.length > 0`.
+  - **"LIBRARY" row** — a muted "LIBRARY" label + hairline border-color rule + count badge. Appears only when both pinned and unpinned palettes exist in the current filtered view.
+  - When no palettes are pinned, the grid looks exactly as before — flat list, no headers.
+  - When all palettes are pinned, only the "PINNED" header shows (no "LIBRARY" row since there's nothing below).
+- **Animated enter/exit** — both section rows use `initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}` inside the existing `AnimatePresence mode="popLayout"`. Pinning a palette smoothly inserts the headers; unpinning the last pinned palette slides them away.
+- **Grid-spanning layout** — headers use `col-span-full` to span both columns at all breakpoints, so they always act as a visual row separator regardless of the 1-col mobile / 2-col desktop grid.
+- **`Pin` icon imported in page.tsx** — was already used in PaletteCard but not in the page itself.
+- **`pinnedDisplay` / `unpinnedDisplay`** — two new derived arrays split from `displayList` right after it's computed; used in the section-aware rendering to replace the single `displayList.map()` with two separate maps + conditional headers.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Split rendering, not a synthetic "header item" in the array** — the two-section approach (map pinned, map unpinned) is cleaner than injecting fake header objects into `displayList` and using type narrowing in a single map. The PaletteCard render block is duplicated once, but it's explicit and easy to follow.
+- **Orange (#f97316) for "Pinned" header** — matches the existing orange color already used for the pinned count stat in the sidebar (`color: pinnedCount > 0 ? "#f97316" : undefined`). Visual consistency without a new design decision.
+- **20% opacity for the hairline** — enough to be visible as a structural element without competing with the swatch colors above and below.
+- **`col-span-full` not `sm:col-span-2`** — `col-span-full` spans all defined columns at every breakpoint in one utility; `sm:col-span-2` would fail on mobile where the grid is 1 column. Always use `col-span-full` for row-spanning elements in responsive grids.
+- **`mt-1` on "LIBRARY" row** — adds a small vertical nudge of separation from the last pinned card, reinforcing the section boundary without needing a full gap.
+
+### What's next (Session 159)
+- **Color Browser: swatch grid density toggle** — small/medium/large swatch size option so creators can see more or fewer colors at once
+- **Palette search: filter by tag multi-select** — allow activating multiple tags simultaneously (currently only one tag can be active; a creator with "botanical" + "coastal" palettes can't filter for either)
+- **Palette card: keyboard shortcut overlay** — hold `?` over a card to see a tooltip of all available shortcuts
+
+---
