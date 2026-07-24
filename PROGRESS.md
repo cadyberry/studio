@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-24 — Session 160: Color Browser Swatch Grid Density Toggle
+
+### What was done
+- **Density toggle (S / M / L)** — three buttons added to the Color Browser header toolbar, left of the search bar. Each represents a swatch grid density level: small (40px minmax), medium (58px), and large (84px). Active level is highlighted in accent color; the other two show muted density grid icons.
+- **DensityIcon SVG component** — custom inline SVG icons (3×3 dots for S, 2×2 for M, single square for L) cleanly communicate the layout change at 12×12px without requiring a library icon.
+- **localStorage persistence** — selected density is saved under `palette-color-browser-density` and restored on mount, so Cady's preferred view survives page reloads.
+- **Proportional text/icon scaling** — the hex label in the hover overlay, the copy/check icon, and the multi-palette count badge all scale with density (sm/md/lg correspond to 8/9/11px text and 9/11/13px icons). Swatches look polished at every size.
+- **Both grids updated** — the chromatic-band grid and the neutrals grid both use `DENSITY_MINMAX[density]` so the toggle affects all colors consistently.
+- Production build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Three levels, not a slider** — S/M/L is faster to click than a slider and maps directly to three clearly different visual modes (dense browse vs. normal vs. large-preview). A continuous slider would require more interaction with less predictable output.
+- **`localStorage` not Zustand** — this preference is scoped to the Color Browser component alone, not the broader palette library state. Keeping it in local state + localStorage avoids polluting the Zustand store with UI-only prefs.
+- **`auto-fill minmax` CSS grid** — the grid adapts to the container width at each density level without any JS resize logic; the browser handles reflow naturally when density changes.
+
+### What's next (Session 161)
+- **Palette card: keyboard shortcut overlay** — hold `?` over a card to see a tooltip of all available shortcuts (this has been deferred from sessions 159 and 160)
+- **Palette card: drag-to-reorder swatches** — rearrange colors within a palette by dragging them
+- **Color Browser: palette strip in hover tooltip** — show a mini horizontal strip of the full palette's colors (not just the matching one) for better palette-level context
+
+---
+
 ## 2026-07-23 — Session 159: Palette Tag Multi-Select
 
 ### What was done
