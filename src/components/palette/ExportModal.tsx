@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, ImageDown } from "lucide-react";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsStoryMoodBoard } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -475,8 +475,16 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                       </button>
                     </div>
 
-                    {/* Regenerate */}
-                    <div className="border-t border-[var(--border)] px-3 py-1.5 flex justify-end">
+                    {/* Story Mood Board export + Regenerate */}
+                    <div className="border-t border-[var(--border)] px-3 py-1.5 flex items-center justify-between">
+                      <button
+                        onClick={() => exportAsStoryMoodBoard(palette, story)}
+                        title="Download a 1080×1350 PNG with swatches, vibe, product ideas & AI prompt"
+                        className="flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all"
+                      >
+                        <ImageDown size={11} className="shrink-0" />
+                        Story Mood Board
+                      </button>
                       <button
                         onClick={() => { setStory(null); generateStory(); }}
                         className="flex items-center gap-1 text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"

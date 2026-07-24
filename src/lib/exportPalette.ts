@@ -1,6 +1,6 @@
 "use client";
 
-import type { Palette } from "@/types";
+import type { Palette, ColorStory } from "@/types";
 import { hexToRgb, rgbToHsl, rgbToCmyk, hexToOklch, simulateCmykPrint, getPaletteMood } from "./utils";
 
 const MOOD_DOTS: Record<string, string> = {
@@ -715,6 +715,234 @@ export function exportAsAse(palette: Palette): void {
   link.href = url;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+// Story Mood Board — 1080×1350 dark canvas combining swatches with the AI Color Story
+function contrastForHex(hex: string): "#FFFFFF" | "#111111" {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? "#111111" : "#FFFFFF";
+}
+
+function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCanvasElement | null {
+  const n = palette.colors.length;
+  if (n === 0) return null;
+
+  const W = 1080;
+  const H = 1350;
+  const PAD = 56;
+  const SANS = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+  const MONO = "'Courier New', Courier, monospace";
+  const CONTENT_W = W - PAD * 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctxOrNull = canvas.getContext("2d");
+  if (!ctxOrNull) return null;
+  const ctx: CanvasRenderingContext2D = ctxOrNull;
+
+  // Background
+  const bgGrd = ctx.createLinearGradient(0, 0, W, H);
+  bgGrd.addColorStop(0, "#1A1A14");
+  bgGrd.addColorStop(1, "#0F0F0A");
+  ctx.fillStyle = bgGrd;
+  ctx.fillRect(0, 0, W, H);
+
+  // Wrap text into lines fitting maxWidth given current ctx.font
+  function wrapText(text: string, maxWidth: number): string[] {
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let cur = "";
+    for (const word of words) {
+      const test = cur ? `${cur} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && cur) {
+        lines.push(cur);
+        cur = word;
+      } else {
+        cur = test;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  // === SWATCH STRIP ===
+  const STRIP_H = 272;
+  const swatchW = W / n;
+  palette.colors.forEach((color, i) => {
+    ctx.fillStyle = color.hex;
+    ctx.fillRect(Math.floor(i * swatchW), 0, Math.ceil(swatchW) + 1, STRIP_H);
+  });
+
+  // Hex labels at bottom of each swatch — pill overlay
+  ctx.font = `bold 13px ${MONO}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  palette.colors.forEach((color, i) => {
+    const fg = contrastForHex(color.hex);
+    const cx = Math.floor(i * swatchW) + swatchW / 2;
+    const cy = STRIP_H - 20;
+    const hexStr = color.hex.slice(1).toUpperCase();
+    const tw = ctx.measureText(hexStr).width;
+    roundRectPath(ctx, cx - tw / 2 - 6, cy - 10, tw + 12, 20, 4);
+    ctx.fillStyle = fg === "#FFFFFF" ? "rgba(0,0,0,0.42)" : "rgba(255,255,255,0.50)";
+    ctx.fill();
+    ctx.fillStyle = fg;
+    ctx.fillText(hexStr, cx, cy);
+  });
+
+  let y = STRIP_H + 50;
+
+  // === PALETTE NAME ===
+  ctx.font = `bold 56px ${SANS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#F5F5EF";
+  const nameLines = wrapText(palette.name, CONTENT_W);
+  nameLines.slice(0, 2).forEach((line, i) => {
+    ctx.fillText(line, PAD, y + i * 68);
+  });
+  y += Math.min(nameLines.length, 2) * 68 + 14;
+
+  // === MOOD + COUNT PILL ===
+  const mood = getPaletteMood(palette.colors);
+  const moodDot = MOOD_DOTS[mood] ?? "#8A8A80";
+  ctx.beginPath();
+  ctx.arc(PAD + 8, y + 11, 8, 0, Math.PI * 2);
+  ctx.fillStyle = moodDot;
+  ctx.fill();
+  ctx.font = `400 19px ${SANS}`;
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#777770";
+  ctx.fillText(`${mood}  ·  ${n} color${n !== 1 ? "s" : ""}`, PAD + 24, y + 2);
+  y += 44;
+
+  // === DIVIDER ===
+  y += 14;
+  ctx.fillStyle = "#2D2D24";
+  ctx.fillRect(PAD, y, CONTENT_W, 1);
+  y += 26;
+
+  // === VIBE SECTION ===
+  ctx.font = `600 11px ${SANS}`;
+  ctx.fillStyle = "#484840";
+  ctx.letterSpacing = "0.1em";
+  ctx.fillText("VIBE", PAD, y);
+  ctx.letterSpacing = "0em";
+  y += 22;
+
+  // Opening curly quote for the vibe — left margin
+  ctx.font = `italic 72px ${SANS}`;
+  ctx.fillStyle = "#2A2A20";
+  ctx.textBaseline = "top";
+  ctx.fillText("“", PAD - 4, y - 10);
+
+  ctx.font = `italic 22px ${SANS}`;
+  ctx.fillStyle = "#C0C0B8";
+  const vibeLines = wrapText(story.vibe, CONTENT_W);
+  vibeLines.slice(0, 4).forEach((line) => {
+    ctx.fillText(line, PAD, y);
+    y += 33;
+  });
+  y += 10;
+
+  // === PRODUCT IDEAS SECTION ===
+  ctx.font = `600 11px ${SANS}`;
+  ctx.fillStyle = "#484840";
+  ctx.letterSpacing = "0.1em";
+  ctx.fillText("PERFECT FOR", PAD, y);
+  ctx.letterSpacing = "0em";
+  y += 22;
+
+  ctx.font = `15px ${SANS}`;
+  ctx.textBaseline = "middle";
+  let px = PAD;
+  const PILL_H = 34;
+  const PILL_PAD = 14;
+  const PILL_GAP = 8;
+  const PILL_R = PILL_H / 2;
+  story.products.slice(0, 9).forEach((product) => {
+    const tw = ctx.measureText(product).width;
+    const pw = tw + PILL_PAD * 2;
+    if (px + pw > W - PAD + 4) {
+      px = PAD;
+      y += PILL_H + 8;
+    }
+    roundRectPath(ctx, px, y, pw, PILL_H, PILL_R);
+    ctx.fillStyle = "#252520";
+    ctx.fill();
+    ctx.fillStyle = "#848480";
+    ctx.textAlign = "center";
+    ctx.fillText(product, px + pw / 2, y + PILL_H / 2);
+    ctx.textAlign = "left";
+    px += pw + PILL_GAP;
+  });
+  y += PILL_H + 24;
+
+  // === ART PROMPT SECTION ===
+  ctx.textBaseline = "top";
+  ctx.font = `600 11px ${SANS}`;
+  ctx.fillStyle = "#484840";
+  ctx.letterSpacing = "0.1em";
+  ctx.fillText("ART PROMPT", PAD, y);
+  ctx.letterSpacing = "0em";
+  y += 22;
+
+  ctx.font = `14px ${MONO}`;
+  ctx.fillStyle = "#6A6A64";
+  const promptLines = wrapText(story.prompt, CONTENT_W - 36);
+  const promptBoxH = Math.min(promptLines.length, 6) * 22 + 36;
+  roundRectPath(ctx, PAD, y, CONTENT_W, promptBoxH, 10);
+  ctx.fillStyle = "#1C1C16";
+  ctx.fill();
+  promptLines.slice(0, 6).forEach((line, i) => {
+    ctx.fillStyle = "#707068";
+    ctx.fillText(line, PAD + 18, y + 18 + i * 22);
+  });
+  y += promptBoxH;
+
+  // === FOOTER (anchored to bottom) ===
+  const footerY = H - PAD - 30;
+  ctx.fillStyle = "#252520";
+  ctx.fillRect(PAD, footerY - 18, CONTENT_W, 1);
+
+  const lw = 24, lh = 24, lr = 6;
+  const logoGrd = ctx.createLinearGradient(PAD, footerY, PAD + lw, footerY + lh);
+  logoGrd.addColorStop(0, "#fda4af");
+  logoGrd.addColorStop(0.5, "#c4b5fd");
+  logoGrd.addColorStop(1, "#93c5fd");
+  ctx.fillStyle = logoGrd;
+  roundRectPath(ctx, PAD, footerY, lw, lh, lr);
+  ctx.fill();
+
+  ctx.font = `bold 15px ${SANS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#B8B8B0";
+  ctx.fillText("Palette", PAD + lw + 9, footerY + lh / 2);
+
+  ctx.font = `500 13px ${SANS}`;
+  ctx.fillStyle = "#484840";
+  ctx.fillText("color intelligence for creators", PAD + lw + 78, footerY + lh / 2);
+
+  const dateStr = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date());
+  ctx.font = `13px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#3A3A30";
+  ctx.fillText(dateStr, W - PAD, footerY + lh / 2);
+
+  return canvas;
+}
+
+export function exportAsStoryMoodBoard(palette: Palette, story: ColorStory): void {
+  const canvas = buildStoryMoodBoardCanvas(palette, story);
+  if (!canvas) return;
+  const link = document.createElement("a");
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-story.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 }
 
 // Procreate .swatches — ZIP archive containing Swatches.json with HSB values.
