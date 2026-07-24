@@ -5,6 +5,37 @@ import { motion } from "framer-motion";
 import { Copy, Check, Layers, Search, X } from "lucide-react";
 import { getContrastColor, hexToRgb, rgbToHsl, hslToHex } from "@/lib/utils";
 
+type SwatchDensity = "sm" | "md" | "lg";
+
+const DENSITY_MINMAX: Record<SwatchDensity, string> = {
+  sm: "40px",
+  md: "58px",
+  lg: "84px",
+};
+
+function DensityIcon({ size }: { size: SwatchDensity }) {
+  if (size === "sm") {
+    const pos = [0, 4, 8];
+    return (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+        {pos.flatMap((x) => pos.map((y) => <rect key={`${x}-${y}`} x={x} y={y} width="3" height="3" rx="0.4" />))}
+      </svg>
+    );
+  }
+  if (size === "md") {
+    return (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+        {[0, 6].flatMap((x) => [0, 6].map((y) => <rect key={`${x}-${y}`} x={x} y={y} width="5" height="5" rx="0.7" />))}
+      </svg>
+    );
+  }
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+      <rect x="0" y="0" width="12" height="12" rx="1.5" />
+    </svg>
+  );
+}
+
 function getPaletteMatchRingColor(hex: string): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return "#8b5cf6bf";
@@ -99,8 +130,22 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [activeBand, setActiveBand] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [density, setDensity] = useState<SwatchDensity>("sm");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Persist density preference
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("palette-color-browser-density") as SwatchDensity | null;
+      if (stored && stored in DENSITY_MINMAX) setDensity(stored);
+    } catch {}
+  }, []);
+
+  const handleDensityChange = (d: SwatchDensity) => {
+    setDensity(d);
+    try { localStorage.setItem("palette-color-browser-density", d); } catch {}
+  };
 
   // Apply collection filter: keep only colors where at least one source palette is in the selected collection
   const visibleColorIndex = useMemo(() => {
@@ -253,6 +298,9 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     const isCopied = copiedHex === c.hex;
     const fg = getContrastColor(c.hex);
     const count = c.paletteIds.length;
+    const hexFontSize = density === "lg" ? "11px" : density === "md" ? "9px" : "8px";
+    const copyIconSize = density === "lg" ? 13 : density === "md" ? 11 : 9;
+    const badgeFontSize = density === "lg" ? "10px" : density === "md" ? "9px" : "8px";
     const matchingPaletteNames = paletteMatchMap.get(c.hex);
     const matchRingColor = matchingPaletteNames ? getPaletteMatchRingColor(c.hex) : null;
 
@@ -321,8 +369,9 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
         {/* Count badge — shows when there are multiple palettes */}
         {count > 1 && !isHovered && (
           <div
-            className="absolute bottom-0.5 right-0.5 text-[8px] font-bold leading-none px-[3px] py-[2px] rounded-[2px]"
+            className="absolute bottom-0.5 right-0.5 font-bold leading-none px-[3px] py-[2px] rounded-[2px]"
             style={{
+              fontSize: badgeFontSize,
               backgroundColor: fg === "#fafaf8" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.55)",
               color: fg,
             }}
@@ -338,8 +387,8 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
             style={{ backgroundColor: fg === "#fafaf8" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.72)" }}
           >
             <span
-              className="text-[8px] font-mono font-bold leading-none"
-              style={{ color: fg === "#fafaf8" ? "#fff" : "#111" }}
+              className="font-mono font-bold leading-none"
+              style={{ fontSize: hexFontSize, color: fg === "#fafaf8" ? "#fff" : "#111" }}
             >
               {c.hex.slice(1).toUpperCase()}
             </span>
@@ -350,8 +399,8 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
               title="Copy hex"
             >
               {isCopied
-                ? <Check size={9} style={{ color: fg === "#fafaf8" ? "#fff" : "#111" }} />
-                : <Copy size={9} style={{ color: fg === "#fafaf8" ? "#fff" : "#111" }} />
+                ? <Check size={copyIconSize} style={{ color: fg === "#fafaf8" ? "#fff" : "#111" }} />
+                : <Copy size={copyIconSize} style={{ color: fg === "#fafaf8" ? "#fff" : "#111" }} />
               }
             </button>
           </div>
@@ -467,6 +516,23 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
             }{!searchQuery.trim() && <span className="hidden sm:inline"> — click any swatch to find palettes that contain it</span>}
           </p>
           <div className="flex items-center gap-2 ml-auto flex-wrap">
+            {/* Density toggle */}
+            <div className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-[var(--border)] p-0.5 bg-[var(--surface-2)]">
+              {(["sm", "md", "lg"] as SwatchDensity[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => handleDensityChange(d)}
+                  title={d === "sm" ? "Small swatches" : d === "md" ? "Medium swatches" : "Large swatches"}
+                  className={`w-5 h-5 flex items-center justify-center rounded transition-all ${
+                    density === d
+                      ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  <DensityIcon size={d} />
+                </button>
+              ))}
+            </div>
             {/* Search bar */}
             <div className="relative flex items-center">
               <Search size={10} className="absolute left-2 text-[var(--muted)] pointer-events-none" />
@@ -560,7 +626,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                 </div>
                 <div
                   className="grid gap-1.5"
-                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+                  style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${DENSITY_MINMAX[density]}, 1fr))` }}
                 >
                   {band.colors.map(renderSwatch)}
                 </div>
@@ -578,7 +644,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                 </div>
                 <div
                   className="grid gap-1.5"
-                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))" }}
+                  style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${DENSITY_MINMAX[density]}, 1fr))` }}
                 >
                   {neutrals.map(renderSwatch)}
                 </div>
