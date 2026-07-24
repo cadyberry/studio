@@ -2,6 +2,38 @@
 
 ---
 
+## 2026-07-24 — Session 161: Story Mood Board Export
+
+### What was done
+- **"Story Mood Board" export** — a new 1080×1350 dark portrait PNG that combines the palette's color story with its swatches into a shareable social image. The export button appears at the bottom of the Color Story card in the Export modal once a story is generated.
+- **Canvas layout** (`buildStoryMoodBoardCanvas` in `exportPalette.ts`):
+  - Full-width swatch strip at the top (272px), with hex codes as semi-transparent pill overlays at the bottom of each swatch — contrast-detected per swatch color
+  - Palette name in large bold type (56px), wraps to 2 lines for long names
+  - Mood dot + mood label + color count
+  - Thin divider rule
+  - "VIBE" section: italic vibe text with a decorative large opening curly quote
+  - "PERFECT FOR" section: product ideas rendered as pill badges in dark background
+  - "ART PROMPT" section: prompt text in a monospace dark-background box
+  - Footer: gradient logo pill + "Palette" branding + current date, anchored to the canvas bottom
+- **Dark mode only** — the near-black gradient background (#1A1A14 → #0F0F0A) makes the swatch colors pop and reads beautifully for social media (Instagram Stories/posts, Pinterest, etc.)
+- **Zero additional API calls** — the export uses the cached Color Story from the Zustand store; no new fetch is triggered
+- **`ExportModal.tsx` update** — "Story Mood Board" button added alongside the existing "Regenerate" action in the story card's footer row. `ImageDown` icon from Lucide distinguishes it as a download action.
+- **`contrastForHex` helper** — local utility in `exportPalette.ts` that returns `#FFFFFF` or `#111111` based on perceived luminance; used to set hex-pill colors in the swatch strip
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes
+
+### Key decisions
+- **Portrait 1080×1350 (Instagram 4:5)** — the existing mood boards include this format, but none include story content; this fills the gap for creators who want to share palette stories, not just color grids
+- **Export button in the story section, not the Download list** — discovery is better here: the user just generated a story and sees "Story Mood Board" right next to Regenerate. Adding it to the Download list would require a disabled/grayed state when no story exists, which is awkward UX
+- **`const ctxOrNull` + `const ctx: CanvasRenderingContext2D`** — TypeScript cannot prove `ctx` is non-null inside a nested closure after an early return; capturing it as an explicitly typed non-null const resolves the type error without casting
+- **Opening curly quote as decorative element** — renders in a huge muted color (72px, `#2A2A20`) behind the vibe text for visual interest without cluttering the readable text
+
+### What's next (Session 162)
+- **Story Mood Board: light-mode variant** — add a light background option to the story export, matching the existing light/dark mood board pairs
+- **Story Mood Board: color name row** — include swatch names below the hex codes in the strip when they exist
+- **Export modal: "Story Mood Board" in Download list** — add as a disabled row with "Generate a Color Story first" when story is null, for discoverability before the story is generated
+
+---
+
 ## 2026-07-24 — Session 160: Color Browser Swatch Grid Density Toggle
 
 ### What was done
