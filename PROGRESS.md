@@ -4424,3 +4424,69 @@
 - **Palette card: keyboard shortcut overlay** — hold `?` over a card to see a tooltip of all available shortcuts
 
 ---
+
+## 2026-07-23 — Session 159: Palette Tag Multi-Select Filter
+
+### What was done
+- **Multi-tag filter** — creators can now activate multiple tags simultaneously in the palette grid. Clicking a second tag adds it to the active set; palettes matching *any* active tag are shown. A `→ N palettes` hint appears inline when two or more tags are active.
+- `toggleTag` now accumulates tags (or removes them) rather than replacing the single active tag.
+- Filter preset save/load updated: `tags` field stores the full array; single-tag presets continue to round-trip correctly via `tag` for backwards compatibility.
+
+### What's next (Session 160)
+- Color Browser: swatch grid density toggle
+- Story Mood Board export with AI color story overlay
+
+---
+
+## 2026-07-23 — Session 160: Color Browser Swatch Grid Density Toggle
+
+### What was done
+- **Density toggle in Color Browser** — small (`sm` / 40px), medium (`md` / 58px), and large (`lg` / 84px) swatch sizes. Selector uses custom SVG icons (3×3 grid, 2×2 grid, single cell) to communicate density without labels. Preference persisted to localStorage as `palette-color-browser-density`.
+- `DENSITY_MINMAX` map drives the CSS grid `minmax()` column calculation for both hue-band and collection-filter views.
+- Font sizes and icon sizes inside each swatch scale with density tier.
+
+### What's next (Session 161)
+- Story Mood Board export — 1080×1350 canvas PNG with palette swatches + AI Color Story text
+
+---
+
+## 2026-07-23 — Session 161: Story Mood Board Export
+
+### What was done
+- **Story Mood Board canvas export** — a new "Mood Board" export option in the Export modal generates a 1080×1350 canvas PNG. The card includes: full-bleed swatch row at top, palette name, the AI Color Story (vibe sentence + product suggestions + prompt fragment), and a subtle Palette watermark. If no Color Story has been generated yet, the button prompts the user to generate one first.
+- Canvas drawing: swatch strip (proportional widths), header text block, body text with line-wrapping, footer branding — all pure Canvas 2D, no external image assets needed.
+- Export is triggered synchronously from a `<canvas>` element drawn off-screen.
+
+### What's next (Session 162)
+- Colorblind simulation mode in Harmony View (CVD — Deuteranopia / Protanopia / Tritanopia)
+- Palette card: `?` shortcut overlay (hold to see shortcuts)
+
+---
+
+## 2026-07-25 — Session 162: Colorblind Simulation (CVD) in Harmony View
+
+### What was done
+- **"CVD" mode added to Harmony View** — a 4th view mode button (Eye icon, labelled "CVD") joins the Screen / Dark / Print toggle row. Clicking it enters Color Vision Deficiency simulation mode.
+- **Three deficiency types** — Deutan (deuteranopia, most common ~5% of men), Protan (protanopia ~1%), Tritan (tritanopia, rare blue-yellow). A 3-button sub-selector switches between them.
+- **Machado (2009) simulation matrices** — severity 1.0 (complete). Applied in linear-light sRGB space (proper gamma removal via the sRGB transfer function, matrix multiply, re-linearize). Pure TypeScript, zero runtime dependencies.
+  - New `simulateColorBlind(hex, type): string` exported from `lib/utils.ts`
+  - New `ColorBlindType = "deuteranopia" | "protanopia" | "tritanopia"` type exported
+- **Mock shop preview** — the shop mockup in Harmony View re-renders with simulated colors so creators can see how their brand looks to colorblind visitors.
+- **Animated swatch header** — the palette strip at the top of the modal animates to the simulated colors (same Framer Motion transition as print mode).
+- **Before/After strip** — a two-row comparison (original top, simulated bottom) with labels appears in the CVD panel below the type selector.
+- **Per-swatch comparison table** — replaces the color roles grid in CVD mode. Each row shows original swatch → simulated swatch + hex values. Swatches that are unchanged get an "Unchanged" badge.
+- **Footer note** — describes the Machado method and encourages using shape/pattern alongside color for accessibility.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Machado 2009 over Brettel 1997** — Machado produces perceptually smoother transitions and is widely used in professional a11y tools (Coblis, Color Oracle). Brettel requires separate half-plane matrices which adds complexity for marginal accuracy gain.
+- **Swatch comparison table replaces color roles in blind mode** — the role assignments (background/text/accent) are unchanged in CVD mode; showing the WCAG contrast ratios would be misleading because CVD viewers experience contrast differently. The before/after swatch comparison is the actionable deliverable.
+- **`cvdCache` as a `Map<string, string>`** — mirrors the `simCache: Map<string, PrintSimResult>` pattern. Built once per render in the parent, passed to `MockShopPage` via props. No memoization needed since the modal is remounted when palette changes.
+- **`linearize` / `delinearize` using the proper sRGB TF** — not the common 2.2 gamma shortcut. The threshold `0.04045` / `0.0031308` matches the IEC 61966-2-1 spec; matters for very dark colors where the linear segment applies.
+
+### What's next (Session 163)
+- **Colorblind export** — a "Download CVD preview" button in CVD mode that exports the simulated palette as a PNG swatch strip so creators can share it with clients or include it in accessibility audits
+- **Palette card accessibility badge** — a small a11y badge on palette cards when all swatch pairs pass contrast checks, so creators can see at a glance which palettes are screen-reader friendly
+- **Print check: Caution → Safe single-click mute** — lighter C=0.12 clamp for Caution swatches (currently only Vivid/C>0.25 gets a Mute button)
+
+---
