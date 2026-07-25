@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-07-25 — Session 162: Story Mood Board Light Variant + Download List Discoverability
+
+### What was done
+- **Story Mood Board — Light variant** (`exportAsLightStoryMoodBoard`) — a cream-gradient 1080×1350 export matching the existing light/dark pair pattern of the regular mood boards. Cream background (`#FAFAF7` → `#F0F0E8`), dark palette name, muted section labels, light pill backgrounds (`#E8E8E0`), and a soft prompt box (`#EDEDE5`). The swatch strip at the top is unaffected (uses the palette's own colors).
+- **`buildStoryMoodBoardCanvas` refactored** — accepts `{ dark?: boolean }` option. A theme object (`t.name`, `t.vibeText`, `t.pillBg`, etc.) holds all variant-specific colors; both light and dark variants share the canvas builder. `exportAsStoryMoodBoard` now explicitly passes `{ dark: true }`.
+- **Swatch names in strip** — when any palette color has a name, the swatch strip expands from 272px to 296px and renders each name in italic above the hex pill. Contrast is auto-detected per swatch; text is truncated if wider than the swatch. Colors without names show only the hex pill.
+- **Story Mood Board in Download list** — "Story Mood Board — Light" and "Story Mood Board — Dark" now appear as rows in the Download section of ExportModal. When no Color Story has been generated yet, they render with `opacity-40 cursor-not-allowed` and describe "Generate a Color Story first" — fully discoverable before the AI section is reached. Once a story exists, both rows enable and download immediately.
+- **Story Mood Board removed from Color Story footer** — the single "Story Mood Board" button that lived at the bottom of the Color Story result card is removed (now covered by the Download list); only "Regenerate" remains in the footer.
+- **Quote fix** — replaced curly Unicode double quotes (U+201C/U+201D) with straight ASCII quotes throughout `exportPalette.ts`; kept the decorative opening curly quote in the Vibe section as a character literal inside a properly delimited string.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes.
+
+### Key decisions
+- **Theme object, not two functions** — a single `buildStoryMoodBoardCanvas(palette, story, { dark })` with a theme literal is far easier to maintain than two parallel canvas functions. The swatch strip (actual palette colors) is identical in both variants; only the surrounding page chrome changes.
+- **Strip height grows with names** — rather than squeezing names into the existing 272px, expanding to 296px gives names room to breathe without making hex pills feel cramped. The 24px delta is invisible in the overall 1350px canvas.
+- **Download list placement, not a toggle in the footer** — discoverability is the core goal. A creator looking at the Download section sees "Story Mood Board — Light/Dark" immediately, even before thinking to generate a story. The disabled state explains what to do next without requiring separate UI copy.
+- **Sun/Moon icons for Light/Dark story boards** — matches the established icon pattern (`Moon` for dark mood boards) and gives creators immediate visual distinction between the two variants.
+
+### What's next (Session 163)
+- **Palette card: drag-to-reorder swatches** — rearrange colors within a palette by dragging them in the grid view
+- **Palette card: keyboard shortcut overlay** — hold `?` over a card to see all available shortcuts in a tooltip
+- **Color Browser: palette strip in hover tooltip** — show a mini horizontal strip of the full palette's colors in the swatch hover tooltip for palette-level context
+
+---
+
 ## 2026-07-24 — Session 161: Story Mood Board Export
 
 ### What was done
