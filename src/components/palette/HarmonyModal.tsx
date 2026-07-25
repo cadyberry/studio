@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Monitor, Printer, Moon } from "lucide-react";
+import { X, Monitor, Printer, Moon, Eye } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import {
@@ -10,9 +10,11 @@ import {
   getContrastRatio,
   getContrastColor,
   simulateCmykPrint,
+  simulateColorBlind,
   type RoleAssignment,
   type ColorRole,
   type PrintSimResult,
+  type ColorBlindType,
 } from "@/lib/utils";
 
 interface HarmonyModalProps {
@@ -82,20 +84,31 @@ function CmykBar({ label, value, color }: { label: string; value: number; color:
   );
 }
 
-function resolveColor(hex: string, printMode: boolean, simCache: Map<string, PrintSimResult>): string {
-  if (!printMode) return hex;
-  if (!simCache.has(hex)) simCache.set(hex, simulateCmykPrint(hex));
-  return simCache.get(hex)!.printHex;
+function resolveColor(
+  hex: string,
+  printMode: boolean,
+  simCache: Map<string, PrintSimResult>,
+  blindMode: boolean,
+  cvdCache: Map<string, string>,
+): string {
+  if (printMode) {
+    if (!simCache.has(hex)) simCache.set(hex, simulateCmykPrint(hex));
+    return simCache.get(hex)!.printHex;
+  }
+  if (blindMode) return cvdCache.get(hex) ?? hex;
+  return hex;
 }
 
-function MockShopPage({ roles, printMode, simCache }: {
+function MockShopPage({ roles, printMode, simCache, blindMode, cvdCache }: {
   roles: RoleAssignment[];
   printMode: boolean;
   simCache: Map<string, PrintSimResult>;
+  blindMode: boolean;
+  cvdCache: Map<string, string>;
 }) {
   const getHex = (role: ColorRole, fallback: string) => {
     const hex = roles.find((r) => r.role === role)?.hex ?? fallback;
-    return resolveColor(hex, printMode, simCache);
+    return resolveColor(hex, printMode, simCache, blindMode, cvdCache);
   };
 
   const bg      = getHex("background", "#ffffff");
@@ -329,15 +342,23 @@ function RoleCard({
   );
 }
 
-type ViewMode = "screen" | "dark" | "print";
+type ViewMode = "screen" | "dark" | "print" | "blind";
+
+const CVD_META: Record<ColorBlindType, { label: string; shortLabel: string; desc: string }> = {
+  deuteranopia: { label: "Deuteranopia", shortLabel: "Deutan", desc: "Green-blind · ~5% of men" },
+  protanopia:   { label: "Protanopia",   shortLabel: "Protan", desc: "Red-blind · ~1% of men"  },
+  tritanopia:   { label: "Tritanopia",   shortLabel: "Tritan", desc: "Blue-yellow blind · rare" },
+};
 
 export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("screen");
+  const [cvdType, setCvdType] = useState<ColorBlindType>("deuteranopia");
 
   if (!palette) return null;
 
   const printMode = viewMode === "print";
   const darkMode  = viewMode === "dark";
+  const blindMode = viewMode === "blind";
 
   const roles = assignColorRoles(palette.colors, darkMode);
   const bgHex   = roles.find((r) => r.role === "background")?.hex ?? (darkMode ? "#111111" : "#ffffff");
@@ -352,8 +373,19 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
     if (!simCache.has(c.hex)) simCache.set(c.hex, simulateCmykPrint(c.hex));
   });
 
-  const displayBgHex   = printMode ? (simCache.get(bgHex)?.printHex ?? bgHex) : bgHex;
-  const displayTextHex = printMode ? (simCache.get(textHex)?.printHex ?? textHex) : textHex;
+  // Pre-compute colorblind simulations
+  const cvdCache = new Map<string, string>();
+  if (blindMode) {
+    roles.forEach((r) => {
+      if (!cvdCache.has(r.hex)) cvdCache.set(r.hex, simulateColorBlind(r.hex, cvdType));
+    });
+    palette.colors.forEach((c) => {
+      if (!cvdCache.has(c.hex)) cvdCache.set(c.hex, simulateColorBlind(c.hex, cvdType));
+    });
+  }
+
+  const displayBgHex   = printMode ? (simCache.get(bgHex)?.printHex ?? bgHex)   : blindMode ? (cvdCache.get(bgHex) ?? bgHex)   : bgHex;
+  const displayTextHex = printMode ? (simCache.get(textHex)?.printHex ?? textHex) : blindMode ? (cvdCache.get(textHex) ?? textHex) : textHex;
   const bgTextContrast = getContrastRatio(displayBgHex, displayTextHex);
 
   const hasHighRisk = roles.some((r) => (simCache.get(r.hex)?.risk ?? "safe") === "high");
@@ -377,11 +409,15 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
           className="bg-[var(--surface)] rounded-[var(--radius-lg)] w-full max-w-lg shadow-2xl overflow-hidden my-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Swatch header — animated between screen and print */}
+          {/* Swatch header — animated between screen / print / cvd modes */}
           <div className="flex h-12">
             {palette.colors.map((color, i) => {
               const sim = simCache.get(color.hex);
-              const displayColor = printMode && sim ? sim.printHex : color.hex;
+              const displayColor = printMode && sim
+                ? sim.printHex
+                : blindMode
+                ? (cvdCache.get(color.hex) ?? color.hex)
+                : color.hex;
               return (
                 <motion.div
                   key={i}
@@ -404,22 +440,26 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                     ? "Print preview — CMYK simulation"
                     : darkMode
                     ? "Dark mode — roles inverted for dark UI"
+                    : blindMode
+                    ? `CVD simulation — ${CVD_META[cvdType].label}`
                     : "Harmony view — palette applied as a UI system"}
                 </p>
               </div>
               <div className="flex items-center gap-1">
-                {/* Screen / Dark / Print toggle */}
+                {/* Screen / Dark / Print / Blind toggle */}
                 <div className="flex items-center rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden mr-1">
                   {(
                     [
                       { mode: "screen" as ViewMode, icon: Monitor, label: "Screen" },
                       { mode: "dark"   as ViewMode, icon: Moon,    label: "Dark"   },
                       { mode: "print"  as ViewMode, icon: Printer,  label: "Print"  },
+                      { mode: "blind"  as ViewMode, icon: Eye,      label: "CVD"    },
                     ] as const
                   ).map(({ mode, icon: Icon, label }) => (
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
+                      title={mode === "blind" ? "Color vision deficiency simulation" : undefined}
                       className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium transition-colors border-r border-[var(--border)] last:border-r-0 ${
                         viewMode === mode
                           ? "bg-[var(--accent)] text-[var(--accent-fg)]"
@@ -436,6 +476,57 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                 </Button>
               </div>
             </div>
+
+            {/* CVD type sub-selector — shown only in blind mode */}
+            <AnimatePresence>
+              {blindMode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginBottom: 12 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden self-start">
+                      {(Object.keys(CVD_META) as ColorBlindType[]).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setCvdType(type)}
+                          className={`px-3 py-1.5 text-[11px] font-medium transition-colors border-r border-[var(--border)] last:border-r-0 ${
+                            cvdType === type
+                              ? "bg-violet-500 text-white"
+                              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                          }`}
+                        >
+                          {CVD_META[type].shortLabel}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)]">
+                      {CVD_META[cvdType].label} — {CVD_META[cvdType].desc}
+                    </p>
+                    {/* Before / After swatch comparison strip */}
+                    <div className="rounded-[var(--radius-sm)] overflow-hidden border border-[var(--border)]">
+                      <div className="flex h-6">
+                        {palette.colors.map((c, i) => (
+                          <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} title={c.hex} />
+                        ))}
+                      </div>
+                      <div className="flex h-6">
+                        {palette.colors.map((c, i) => {
+                          const sim = simulateColorBlind(c.hex, cvdType);
+                          return <div key={i} className="flex-1" style={{ backgroundColor: sim }} title={sim} />;
+                        })}
+                      </div>
+                      <div className="flex text-[9px] text-[var(--muted)] px-2 py-1 justify-between bg-[var(--surface-2)]">
+                        <span>Original</span>
+                        <span>{CVD_META[cvdType].shortLabel} view</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Print warning banner */}
             <AnimatePresence>
@@ -458,7 +549,7 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
             </AnimatePresence>
 
             {/* Mock page preview */}
-            <MockShopPage roles={roles} printMode={printMode} simCache={simCache} />
+            <MockShopPage roles={roles} printMode={printMode} simCache={simCache} blindMode={blindMode} cvdCache={cvdCache} />
 
             {/* Contrast / ink summary */}
             <div className="mt-3 flex items-center gap-2 text-xs text-[var(--muted)]">
@@ -477,30 +568,69 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
               )}
             </div>
 
-            {/* Color roles */}
-            <div className="mt-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-2">
-                {printMode ? "CMYK Breakdown" : darkMode ? "Dark Roles" : "Color Roles"}
+            {/* Color roles — hide in blind mode (the before/after strip is the main deliverable) */}
+            {!blindMode && (
+              <div className="mt-4">
+                <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-2">
+                  {printMode ? "CMYK Breakdown" : darkMode ? "Dark Roles" : "Color Roles"}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {roles.map((assignment, i) => (
+                    <RoleCard
+                      key={i}
+                      assignment={assignment}
+                      bgHex={displayBgHex}
+                      textHex={displayTextHex}
+                      printMode={printMode}
+                      simResult={simCache.get(assignment.hex)!}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {roles.map((assignment, i) => (
-                  <RoleCard
-                    key={i}
-                    assignment={assignment}
-                    bgHex={displayBgHex}
-                    textHex={displayTextHex}
-                    printMode={printMode}
-                    simResult={simCache.get(assignment.hex)!}
-                  />
-                ))}
+            )}
+
+            {/* Blind mode: per-swatch comparison table */}
+            {blindMode && (
+              <div className="mt-4">
+                <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-2">
+                  Swatch Comparison
+                </div>
+                <div className="space-y-1.5">
+                  {palette.colors.map((color, i) => {
+                    const simHex = simulateColorBlind(color.hex, cvdType);
+                    const same = simHex.toLowerCase() === color.hex.toLowerCase();
+                    return (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-[var(--radius-sm)] bg-[var(--surface-2)]">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="w-7 h-7 rounded-md border border-black/[0.08]" style={{ backgroundColor: color.hex }} title="Original" />
+                          <span className="text-[10px] text-[var(--muted)] opacity-50">→</span>
+                          <div className="w-7 h-7 rounded-md border border-black/[0.08]" style={{ backgroundColor: simHex }} title="Simulated" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {color.name && <div className="text-[11px] font-medium truncate">{color.name}</div>}
+                          <div className="font-mono text-[10px] text-[var(--muted)]">{color.hex.toUpperCase()}</div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {same ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">Unchanged</span>
+                          ) : (
+                            <span className="font-mono text-[10px] text-[var(--muted)]">{simHex.toUpperCase()}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             <p className="text-[10px] text-[var(--muted)] mt-3 leading-relaxed">
               {printMode
                 ? "Simulated using sRGB → CMYK conversion with 300% total area coverage limit. ΔE is CIE76 color difference. Actual print output depends on your POD provider's ICC profile."
                 : darkMode
                 ? "Dark mode inverts luminance priority: darkest color → background, lightest → text. Accent and secondary are still saturation-ranked. Contrast badges show WCAG 2.1 ratios."
+                : blindMode
+                ? `Machado (2009) color vision deficiency simulation, severity 1.0 (complete). The mock shop preview above shows how your palette reads under ${CVD_META[cvdType].label}. Consider using shape or pattern alongside color to ensure designs are accessible.`
                 : "Roles are auto-assigned by luminance & saturation. Contrast badges show WCAG 2.1 ratios against background/text."}
             </p>
           </div>

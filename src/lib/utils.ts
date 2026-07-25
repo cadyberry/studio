@@ -675,3 +675,52 @@ export function generateShadeScale(sourceHex: string): ShadeStop[] {
     };
   });
 }
+
+// ─── Color Vision Deficiency Simulation ───────────────────────────────────────
+// Machado 2009 matrices (severity = 1.0), applied in linear-light sRGB space.
+
+export type ColorBlindType = "deuteranopia" | "protanopia" | "tritanopia";
+
+const CVD_MATRICES: Record<ColorBlindType, readonly [number, number, number, number, number, number, number, number, number]> = {
+  // Green-blind (most common, ~5% of men)
+  deuteranopia: [
+     0.367322,  0.860646, -0.227968,
+     0.280085,  0.672501,  0.047413,
+    -0.011820,  0.042940,  0.968881,
+  ],
+  // Red-blind (~1% of men)
+  protanopia: [
+     0.152286,  1.052583, -0.204868,
+     0.114503,  0.786281,  0.099216,
+    -0.003882, -0.048116,  1.051998,
+  ],
+  // Blue-yellow blind (rare)
+  tritanopia: [
+     1.255528, -0.076749, -0.178779,
+    -0.078411,  0.930809,  0.147602,
+     0.004733,  0.691367,  0.303900,
+  ],
+};
+
+function linearize(c: number): number {
+  const v = c / 255;
+  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
+
+function delinearize(v: number): number {
+  const c = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+  return Math.round(Math.max(0, Math.min(1, c)) * 255);
+}
+
+export function simulateColorBlind(hex: string, type: ColorBlindType): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const m = CVD_MATRICES[type];
+  const lr = linearize(rgb.r);
+  const lg = linearize(rgb.g);
+  const lb = linearize(rgb.b);
+  const r = delinearize(m[0] * lr + m[1] * lg + m[2] * lb);
+  const g = delinearize(m[3] * lr + m[4] * lg + m[5] * lb);
+  const b = delinearize(m[6] * lr + m[7] * lg + m[8] * lb);
+  return rgbToHex(r, g, b);
+}
