@@ -717,7 +717,7 @@ export function exportAsAse(palette: Palette): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-// Story Mood Board — 1080×1350 dark canvas combining swatches with the AI Color Story
+// Story Mood Board — 1080×1350 canvas combining swatches with the AI Color Story
 function contrastForHex(hex: string): "#FFFFFF" | "#111111" {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -725,7 +725,12 @@ function contrastForHex(hex: string): "#FFFFFF" | "#111111" {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? "#111111" : "#FFFFFF";
 }
 
-function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCanvasElement | null {
+interface StoryMoodBoardOptions {
+  dark?: boolean;
+}
+
+function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory, options: StoryMoodBoardOptions = {}): HTMLCanvasElement | null {
+  const { dark = true } = options;
   const n = palette.colors.length;
   if (n === 0) return null;
 
@@ -736,6 +741,32 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
   const MONO = "'Courier New', Courier, monospace";
   const CONTENT_W = W - PAD * 2;
 
+  const t = dark ? {
+    bg0: "#1A1A14", bg1: "#0F0F0A",
+    name: "#F5F5EF",
+    moodText: "#777770",
+    divider: "#2D2D24",
+    sectionLabel: "#484840",
+    decorQuote: "#2A2A20",
+    vibeText: "#C0C0B8",
+    pillBg: "#252520", pillText: "#848480",
+    promptBox: "#1C1C16", promptText: "#707068",
+    footerLine: "#252520",
+    footerBrand: "#B8B8B0", footerSub: "#484840", footerDate: "#3A3A30",
+  } : {
+    bg0: "#FAFAF7", bg1: "#F0F0E8",
+    name: "#1A1A14",
+    moodText: "#6A6A60",
+    divider: "#D8D8CC",
+    sectionLabel: "#A0A098",
+    decorQuote: "#DEDED6",
+    vibeText: "#3A3A30",
+    pillBg: "#E8E8E0", pillText: "#6A6A60",
+    promptBox: "#EDEDE5", promptText: "#787870",
+    footerLine: "#C8C8C0",
+    footerBrand: "#2A2A20", footerSub: "#A0A098", footerDate: "#B0B0A8",
+  };
+
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -745,8 +776,8 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
 
   // Background
   const bgGrd = ctx.createLinearGradient(0, 0, W, H);
-  bgGrd.addColorStop(0, "#1A1A14");
-  bgGrd.addColorStop(1, "#0F0F0A");
+  bgGrd.addColorStop(0, t.bg0);
+  bgGrd.addColorStop(1, t.bg1);
   ctx.fillStyle = bgGrd;
   ctx.fillRect(0, 0, W, H);
 
@@ -769,12 +800,33 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
   }
 
   // === SWATCH STRIP ===
-  const STRIP_H = 272;
+  const hasNames = palette.colors.some((c) => c.name);
+  const STRIP_H = hasNames ? 296 : 272;
   const swatchW = W / n;
   palette.colors.forEach((color, i) => {
     ctx.fillStyle = color.hex;
     ctx.fillRect(Math.floor(i * swatchW), 0, Math.ceil(swatchW) + 1, STRIP_H);
   });
+
+  // Swatch names (when present) — shown above the hex pill
+  if (hasNames) {
+    ctx.font = `italic 12px ${SANS}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    palette.colors.forEach((color, i) => {
+      if (!color.name) return;
+      const fg = contrastForHex(color.hex);
+      const cx = Math.floor(i * swatchW) + swatchW / 2;
+      let name = color.name;
+      const maxW = swatchW - 20;
+      while (ctx.measureText(name).width > maxW && name.length > 2) {
+        name = name.slice(0, -1);
+      }
+      if (name.length < color.name.length) name += "…";
+      ctx.fillStyle = fg === "#FFFFFF" ? "rgba(255,255,255,0.62)" : "rgba(0,0,0,0.40)";
+      ctx.fillText(name, cx, STRIP_H - 44);
+    });
+  }
 
   // Hex labels at bottom of each swatch — pill overlay
   ctx.font = `bold 13px ${MONO}`;
@@ -799,14 +851,14 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
   ctx.font = `bold 56px ${SANS}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillStyle = "#F5F5EF";
+  ctx.fillStyle = t.name;
   const nameLines = wrapText(palette.name, CONTENT_W);
   nameLines.slice(0, 2).forEach((line, i) => {
     ctx.fillText(line, PAD, y + i * 68);
   });
   y += Math.min(nameLines.length, 2) * 68 + 14;
 
-  // === MOOD + COUNT PILL ===
+  // === MOOD + COUNT ===
   const mood = getPaletteMood(palette.colors);
   const moodDot = MOOD_DOTS[mood] ?? "#8A8A80";
   ctx.beginPath();
@@ -815,32 +867,32 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
   ctx.fill();
   ctx.font = `400 19px ${SANS}`;
   ctx.textBaseline = "top";
-  ctx.fillStyle = "#777770";
+  ctx.fillStyle = t.moodText;
   ctx.fillText(`${mood}  ·  ${n} color${n !== 1 ? "s" : ""}`, PAD + 24, y + 2);
   y += 44;
 
   // === DIVIDER ===
   y += 14;
-  ctx.fillStyle = "#2D2D24";
+  ctx.fillStyle = t.divider;
   ctx.fillRect(PAD, y, CONTENT_W, 1);
   y += 26;
 
   // === VIBE SECTION ===
   ctx.font = `600 11px ${SANS}`;
-  ctx.fillStyle = "#484840";
+  ctx.fillStyle = t.sectionLabel;
   ctx.letterSpacing = "0.1em";
   ctx.fillText("VIBE", PAD, y);
   ctx.letterSpacing = "0em";
   y += 22;
 
-  // Opening curly quote for the vibe — left margin
+  // Opening curly quote — decorative
   ctx.font = `italic 72px ${SANS}`;
-  ctx.fillStyle = "#2A2A20";
+  ctx.fillStyle = t.decorQuote;
   ctx.textBaseline = "top";
   ctx.fillText("“", PAD - 4, y - 10);
 
   ctx.font = `italic 22px ${SANS}`;
-  ctx.fillStyle = "#C0C0B8";
+  ctx.fillStyle = t.vibeText;
   const vibeLines = wrapText(story.vibe, CONTENT_W);
   vibeLines.slice(0, 4).forEach((line) => {
     ctx.fillText(line, PAD, y);
@@ -850,7 +902,7 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
 
   // === PRODUCT IDEAS SECTION ===
   ctx.font = `600 11px ${SANS}`;
-  ctx.fillStyle = "#484840";
+  ctx.fillStyle = t.sectionLabel;
   ctx.letterSpacing = "0.1em";
   ctx.fillText("PERFECT FOR", PAD, y);
   ctx.letterSpacing = "0em";
@@ -871,9 +923,9 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
       y += PILL_H + 8;
     }
     roundRectPath(ctx, px, y, pw, PILL_H, PILL_R);
-    ctx.fillStyle = "#252520";
+    ctx.fillStyle = t.pillBg;
     ctx.fill();
-    ctx.fillStyle = "#848480";
+    ctx.fillStyle = t.pillText;
     ctx.textAlign = "center";
     ctx.fillText(product, px + pw / 2, y + PILL_H / 2);
     ctx.textAlign = "left";
@@ -884,28 +936,27 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
   // === ART PROMPT SECTION ===
   ctx.textBaseline = "top";
   ctx.font = `600 11px ${SANS}`;
-  ctx.fillStyle = "#484840";
+  ctx.fillStyle = t.sectionLabel;
   ctx.letterSpacing = "0.1em";
   ctx.fillText("ART PROMPT", PAD, y);
   ctx.letterSpacing = "0em";
   y += 22;
 
   ctx.font = `14px ${MONO}`;
-  ctx.fillStyle = "#6A6A64";
   const promptLines = wrapText(story.prompt, CONTENT_W - 36);
   const promptBoxH = Math.min(promptLines.length, 6) * 22 + 36;
   roundRectPath(ctx, PAD, y, CONTENT_W, promptBoxH, 10);
-  ctx.fillStyle = "#1C1C16";
+  ctx.fillStyle = t.promptBox;
   ctx.fill();
   promptLines.slice(0, 6).forEach((line, i) => {
-    ctx.fillStyle = "#707068";
+    ctx.fillStyle = t.promptText;
     ctx.fillText(line, PAD + 18, y + 18 + i * 22);
   });
   y += promptBoxH;
 
   // === FOOTER (anchored to bottom) ===
   const footerY = H - PAD - 30;
-  ctx.fillStyle = "#252520";
+  ctx.fillStyle = t.footerLine;
   ctx.fillRect(PAD, footerY - 18, CONTENT_W, 1);
 
   const lw = 24, lh = 24, lr = 6;
@@ -920,27 +971,36 @@ function buildStoryMoodBoardCanvas(palette: Palette, story: ColorStory): HTMLCan
   ctx.font = `bold 15px ${SANS}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "#B8B8B0";
+  ctx.fillStyle = t.footerBrand;
   ctx.fillText("Palette", PAD + lw + 9, footerY + lh / 2);
 
   ctx.font = `500 13px ${SANS}`;
-  ctx.fillStyle = "#484840";
+  ctx.fillStyle = t.footerSub;
   ctx.fillText("color intelligence for creators", PAD + lw + 78, footerY + lh / 2);
 
   const dateStr = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date());
   ctx.font = `13px ${SANS}`;
   ctx.textAlign = "right";
-  ctx.fillStyle = "#3A3A30";
+  ctx.fillStyle = t.footerDate;
   ctx.fillText(dateStr, W - PAD, footerY + lh / 2);
 
   return canvas;
 }
 
 export function exportAsStoryMoodBoard(palette: Palette, story: ColorStory): void {
-  const canvas = buildStoryMoodBoardCanvas(palette, story);
+  const canvas = buildStoryMoodBoardCanvas(palette, story, { dark: true });
   if (!canvas) return;
   const link = document.createElement("a");
-  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-story.png`;
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-story-dark.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+export function exportAsLightStoryMoodBoard(palette: Palette, story: ColorStory): void {
+  const canvas = buildStoryMoodBoardCanvas(palette, story, { dark: false });
+  if (!canvas) return;
+  const link = document.createElement("a");
+  link.download = `${palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-story-light.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
