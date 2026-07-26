@@ -4514,3 +4514,24 @@
 - **Print check: Caution → Safe single-click mute** — lighter C=0.12 clamp for Caution swatches (currently only Vivid/C>0.25 gets a Mute button)
 
 ---
+
+---
+
+## 2026-07-26 — Session 163: CVD Export PNG
+
+### What was done
+- **"Download CVD preview PNG" button in Harmony View blind mode** — clicking it calls the new `exportAsCvdStrip(palette, cvdType)` function which builds an 800×388px canvas and triggers a PNG download.
+- Canvas layout: **header** (logo mark, palette name, CVD type + prevalence label), **original swatch row** (full-width), **hex label row**, **divider strip** ("ORIGINAL → SIMULATION" with CVD name), **simulated swatch row** with an "UNCHANGED" overlay badge for unaffected colors, **simulated hex label row**, **footer** (Machado attribution + date).
+- All three deficiency types download correctly-named files (e.g. `my-palette-deutan-cvd.png`).
+- Button styled in violet (matches the CVD type sub-selector) to signal it's a CVD-specific action, not the general Export button.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Separate canvas function, not wired into ExportModal** — CVD export is a modal-local action (it depends on which CVD type is currently selected), so a standalone `exportAsCvdStrip` in `exportPalette.ts` is cleaner than threading state into the general export modal.
+- **800px wide, two-row layout** — mirrors the existing PNG strip format but extends it with a second row for the simulated colors. Compact enough to share as a Slack attachment or embed in an audit doc.
+- **"UNCHANGED" overlay** — clearly communicates that a given swatch is not affected by this deficiency, reducing creator confusion when many swatches look similar between rows.
+
+### What's next (Session 164)
+- **Palette card accessibility badge** — a small `A11y` badge on palette cards when all adjacent swatch pairs pass WCAG AA contrast (≥4.5:1), so creators can spot accessible palettes at a glance
+- **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode (currently only Vivid/high-risk colors get a Mute button)
+- **Keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip of all available keyboard shortcuts for that card
