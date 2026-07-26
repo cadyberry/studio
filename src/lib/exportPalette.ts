@@ -1,7 +1,7 @@
 "use client";
 
 import type { Palette, ColorStory } from "@/types";
-import { hexToRgb, rgbToHsl, rgbToCmyk, hexToOklch, simulateCmykPrint, getPaletteMood } from "./utils";
+import { hexToRgb, rgbToHsl, rgbToCmyk, hexToOklch, simulateCmykPrint, getPaletteMood, simulateColorBlind, type ColorBlindType } from "./utils";
 
 const MOOD_DOTS: Record<string, string> = {
   warm: "#f59e0b",
@@ -1030,4 +1030,175 @@ export async function exportAsProcreateSwatches(palette: Palette): Promise<void>
   link.href = url;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+const CVD_LABELS: Record<ColorBlindType, { full: string; short: string; desc: string }> = {
+  deuteranopia: { full: "Deuteranopia", short: "Deutan", desc: "Green-blind · ~5% of men" },
+  protanopia:   { full: "Protanopia",   short: "Protan", desc: "Red-blind · ~1% of men"  },
+  tritanopia:   { full: "Tritanopia",   short: "Tritan", desc: "Blue-yellow blind · rare" },
+};
+
+export function exportAsCvdStrip(palette: Palette, cvdType: ColorBlindType): void {
+  if (typeof document === "undefined") return;
+
+  const SANS = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+  const MONO = "'Courier New', Courier, monospace";
+
+  const n = palette.colors.length;
+  const W = 800;
+  const HEADER_H = 56;
+  const SWATCH_H = 90;
+  const INFO_H = 40;
+  const DIVIDER_H = 32;
+  const FOOTER_H = 40;
+  const TOTAL_H = HEADER_H + SWATCH_H + INFO_H + DIVIDER_H + SWATCH_H + INFO_H + FOOTER_H;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = TOTAL_H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const cvdMeta = CVD_LABELS[cvdType];
+  const simColors = palette.colors.map((c) => simulateColorBlind(c.hex, cvdType));
+  const SW = W / n;
+
+  ctx.fillStyle = "#fafaf8";
+  ctx.fillRect(0, 0, W, TOTAL_H);
+
+  // Header logo mark
+  const grd = ctx.createLinearGradient(20, 14, 44, 38);
+  grd.addColorStop(0, "#a78bfa");
+  grd.addColorStop(0.5, "#818cf8");
+  grd.addColorStop(1, "#60a5fa");
+  ctx.fillStyle = grd;
+  roundRectPath(ctx, 20, 14, 24, 24, 5);
+  ctx.fill();
+
+  ctx.fillStyle = "#1c1c19";
+  ctx.font = `bold 17px ${SANS}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  const displayName = palette.name.length > 55 ? palette.name.slice(0, 55) + "…" : palette.name;
+  ctx.fillText(displayName, 52, HEADER_H / 2);
+
+  ctx.fillStyle = "#9a9a90";
+  ctx.font = `12px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.fillText(`${cvdMeta.full} · ${cvdMeta.desc}`, W - 20, HEADER_H / 2);
+
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, HEADER_H - 1, W, 1);
+
+  function drawSwatchRow(startY: number, hexValues: string[]): void {
+    let cx = 0;
+    hexValues.forEach((hex, i) => {
+      const w = i === n - 1 ? W - Math.round(cx) : Math.round(SW);
+      ctx!.fillStyle = hex;
+      ctx!.fillRect(Math.round(cx), startY, w, SWATCH_H);
+      cx += SW;
+    });
+  }
+
+  function drawLabelRow(startY: number, hexValues: string[], rowH: number): void {
+    let cx = 0;
+    hexValues.forEach((hex, i) => {
+      const w = i === n - 1 ? W - Math.round(cx) : Math.round(SW);
+      const centerX = Math.round(cx) + w / 2;
+      ctx!.fillStyle = "#1c1c19";
+      ctx!.font = `10px ${MONO}`;
+      ctx!.textAlign = "center";
+      ctx!.textBaseline = "middle";
+      ctx!.fillText(hex.toUpperCase(), centerX, startY + rowH / 2);
+      cx += SW;
+    });
+  }
+
+  // Original row
+  const origSwatchY = HEADER_H;
+  const origLabelY = HEADER_H + SWATCH_H;
+  drawSwatchRow(origSwatchY, palette.colors.map((c) => c.hex));
+  ctx.fillStyle = "#fafaf8";
+  ctx.fillRect(0, origLabelY, W, INFO_H);
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, origLabelY, W, 1);
+  drawLabelRow(origLabelY, palette.colors.map((c) => c.hex), INFO_H);
+
+  // Divider
+  const dividerY = origLabelY + INFO_H;
+  ctx.fillStyle = "#f0f0ec";
+  ctx.fillRect(0, dividerY, W, DIVIDER_H);
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, dividerY, W, 1);
+  ctx.fillRect(0, dividerY + DIVIDER_H - 1, W, 1);
+
+  ctx.fillStyle = "#9a9a90";
+  ctx.font = `bold 9px ${SANS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("ORIGINAL", 20, dividerY + DIVIDER_H / 2);
+
+  ctx.fillStyle = "#a78bfa";
+  ctx.font = `bold 9px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.fillText(`${cvdMeta.full.toUpperCase()} SIMULATION`, W - 20, dividerY + DIVIDER_H / 2);
+
+  ctx.fillStyle = "#c4c4bc";
+  ctx.font = `13px ${SANS}`;
+  ctx.textAlign = "center";
+  ctx.fillText("↓", W / 2, dividerY + DIVIDER_H / 2);
+
+  // Simulated row
+  const simSwatchY = dividerY + DIVIDER_H;
+  const simLabelY = simSwatchY + SWATCH_H;
+  drawSwatchRow(simSwatchY, simColors);
+
+  // Mark unchanged swatches with a subtle overlay
+  {
+    let cx = 0;
+    palette.colors.forEach((c, i) => {
+      const w = i === n - 1 ? W - Math.round(cx) : Math.round(SW);
+      const same = simColors[i].toLowerCase() === c.hex.toLowerCase();
+      if (same) {
+        const centerX = Math.round(cx) + w / 2;
+        ctx.fillStyle = "rgba(16,185,129,0.18)";
+        ctx.fillRect(Math.round(cx), simSwatchY, w, SWATCH_H);
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.font = `bold 9px ${SANS}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("UNCHANGED", centerX, simSwatchY + SWATCH_H / 2);
+      }
+      cx += SW;
+    });
+  }
+
+  ctx.fillStyle = "#fafaf8";
+  ctx.fillRect(0, simLabelY, W, INFO_H);
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, simLabelY, W, 1);
+  drawLabelRow(simLabelY, simColors, INFO_H);
+
+  // Footer
+  const footerY = simLabelY + INFO_H;
+  ctx.fillStyle = "#fafaf8";
+  ctx.fillRect(0, footerY, W, FOOTER_H);
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, footerY, W, 1);
+
+  ctx.fillStyle = "#9a9a90";
+  ctx.font = `10px ${SANS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("palette.unavoided.com · Machado (2009) CVD simulation, severity 1.0", 20, footerY + FOOTER_H / 2);
+
+  const dateStr = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date());
+  ctx.textAlign = "right";
+  ctx.fillText(dateStr, W - 20, footerY + FOOTER_H / 2);
+
+  const slug = palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const downloadLink = document.createElement("a");
+  downloadLink.download = `${slug}-${cvdMeta.short.toLowerCase()}-cvd.png`;
+  downloadLink.href = canvas.toDataURL("image/png");
+  downloadLink.click();
 }

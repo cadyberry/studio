@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Monitor, Printer, Moon, Eye } from "lucide-react";
+import { X, Monitor, Printer, Moon, Eye, Download } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import {
@@ -16,6 +16,7 @@ import {
   type PrintSimResult,
   type ColorBlindType,
 } from "@/lib/utils";
+import { exportAsCvdStrip } from "@/lib/exportPalette";
 
 interface HarmonyModalProps {
   palette: Palette | null;
@@ -523,6 +524,15 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                         <span>{CVD_META[cvdType].shortLabel} view</span>
                       </div>
                     </div>
+
+                    {/* CVD export button */}
+                    <button
+                      onClick={() => exportAsCvdStrip(palette, cvdType)}
+                      className="flex items-center gap-1.5 self-start px-3 py-1.5 rounded-[var(--radius-sm)] border border-violet-300 text-violet-600 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400 dark:hover:bg-violet-950/40 text-[11px] font-medium transition-colors"
+                    >
+                      <Download size={11} />
+                      Download CVD preview PNG
+                    </button>
                   </div>
                 </motion.div>
               )}
