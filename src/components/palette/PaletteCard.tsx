@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck } from "lucide-react";
+import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -525,6 +525,27 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     },
     { vivid: 0, moderate: 0 }
   );
+
+  // A11y badge: best pairwise WCAG contrast across all color pairs
+  // AA = ≥4.5:1 (normal text), AA Large = ≥3:1 (large text / UI)
+  const a11yBadge = (() => {
+    const colors = palette.colors;
+    if (colors.length < 2) return null;
+    let bestRatio = 0;
+    let bestPair: [string, string] = [colors[0].hex, colors[1].hex];
+    for (let i = 0; i < colors.length; i++) {
+      for (let j = i + 1; j < colors.length; j++) {
+        const ratio = getContrastRatio(colors[i].hex, colors[j].hex);
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          bestPair = [colors[i].hex, colors[j].hex];
+        }
+      }
+    }
+    if (bestRatio >= 4.5) return { level: "AA", ratio: bestRatio, pair: bestPair };
+    if (bestRatio >= 3.0) return { level: "AA Large", ratio: bestRatio, pair: bestPair };
+    return null;
+  })();
 
   // Tag autocomplete: existing library tags that match current input, not already on this palette
   const currentTags = palette.tags ?? [];
@@ -1529,6 +1550,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               >
                 <Sparkles size={8} className="shrink-0" />
                 story
+              </span>
+            )}
+            {a11yBadge && (
+              <span
+                title={`WCAG ${a11yBadge.level} — best contrast ${a11yBadge.ratio.toFixed(1)}:1 between ${a11yBadge.pair[0]} and ${a11yBadge.pair[1]}`}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-default select-none ${
+                  a11yBadge.level === "AA"
+                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                }`}
+              >
+                <ShieldCheck size={8} className="shrink-0" />
+                {a11yBadge.level}
               </span>
             )}
           </div>
