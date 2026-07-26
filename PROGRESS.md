@@ -4535,3 +4535,29 @@
 - **Palette card accessibility badge** — a small `A11y` badge on palette cards when all adjacent swatch pairs pass WCAG AA contrast (≥4.5:1), so creators can spot accessible palettes at a glance
 - **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode (currently only Vivid/high-risk colors get a Mute button)
 - **Keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip of all available keyboard shortcuts for that card
+
+---
+
+## 2026-07-26 — Session 164: Palette Card A11y Badge
+
+### What was done
+- **A11y badge on palette cards** — a `ShieldCheck` icon + "AA" or "AA Large" text badge now appears in the palette card's badge row when any pair of colors in the palette achieves sufficient WCAG contrast.
+  - **Green "AA" badge** — best pairwise contrast ≥ 4.5:1 (WCAG AA for normal text). Styled in emerald.
+  - **Amber "AA Large" badge** — best pairwise contrast ≥ 3:1 but < 4.5:1 (WCAG AA for large text/UI components). Styled in amber.
+  - No badge — best pairwise contrast < 3:1 (palette has no accessible text/background pairings).
+- `getContrastRatio` imported into `PaletteCard.tsx` (was already exported from `utils.ts`; this is the first time it's used outside HarmonyModal).
+- `ShieldCheck` icon added to the Lucide import list.
+- Badge logic: O(n²) all-pairs scan over palette colors (max 8 swatches → 28 pairs); negligible cost. Tooltip shows the exact ratio and the two hex values that form the best pair.
+- No a11yBadge is rendered for single-swatch palettes (less than 2 colors).
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Best pairwise, not adjacent-only** — checking all pairs surfaces the maximum accessible potential of a palette (e.g., a palette with dark navy + cream is AA even if the four middle swatches are all mid-tones). Adjacent-only would miss this.
+- **Two tiers (AA / AA Large), not three** — WCAG AAA (≥7:1) is rare in expressive design palettes; including it would clutter the badge with an infrequently-earned tier. The two tiers that matter for real POD content (normal text and large text/UI) are enough.
+- **Emerald for AA, amber for AA Large** — green signals "accessible", amber signals "conditionally accessible" — intuitive at a glance without reading the label.
+- **Tooltip includes the hex pair** — creators can immediately see which two swatches create the accessible combination without opening the Harmony modal.
+
+### What's next (Session 165)
+- **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode (currently only Vivid/high-risk colors get a Mute button)
+- **Keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip of all available keyboard shortcuts
+- **A11y filter** — filter palette library to show only "AA" or "AA Large" accessible palettes (extends the existing filter/preset system)
