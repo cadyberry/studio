@@ -4561,3 +4561,29 @@
 - **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode (currently only Vivid/high-risk colors get a Mute button)
 - **Keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip of all available keyboard shortcuts
 - **A11y filter** — filter palette library to show only "AA" or "AA Large" accessible palettes (extends the existing filter/preset system)
+
+---
+
+## 2026-07-27 — Session 165: A11y Filter
+
+### What was done
+- **A11y filter pill added to the mood/filter bar** — a new `ShieldCheck`-icon pill appears in the Mood / Locked / Print-safe filter row whenever any palette in the current view has at least one accessible color pair (WCAG ≥3:1).
+- **Three-state toggle** — clicking cycles through:
+  - Off (all palettes shown, pill shows total AA-or-better count as hint)
+  - **AA Large** — shows palettes where the best pairwise contrast ≥3:1 (suitable for large text and UI components)
+  - **AA** — shows palettes where the best pairwise contrast ≥4.5:1 (strict normal-text accessibility)
+- **Violet styling** — distinct from the emerald Print-safe pill; uses violet to match the existing a11y badge on palette cards (added session 164), making the UI language consistent.
+- **FilterPreset support** — `a11yFilter` is saved/restored with filter presets. Old presets default to "all" via `??` fallback.
+- **Filter chain** — inserted between `freezeFiltered` and the `printReadyOnly` step so all existing filters compose correctly. `printSafeCount` now counts within the A11y-filtered pool.
+- `getContrastRatio` imported into page.tsx; `getPaletteA11yLevel` helper callback (O(n²) pairs, same logic as card badge).
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Best pairwise (not adjacent)** — mirrors the palette card badge logic so the filter pill exactly matches which cards show a badge.
+- **AA Large includes AA** — filtering by "AA Large" shows all palettes ≥3:1, which is a superset of AA; filtering by "AA" narrows to ≥4.5:1. This matches WCAG's layered standard.
+- **Violet, not emerald** — emerald is already used for Print-safe and A11y-green signals. Violet reads as "accessibility" and matches the `ShieldCheck` badge on palette cards.
+- **`anyA11y` condition** — the pill appears only when at least one visible palette has an accessible pair, keeping the filter bar clean for new libraries with single-swatch palettes.
+
+### What's next (Session 166)
+- **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode
+- **Keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip of all available keyboard shortcuts
