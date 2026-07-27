@@ -4587,3 +4587,28 @@
 ### What's next (Session 166)
 - **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode
 - **Keyboard shortcut overlay** — hold `?` over a palette card to show a tooltip of all available keyboard shortcuts
+
+---
+
+## 2026-07-27 — Session 166: Contrast Matrix in Harmony View
+
+### What was done
+- **Contrast Matrix — 5th view mode in HarmonyModal** — a new "Matrix" tab (Grid3x3 icon) joins the Screen / Dark / Print / CVD toggle row. Clicking it switches to a compact n×n grid showing the WCAG contrast ratio for every pairwise color combination in the palette.
+- **Cell layout** — each cell shows a two-line label: the WCAG tier abbreviation (AAA / AA / AL / ✗) and the numeric ratio (e.g. `5.4`). Cells are color-coded by tier: emerald for AAA (≥7:1), sky for AA (≥4.5:1), amber for AA-Large (≥3:1), rose for Fail (<3:1). Dark mode variants included.
+- **Axes** — column headers show the foreground swatch, row headers show the background swatch (small color squares). Row = background, column = foreground text. Diagonal cells render in the swatch's own color with a muted "—" (self-contrast is undefined).
+- **Legend** — four legend chips below the matrix with tier label and ratio threshold.
+- **Conditional content** — when in Matrix mode, MockShopPage, contrast summary, and color role cards are hidden; only the matrix + footer note are shown. Single-color palettes show a graceful "Add at least 2 colors" fallback.
+- **Subtitle** — shows "Contrast matrix — all pairwise WCAG ratios" in matrix mode.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **All pairs, not just roles** — the matrix shows every possible swatch combination, not just assigned role pairs. This lets Cady discover accessible pairs she wouldn't have looked for (e.g., a tertiary swatch that makes great accessible text on a near-white swatch).
+- **Row = bg, column = fg** — matches the WCAG reading direction (background first, foreground second). The header labels reinforce this with "Row = background · Column = foreground text".
+- **AL instead of "AA-L" or "AA Large"** — at 6.5–7.5px cell font size, "AL" fits without truncation. The legend explains it fully.
+- **Hide mock shop in matrix mode** — the matrix is a data view, not a preview. Showing both the mock shop and the matrix would make the modal too tall and dilute focus. The mock shop content is behind `!matrixMode` guards.
+- **Symmetric pairs can differ** — WCAG contrast is symmetric (ratio(A,B) = ratio(B,A)) but the matrix still shows both directions. This is intentional: it reinforces the "row = bg, col = text" mental model and lets the grid cells each be actionable (hover tooltip shows the specific bg/fg hex).
+
+### What's next (Session 167)
+- **Palette card inline swatch reorder** — drag swatches within a palette card to change their display order (using pointer events, no heavy DnD library)
+- **Matrix copy button** — one-click copy of the contrast matrix as a CSV or markdown table for use in accessibility audit documents
+- **Tone map indicator** — a small luminance histogram on palette cards showing the spread from dark to light (helps identify palettes that are all-mid-tone and would have no accessible pairings)
