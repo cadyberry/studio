@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -19,7 +19,7 @@ import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
 import ColorBrowser from "@/components/palette/ColorBrowser";
-import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, type PaletteMood } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
 
@@ -138,6 +138,19 @@ export default function Home() {
     const ls = p.colors.map((c) => { const ok = hexToOklch(c.hex); return ok ? ok.l : 50; });
     return Math.max(...ls) - Math.min(...ls);
   }, []);
+
+  const getPaletteA11yLevel = useCallback((p: Palette): "AA" | "AA Large" | null => {
+    if (p.colors.length < 2) return null;
+    let best = 0;
+    for (let i = 0; i < p.colors.length; i++)
+      for (let j = i + 1; j < p.colors.length; j++) {
+        const r = getContrastRatio(p.colors[i].hex, p.colors[j].hex);
+        if (r > best) best = r;
+      }
+    if (best >= 4.5) return "AA";
+    if (best >= 3.0) return "AA Large";
+    return null;
+  }, []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -150,6 +163,7 @@ export default function Home() {
   const [activeMood, setActiveMood] = useState<PaletteMood | "all">("all");
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [printReadyOnly, setPrintReadyOnly] = useState(false);
+  const [a11yFilter, setA11yFilter] = useState<"all" | "AA" | "AA Large">("all");
   const [highlightedPaletteId, setHighlightedPaletteId] = useState<string | null>(null);
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -366,6 +380,7 @@ export default function Home() {
     activeMood !== "all" ||
     activeFreezeFilter !== "all" ||
     printReadyOnly ||
+    a11yFilter !== "all" ||
     activeColorCount !== "all" ||
     sortBy !== "newest";
 
@@ -381,6 +396,7 @@ export default function Home() {
         p.mood === activeMood &&
         p.freezeFilter === activeFreezeFilter &&
         p.printReadyOnly === printReadyOnly &&
+        (p.a11yFilter ?? "all") === a11yFilter &&
         p.colorCount === activeColorCount &&
         p.sortBy === sortBy
       );
@@ -397,6 +413,7 @@ export default function Home() {
       mood: activeMood,
       freezeFilter: activeFreezeFilter,
       printReadyOnly,
+      a11yFilter,
       colorCount: activeColorCount,
       sortBy,
       createdAt: new Date().toISOString(),
@@ -412,6 +429,7 @@ export default function Home() {
     setActiveMood(preset.mood as PaletteMood | "all");
     setActiveFreezeFilter(preset.freezeFilter);
     setPrintReadyOnly(preset.printReadyOnly);
+    setA11yFilter(preset.a11yFilter ?? "all");
     setActiveColorCount(preset.colorCount);
     setSortBy(preset.sortBy as typeof sortBy);
   }, []);
@@ -469,8 +487,14 @@ export default function Home() {
 
   const freezeFiltered = activeFreezeFilter === "locked" ? countFiltered.filter((p) => p.frozen) : countFiltered;
   const anyPrintRisk = countFiltered.some((p) => palettePrintRiskAny(p));
-  const printSafeCount = freezeFiltered.filter((p) => !palettePrintRiskAny(p)).length;
-  const filtered = printReadyOnly ? freezeFiltered.filter((p) => !palettePrintRiskAny(p)) : freezeFiltered;
+  const anyA11y = freezeFiltered.some((p) => getPaletteA11yLevel(p) !== null);
+  const aaLargeInView = freezeFiltered.filter((p) => { const l = getPaletteA11yLevel(p); return l === "AA" || l === "AA Large"; }).length;
+  const aaInView = freezeFiltered.filter((p) => getPaletteA11yLevel(p) === "AA").length;
+  const a11yFiltered = a11yFilter === "all" ? freezeFiltered
+    : a11yFilter === "AA Large" ? freezeFiltered.filter((p) => { const l = getPaletteA11yLevel(p); return l === "AA" || l === "AA Large"; })
+    : freezeFiltered.filter((p) => getPaletteA11yLevel(p) === "AA");
+  const printSafeCount = a11yFiltered.filter((p) => !palettePrintRiskAny(p)).length;
+  const filtered = printReadyOnly ? a11yFiltered.filter((p) => !palettePrintRiskAny(p)) : a11yFiltered;
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -1679,7 +1703,7 @@ export default function Home() {
 
             {/* Mood + Locked filter pills — hidden when color search is active (inline strip handles it) */}
             <AnimatePresence>
-              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk) && (
+              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -1770,6 +1794,36 @@ export default function Home() {
                           <CheckCircle2 size={9} className="flex-shrink-0" />
                           Print-safe
                           {printReadyOnly && <span className="text-[10px] opacity-60">{printSafeCount}</span>}
+                        </button>
+                      </>
+                    )}
+                    {anyA11y && (
+                      <>
+                        {(moodCounts.size >= 2 || anyFrozen || anyPrintRisk) && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                        <button
+                          onClick={() => setA11yFilter(
+                            a11yFilter === "all" ? "AA Large" : a11yFilter === "AA Large" ? "AA" : "all"
+                          )}
+                          title={
+                            a11yFilter === "all"
+                              ? `Filter to accessible palettes — click for AA Large (≥3:1), click again for strict AA (≥4.5:1)`
+                              : a11yFilter === "AA Large"
+                              ? `Showing AA Large accessible palettes (best pair ≥3:1) — click for strict AA only`
+                              : `Showing strict AA palettes (best pair ≥4.5:1) — click to clear`
+                          }
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            a11yFilter !== "all"
+                              ? "bg-violet-100 text-violet-700 border-violet-300 shadow-sm dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700"
+                              : "bg-[var(--surface)] text-violet-600 border-violet-200 hover:border-violet-400 hover:bg-violet-50/50 dark:text-violet-400 dark:border-violet-800/60 dark:hover:bg-violet-950/20"
+                          }`}
+                        >
+                          <ShieldCheck size={9} className="flex-shrink-0" />
+                          {a11yFilter !== "all" ? a11yFilter : "A11y"}
+                          <span className="text-[10px] opacity-60">
+                            {a11yFilter === "AA" ? aaInView : aaLargeInView}
+                          </span>
                         </button>
                       </>
                     )}
