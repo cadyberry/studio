@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Monitor, Printer, Moon, Eye, Download } from "lucide-react";
+import { X, Monitor, Printer, Moon, Eye, Download, Grid3x3 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import {
@@ -343,7 +343,7 @@ function RoleCard({
   );
 }
 
-type ViewMode = "screen" | "dark" | "print" | "blind";
+type ViewMode = "screen" | "dark" | "print" | "blind" | "matrix";
 
 const CVD_META: Record<ColorBlindType, { label: string; shortLabel: string; desc: string }> = {
   deuteranopia: { label: "Deuteranopia", shortLabel: "Deutan", desc: "Green-blind · ~5% of men" },
@@ -357,9 +357,10 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
 
   if (!palette) return null;
 
-  const printMode = viewMode === "print";
-  const darkMode  = viewMode === "dark";
-  const blindMode = viewMode === "blind";
+  const printMode  = viewMode === "print";
+  const darkMode   = viewMode === "dark";
+  const blindMode  = viewMode === "blind";
+  const matrixMode = viewMode === "matrix";
 
   const roles = assignColorRoles(palette.colors, darkMode);
   const bgHex   = roles.find((r) => r.role === "background")?.hex ?? (darkMode ? "#111111" : "#ffffff");
@@ -443,6 +444,8 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                     ? "Dark mode — roles inverted for dark UI"
                     : blindMode
                     ? `CVD simulation — ${CVD_META[cvdType].label}`
+                    : matrixMode
+                    ? "Contrast matrix — all pairwise WCAG ratios"
                     : "Harmony view — palette applied as a UI system"}
                 </p>
               </div>
@@ -451,10 +454,11 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                 <div className="flex items-center rounded-[var(--radius-sm)] border border-[var(--border)] overflow-hidden mr-1">
                   {(
                     [
-                      { mode: "screen" as ViewMode, icon: Monitor, label: "Screen" },
-                      { mode: "dark"   as ViewMode, icon: Moon,    label: "Dark"   },
+                      { mode: "screen" as ViewMode, icon: Monitor,  label: "Screen" },
+                      { mode: "dark"   as ViewMode, icon: Moon,     label: "Dark"   },
                       { mode: "print"  as ViewMode, icon: Printer,  label: "Print"  },
                       { mode: "blind"  as ViewMode, icon: Eye,      label: "CVD"    },
+                      { mode: "matrix" as ViewMode, icon: Grid3x3,  label: "Matrix" },
                     ] as const
                   ).map(({ mode, icon: Icon, label }) => (
                     <button
@@ -558,28 +562,32 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
               )}
             </AnimatePresence>
 
-            {/* Mock page preview */}
-            <MockShopPage roles={roles} printMode={printMode} simCache={simCache} blindMode={blindMode} cvdCache={cvdCache} />
+            {/* Mock page preview — hidden in matrix mode */}
+            {!matrixMode && (
+              <MockShopPage roles={roles} printMode={printMode} simCache={simCache} blindMode={blindMode} cvdCache={cvdCache} />
+            )}
 
-            {/* Contrast / ink summary */}
-            <div className="mt-3 flex items-center gap-2 text-xs text-[var(--muted)]">
-              <span>{printMode ? "Print text/bg contrast:" : "Text / Background contrast:"}</span>
-              <ContrastBadge ratio={bgTextContrast} />
-              {printMode && (
-                <span className="ml-auto opacity-60 text-[10px]">
-                  300% TAC ink limit applied
-                </span>
-              )}
-              {!printMode && (
-                <span className="ml-auto opacity-60">
-                  {bgTextContrast >= 7 ? "AAA pass" : bgTextContrast >= 4.5 ? "AA pass" : "Below AA — adjust text or bg"}
-                  {darkMode && " (dark mode)"}
-                </span>
-              )}
-            </div>
+            {/* Contrast / ink summary — hidden in matrix mode */}
+            {!matrixMode && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-[var(--muted)]">
+                <span>{printMode ? "Print text/bg contrast:" : "Text / Background contrast:"}</span>
+                <ContrastBadge ratio={bgTextContrast} />
+                {printMode && (
+                  <span className="ml-auto opacity-60 text-[10px]">
+                    300% TAC ink limit applied
+                  </span>
+                )}
+                {!printMode && (
+                  <span className="ml-auto opacity-60">
+                    {bgTextContrast >= 7 ? "AAA pass" : bgTextContrast >= 4.5 ? "AA pass" : "Below AA — adjust text or bg"}
+                    {darkMode && " (dark mode)"}
+                  </span>
+                )}
+              </div>
+            )}
 
-            {/* Color roles — hide in blind mode (the before/after strip is the main deliverable) */}
-            {!blindMode && (
+            {/* Color roles — hide in blind/matrix modes */}
+            {!blindMode && !matrixMode && (
               <div className="mt-4">
                 <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-2">
                   {printMode ? "CMYK Breakdown" : darkMode ? "Dark Roles" : "Color Roles"}
@@ -634,6 +642,118 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
               </div>
             )}
 
+            {/* Contrast matrix — shown only in matrix mode */}
+            {matrixMode && (
+              <div className="mt-2">
+                {palette.colors.length < 2 ? (
+                  <p className="text-sm text-[var(--muted)] text-center py-8">
+                    Add at least 2 colors to see contrast pairs.
+                  </p>
+                ) : (
+                  <>
+                    <div className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-1">
+                      Contrast Matrix
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] mb-3">
+                      Row = background · Column = foreground text
+                    </p>
+                    <div className="overflow-x-auto -mx-1 px-1">
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: `20px repeat(${palette.colors.length}, 1fr)`,
+                          gap: 3,
+                        }}
+                      >
+                        {/* Corner + column header swatches */}
+                        <div />
+                        {palette.colors.map((c, j) => (
+                          <div key={`ch-${j}`} className="flex justify-center pb-1" title={c.name || c.hex}>
+                            <div
+                              className="w-4 h-4 rounded-sm border border-black/10"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          </div>
+                        ))}
+                        {/* Data rows: row swatch + cells */}
+                        {palette.colors.map((bg, i) => (
+                          <React.Fragment key={`row-${i}`}>
+                            <div className="flex items-center justify-center" title={bg.name || bg.hex}>
+                              <div
+                                className="w-4 h-4 rounded-sm border border-black/10"
+                                style={{ backgroundColor: bg.hex }}
+                              />
+                            </div>
+                            {palette.colors.map((fg, j) => {
+                              if (i === j) {
+                                return (
+                                  <div
+                                    key={`cell-${i}-${j}`}
+                                    className="rounded-sm flex items-center justify-center"
+                                    style={{ backgroundColor: bg.hex, minHeight: 30 }}
+                                    title="Same color — contrast undefined"
+                                  >
+                                    <span
+                                      className="text-[7px] font-bold opacity-20 select-none"
+                                      style={{ color: getContrastColor(bg.hex) }}
+                                    >
+                                      —
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              const ratio = getContrastRatio(bg.hex, fg.hex);
+                              const aaa = ratio >= 7;
+                              const aa  = ratio >= 4.5;
+                              const aal = ratio >= 3;
+                              const tierLabel = aaa ? "AAA" : aa ? "AA" : aal ? "AL" : "✗";
+                              const cellBg  = aaa ? "bg-emerald-50 dark:bg-emerald-900/30"
+                                            : aa  ? "bg-sky-50 dark:bg-sky-900/30"
+                                            : aal ? "bg-amber-50 dark:bg-amber-900/30"
+                                                  : "bg-rose-50 dark:bg-rose-900/30";
+                              const cellTxt = aaa ? "text-emerald-700 dark:text-emerald-400"
+                                            : aa  ? "text-sky-700 dark:text-sky-400"
+                                            : aal ? "text-amber-700 dark:text-amber-400"
+                                                  : "text-rose-700 dark:text-rose-400";
+                              return (
+                                <div
+                                  key={`cell-${i}-${j}`}
+                                  className={`rounded-sm flex flex-col items-center justify-center select-none cursor-default ${cellBg}`}
+                                  style={{ minHeight: 30 }}
+                                  title={`${bg.hex} bg · ${fg.hex} text · ${ratio.toFixed(1)}:1`}
+                                >
+                                  <span className={`text-[7.5px] font-bold leading-none ${cellTxt}`}>{tierLabel}</span>
+                                  <span className={`text-[6.5px] leading-none mt-px tabular-nums ${cellTxt} opacity-80`}>{ratio.toFixed(1)}</span>
+                                </div>
+                              );
+                            })}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Legend */}
+                    <div className="mt-3 flex items-center gap-3 flex-wrap">
+                      {(
+                        [
+                          { tier: "AAA", label: "≥ 7:1",       cellBg: "bg-emerald-50 dark:bg-emerald-900/30", cellTxt: "text-emerald-700 dark:text-emerald-400" },
+                          { tier: "AA",  label: "≥ 4.5:1",     cellBg: "bg-sky-50 dark:bg-sky-900/30",         cellTxt: "text-sky-700 dark:text-sky-400"         },
+                          { tier: "AL",  label: "≥ 3:1 large", cellBg: "bg-amber-50 dark:bg-amber-900/30",     cellTxt: "text-amber-700 dark:text-amber-400"     },
+                          { tier: "✗",   label: "< 3:1 fail",  cellBg: "bg-rose-50 dark:bg-rose-900/30",       cellTxt: "text-rose-700 dark:text-rose-400"       },
+                        ] as const
+                      ).map(({ tier, label, cellBg, cellTxt }) => (
+                        <div key={tier} className="flex items-center gap-1.5">
+                          <div className={`w-8 h-5 rounded-sm flex items-center justify-center ${cellBg}`}>
+                            <span className={`text-[8px] font-bold ${cellTxt}`}>{tier}</span>
+                          </div>
+                          <span className="text-[10px] text-[var(--muted)]">{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <p className="text-[10px] text-[var(--muted)] mt-3 leading-relaxed">
               {printMode
                 ? "Simulated using sRGB → CMYK conversion with 300% total area coverage limit. ΔE is CIE76 color difference. Actual print output depends on your POD provider's ICC profile."
@@ -641,6 +761,8 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                 ? "Dark mode inverts luminance priority: darkest color → background, lightest → text. Accent and secondary are still saturation-ranked. Contrast badges show WCAG 2.1 ratios."
                 : blindMode
                 ? `Machado (2009) color vision deficiency simulation, severity 1.0 (complete). The mock shop preview above shows how your palette reads under ${CVD_META[cvdType].label}. Consider using shape or pattern alongside color to ensure designs are accessible.`
+                : matrixMode
+                ? "WCAG 2.1 contrast ratios. Diagonal = same color (undefined). AL = AA Large (≥3:1, suitable for large text and UI components). Symmetric pairs may differ — the matrix shows bg/fg direction explicitly."
                 : "Roles are auto-assigned by luminance & saturation. Contrast badges show WCAG 2.1 ratios against background/text."}
             </p>
           </div>
