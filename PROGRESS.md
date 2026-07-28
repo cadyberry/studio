@@ -4612,3 +4612,25 @@
 - **Palette card inline swatch reorder** — drag swatches within a palette card to change their display order (using pointer events, no heavy DnD library)
 - **Matrix copy button** — one-click copy of the contrast matrix as a CSV or markdown table for use in accessibility audit documents
 - **Tone map indicator** — a small luminance histogram on palette cards showing the spread from dark to light (helps identify palettes that are all-mid-tone and would have no accessible pairings)
+
+---
+
+## 2026-07-28 — Session 167: Matrix Copy Button
+
+### What was done
+- **"Copy MD" button in Contrast Matrix mode** — a `Copy MD` button appears in the legend row of the Harmony modal when in Matrix view. Clicking it copies the full n×n contrast matrix as a Markdown table to the clipboard.
+- **Markdown table format** — header row of foreground hex values (with color names when available), separator row, and one row per background color with each cell showing `ratio tier` (e.g. `5.4 AA`, `8.1 AAA`, `2.1 ✗`). Diagonal cells are `—` (self-contrast undefined).
+- **Copy feedback** — the button icon swaps to a green `Check` for 2 seconds after copy, with label changing to "Copied!" — standard optimistic UI pattern.
+- **`buildContrastMarkdown` helper** — pure function outside the component; takes `ColorSwatch[]` and returns the markdown string. Reuses `getContrastRatio` (already imported). No side effects.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Markdown over CSV** — Markdown tables paste legibly into Notion, Linear, GitHub issues, and Slack (fenced with backticks). CSV requires a spreadsheet app. For a solo creator doing POD work, Markdown is the right default.
+- **Button in legend row, right-aligned** — the legend is already a flex row at the bottom of the matrix; right-aligning the copy button keeps it near the data without adding vertical space or a separate toolbar.
+- **Color name + hex in headers** — when swatches have names (e.g. "Muted Clay (#C4A882)"), the header uses both; unnamed swatches fall back to hex only. This makes the pasted table self-documenting.
+- **`buildContrastMarkdown` outside component** — pure function, no hooks or state. Easier to test, no closure capture, no re-creation on render.
+
+### What's next (Session 168)
+- **Tone map indicator** — a small luminance histogram on palette cards showing the spread from dark to light (helps identify all-mid-tone palettes with no accessible pairings)
+- **Print check: Caution single-click mute** — lighter clamp for Caution-risk swatches in Print mode
+- **Keyboard shortcut overlay** — hold `?` over a palette card for a tooltip of all shortcuts
