@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Monitor, Printer, Moon, Eye, Download, Grid3x3 } from "lucide-react";
+import { X, Monitor, Printer, Moon, Eye, Download, Grid3x3, Copy, Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import {
@@ -351,9 +351,29 @@ const CVD_META: Record<ColorBlindType, { label: string; shortLabel: string; desc
   tritanopia:   { label: "Tritanopia",   shortLabel: "Tritan", desc: "Blue-yellow blind · rare" },
 };
 
+function buildContrastMarkdown(colors: import("@/types").ColorSwatch[]): string {
+  const label = (c: import("@/types").ColorSwatch) =>
+    c.name ? `${c.name} (${c.hex.toUpperCase()})` : c.hex.toUpperCase();
+  const headers = ["Bg \\ Fg", ...colors.map(label)];
+  const sep = headers.map(() => "---");
+  const rows = colors.map((bg) => {
+    const cells = colors.map((fg) => {
+      if (bg.hex.toLowerCase() === fg.hex.toLowerCase()) return "—";
+      const ratio = getContrastRatio(bg.hex, fg.hex);
+      const tier = ratio >= 7 ? "AAA" : ratio >= 4.5 ? "AA" : ratio >= 3 ? "AL" : "✗";
+      return `${ratio.toFixed(1)} ${tier}`;
+    });
+    return [label(bg), ...cells];
+  });
+  return [headers, sep, ...rows]
+    .map((r) => `| ${r.join(" | ")} |`)
+    .join("\n");
+}
+
 export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("screen");
   const [cvdType, setCvdType] = useState<ColorBlindType>("deuteranopia");
+  const [matrixCopied, setMatrixCopied] = useState(false);
 
   if (!palette) return null;
 
@@ -731,23 +751,37 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                         ))}
                       </div>
                     </div>
-                    {/* Legend */}
-                    <div className="mt-3 flex items-center gap-3 flex-wrap">
-                      {(
-                        [
-                          { tier: "AAA", label: "≥ 7:1",       cellBg: "bg-emerald-50 dark:bg-emerald-900/30", cellTxt: "text-emerald-700 dark:text-emerald-400" },
-                          { tier: "AA",  label: "≥ 4.5:1",     cellBg: "bg-sky-50 dark:bg-sky-900/30",         cellTxt: "text-sky-700 dark:text-sky-400"         },
-                          { tier: "AL",  label: "≥ 3:1 large", cellBg: "bg-amber-50 dark:bg-amber-900/30",     cellTxt: "text-amber-700 dark:text-amber-400"     },
-                          { tier: "✗",   label: "< 3:1 fail",  cellBg: "bg-rose-50 dark:bg-rose-900/30",       cellTxt: "text-rose-700 dark:text-rose-400"       },
-                        ] as const
-                      ).map(({ tier, label, cellBg, cellTxt }) => (
-                        <div key={tier} className="flex items-center gap-1.5">
-                          <div className={`w-8 h-5 rounded-sm flex items-center justify-center ${cellBg}`}>
-                            <span className={`text-[8px] font-bold ${cellTxt}`}>{tier}</span>
+                    {/* Legend + copy button row */}
+                    <div className="mt-3 flex items-center gap-3 flex-wrap justify-between">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {(
+                          [
+                            { tier: "AAA", label: "≥ 7:1",       cellBg: "bg-emerald-50 dark:bg-emerald-900/30", cellTxt: "text-emerald-700 dark:text-emerald-400" },
+                            { tier: "AA",  label: "≥ 4.5:1",     cellBg: "bg-sky-50 dark:bg-sky-900/30",         cellTxt: "text-sky-700 dark:text-sky-400"         },
+                            { tier: "AL",  label: "≥ 3:1 large", cellBg: "bg-amber-50 dark:bg-amber-900/30",     cellTxt: "text-amber-700 dark:text-amber-400"     },
+                            { tier: "✗",   label: "< 3:1 fail",  cellBg: "bg-rose-50 dark:bg-rose-900/30",       cellTxt: "text-rose-700 dark:text-rose-400"       },
+                          ] as const
+                        ).map(({ tier, label, cellBg, cellTxt }) => (
+                          <div key={tier} className="flex items-center gap-1.5">
+                            <div className={`w-8 h-5 rounded-sm flex items-center justify-center ${cellBg}`}>
+                              <span className={`text-[8px] font-bold ${cellTxt}`}>{tier}</span>
+                            </div>
+                            <span className="text-[10px] text-[var(--muted)]">{label}</span>
                           </div>
-                          <span className="text-[10px] text-[var(--muted)]">{label}</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(buildContrastMarkdown(palette.colors));
+                          setMatrixCopied(true);
+                          setTimeout(() => setMatrixCopied(false), 2000);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--foreground)]/30 text-[11px] font-medium transition-colors flex-shrink-0"
+                        title="Copy matrix as Markdown table"
+                      >
+                        {matrixCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                        {matrixCopied ? "Copied!" : "Copy MD"}
+                      </button>
                     </div>
                   </>
                 )}
