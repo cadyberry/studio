@@ -4634,3 +4634,29 @@
 - **Tone map indicator** — a small luminance histogram on palette cards showing the spread from dark to light (helps identify all-mid-tone palettes with no accessible pairings)
 - **Print check: Caution single-click mute** — lighter clamp for Caution-risk swatches in Print mode
 - **Keyboard shortcut overlay** — hold `?` over a palette card for a tooltip of all shortcuts
+- **Keyboard shortcut overlay** — hold `?` over a palette card for a tooltip of all shortcuts
+
+---
+
+## 2026-07-28 — Session 168: Tone Map Indicator
+
+### What was done
+- **Dual-view sparkline with 5-bin luminance histogram** — the existing per-swatch lightness sparkline (14px tall bar chart below the swatch strip) now has a hover state that reveals a tonal distribution histogram.
+- **Default view** — unchanged: one bar per swatch, height = lightness, color = swatch hex. Shows how swatches relate in order.
+- **Hover view** — 5-bin grayscale histogram covering the full L 0–100% tonal range, binned in 20% steps: Shadows (0–20), Dark (20–40), Mid (40–60), Light (60–80), Highlights (80–100). Each bin's height is proportional to how many swatches land in that zone. Empty bins render as a thin baseline. Bins are filled with the representative grayscale midpoint (L 10, 30, 50, 70, 90%) — pure luminance visualization, no hue interference.
+- **Flat-tone amber dot** — when a palette has no Shadows and no Highlights (all colors between L 20–80%) and has 2+ swatches, a small amber dot appears in the top-right of the histogram on hover. This indicates "all mid-tone — low contrast potential" (the same condition that makes a palette likely to have no WCAG-passing pairs).
+- **Tooltip text** — updates based on tonal state: flat-tone palettes get a note "All mid-tone — low contrast potential"; standard palettes get "Hover for tonal spread" alongside the per-swatch lightness values.
+- `toneMap` computed alongside existing `oklchRange`/`lightnessRange`/`a11yBadge` derived values (before the render return). Pure O(n) derivation, no side effects.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Dual-view, no extra height** — the histogram replaces nothing and adds nothing to card height. The existing 14px sparkline row gains a hover state. This avoids any layout shift and keeps the card visually lean.
+- **Grayscale bins, not colored** — using `hsl(0,0%,L%)` for each bin keeps the histogram purely about luminance. Colorizing bins with swatch colors would conflate two dimensions. The existing sparkline (visible by default) already shows the color.
+- **5 bins, 20%-wide** — coarse enough to read at 14px height, fine enough to distinguish "all mid-tone" from "one dark anchor." A 10-bin histogram at this height would be unreadable.
+- **Flat-tone on bins[0]===0 && bins[4]===0** — requires no Shadows AND no Highlights. A palette that has one very dark color and no highlights (or vice versa) is not "flat" — it still has some contrast range. The flat-tone condition indicates genuinely limited tonal spread.
+- **Dot rather than badge** — the flat-tone indicator is a 6px amber dot, not a text badge. At 14px row height, text is unreadable and a badge would be disproportionate. The tooltip carries the full explanation.
+
+### What's next (Session 169)
+- **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode (already has "→ safe" split pill; per-swatch mute button is still missing)
+- **Keyboard shortcut overlay** — hold `?` over a palette card for a tooltip of all shortcuts
+- **A11y + flat-tone filter** — extend the existing A11y filter pill to optionally filter for "flat-tone" palettes (complement to the AA/AA Large accessibility filter)
