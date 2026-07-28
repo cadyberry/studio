@@ -526,6 +526,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     { vivid: 0, moderate: 0 }
   );
 
+  // Tonal distribution: 5 bins across L 0-100% (shadows, dark, mid, light, highlights)
+  // Used to detect "flat tone" palettes where all colors cluster in the mid-range
+  const toneMap = (() => {
+    const bins = [0, 0, 0, 0, 0]; // L 0-20, 20-40, 40-60, 60-80, 80-100
+    for (const color of palette.colors) {
+      const rgb = hexToRgb(color.hex);
+      if (!rgb) continue;
+      const l = rgbToHsl(rgb.r, rgb.g, rgb.b).l;
+      bins[Math.min(4, Math.floor(l / 20))]++;
+    }
+    const total = palette.colors.length;
+    const maxBin = Math.max(...bins, 1);
+    // Flat tone: no shadows (L<20) and no highlights (L>80) in a 2+ color palette
+    const isFlatTones = total >= 2 && bins[0] === 0 && bins[4] === 0;
+    const binLabels = ["Shadows", "Dark", "Mid", "Light", "Highlights"];
+    return { bins, binLabels, total, maxBin, isFlatTones };
+  })();
+
   // A11y badge: best pairwise WCAG contrast across all color pairs
   // AA = ≥4.5:1 (normal text), AA Large = ≥3:1 (large text / UI)
   const a11yBadge = (() => {
@@ -1155,30 +1173,50 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         })()}
       </div>
 
-      {/* Lightness sparkline — always-visible bar chart of per-swatch HSL lightness */}
+      {/* Tone map — dual view: per-swatch sparkline (default) / 5-bin luminance histogram (hover) */}
       <div
-        className="flex items-end gap-[2px] px-2 bg-[var(--surface-2)]/30"
+        className="group/sparkline relative bg-[var(--surface-2)]/30 cursor-default overflow-hidden"
         style={{ height: 14 }}
-        title={`Lightness profile · ${orderedColors.map((c) => {
-          const rgb = hexToRgb(c.hex);
-          return rgb ? `${rgbToHsl(rgb.r, rgb.g, rgb.b).l}%` : "?";
-        }).join(" · ")}`}
+        title={
+          toneMap.isFlatTones
+            ? `Tonal spread: ${toneMap.binLabels.map((l, i) => `${l} ${toneMap.bins[i]}`).join(" · ")} · All mid-tone — low contrast potential`
+            : `Lightness profile · ${orderedColors.map((c) => { const rgb = hexToRgb(c.hex); return rgb ? `${rgbToHsl(rgb.r, rgb.g, rgb.b).l}%` : "?"; }).join(" · ")} · Hover for tonal spread`
+        }
       >
-        {orderedColors.map((color) => {
-          const rgb = hexToRgb(color.hex);
-          const l = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
-          return (
-            <div
-              key={color._key}
-              className="flex-1 rounded-t-[2px]"
-              style={{
-                height: Math.max(2, Math.round((l / 100) * 11)),
-                backgroundColor: color.hex,
-                opacity: 0.72,
-              }}
-            />
-          );
-        })}
+        {/* Default: per-swatch bars (each bar = one swatch, height = lightness) */}
+        <div className="absolute inset-0 flex items-end gap-[2px] px-2 group-hover/sparkline:opacity-0 transition-opacity duration-150 pointer-events-none">
+          {orderedColors.map((color) => {
+            const rgb = hexToRgb(color.hex);
+            const l = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
+            return (
+              <div
+                key={color._key}
+                className="flex-1 rounded-t-[2px]"
+                style={{ height: Math.max(2, Math.round((l / 100) * 11)), backgroundColor: color.hex, opacity: 0.72 }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Hover: 5-bin tonal histogram (grayscale bins showing tonal distribution) */}
+        <div className="absolute inset-0 flex items-end px-2 gap-[3px] opacity-0 group-hover/sparkline:opacity-100 transition-opacity duration-150 pointer-events-none">
+          {toneMap.bins.map((count, i) => {
+            const binMidL = i * 20 + 10; // midpoint L for each bin: 10, 30, 50, 70, 90
+            const heightPx = count === 0 ? 1 : Math.max(2, Math.round((count / toneMap.maxBin) * 11));
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                <div
+                  className="w-full rounded-t-[2px]"
+                  style={{ height: heightPx, backgroundColor: `hsl(0,0%,${binMidL}%)`, opacity: count === 0 ? 0.18 : 0.82 }}
+                />
+              </div>
+            );
+          })}
+          {/* Amber dot when palette is flat-toned (no shadows or highlights) */}
+          {toneMap.isFlatTones && (
+            <div className="absolute right-1.5 top-1 w-1.5 h-1.5 rounded-full bg-amber-400" title="All mid-tone" />
+          )}
+        </div>
       </div>
 
       {/* oklch L-range gradient bar — dark→light span, always visible */}
