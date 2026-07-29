@@ -4684,3 +4684,26 @@
 - **Print check: per-swatch Caution mute** — in the print check overlay, add a small per-swatch mute button for Caution-risk colors (C 0.12–0.25), complementing the existing "→ safe" bulk mute
 - **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut overlay (may already be implemented; verify)
 - **Collection sidebar cohesion score badge** — show the last recorded cohesion score as a small badge on collection rows in the left sidebar, saving a click into CohesionModal
+
+---
+
+## 2026-07-29 — Session 170: Library Hue Coverage Wheel
+
+### What was done
+- **Library Hue Coverage Wheel** — a 60px SVG donut ring added to the sidebar stats panel as a new "hue coverage" row. The wheel has 12 arcs, each representing a 30° hue sector (Red → Orange → Yellow → Chartreuse → Green → Spring Green → Cyan → Azure → Blue → Violet → Magenta → Rose). Arc brightness/opacity scales proportionally with the number of swatches in that hue range: dim means sparse, bright means well-represented.
+- **Achromatic exclusion** — colors with HSL saturation < 10% or lightness < 5% or > 95% (grays, near-white, near-black) are excluded from hue counting so they don't distort any sector's count.
+- **Hover tooltips** — native SVG `<title>` elements on each arc provide "Red: 14 swatches", "Orange: 3 swatches", etc. on hover.
+- **"N/12 sectors" label** — a compact coverage score below the sector count shows how many of the 12 hue zones are represented at all.
+- **SVG helpers** — `polarXY` and `donutArc` pure functions for arc math; `LibraryHueWheel` component takes pre-computed `buckets` array; `hueBuckets` computed inline alongside other library stats (no extra render cost).
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **12 sectors, 30° each** — matches the standard color wheel divisions (R, O, Y, CY, G, SG, C, Az, B, V, M, Ro). Coarser than 24 sectors but easily readable at 60px; finer than 6 sectors so warm/cool splits are visible.
+- **`opacity` scaling, not size** — all arcs are the same size; brightness encodes density. A small arc that's fully bright would be ambiguous. Uniform arc size → comparable areas → no perceptual area bias.
+- **0.08 floor for empty arcs** — very dim but visible, so the full ring shape is always apparent. A completely invisible arc would make the wheel look broken; a dim placeholder shows the sector exists but is empty.
+- **Excluded from `useMemo`** — `hueBuckets` is computed inline as a const, matching the pattern of `moodTally`, `pinnedCount`, etc. For a typical library of <200 palettes the O(n×colors) pass is negligible.
+
+### What's next (Session 171)
+- **Hue gap badge** — if hueCoveredCount < 6 (less than half the wheel), show a small "Narrow range" advisory on the stats panel; complement to the wheel
+- **Click-to-filter by hue sector** — clicking a sector arc on the wheel fires a hue-range color search to show all palettes containing that hue band
+- **Collection-scoped hue wheel** — when a collection is active, show the wheel for that collection's colors only (already have `activeCollection` state, just scope `palettes` before the loop)
