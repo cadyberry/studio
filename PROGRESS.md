@@ -4660,3 +4660,27 @@
 - **Print check: Caution single-click mute** — lighter C=0.12 clamp for Caution-risk swatches in Print mode (already has "→ safe" split pill; per-swatch mute button is still missing)
 - **Keyboard shortcut overlay** — hold `?` over a palette card for a tooltip of all shortcuts
 - **A11y + flat-tone filter** — extend the existing A11y filter pill to optionally filter for "flat-tone" palettes (complement to the AA/AA Large accessibility filter)
+
+---
+
+## 2026-07-29 — Session 169: Flat-Tone Filter
+
+### What was done
+- **Flat-tone filter pill** — a new amber "Flat Tone · N" filter pill appears in the Mood/A11y filter row when any palette in the current view has all colors with HSL L between 20–80% (no deep shadows, no bright highlights). Clicking it filters the library to show only those palettes. Clicking again clears the filter.
+- **`isPaletteFlatTone(p)` helper** — pure O(n) callback function in `page.tsx`, mirrors the `toneMap.isFlatTones` logic from PaletteCard. A palette qualifies if it has 2+ colors and all HSL L values are strictly between 20 and 80%.
+- **Filter pipeline** — `flatToneFiltered` step inserted after `a11yFiltered` and before `printReadyOnly`. The flat-tone filter and A11y filter are fully composable: filtering for AA + flat-tone shows palettes that somehow have an accessible pair despite compressed tonal range.
+- **Preset support** — `flatToneFilter?: boolean` added to `FilterPreset` type. `savePreset`, `applyPreset`, and `activePresetId` matching all updated.
+- **Amber pill design** — amber dot + "Flat Tone" label + count badge, separated by the `·` separator when other pills are present. Matches the established pill pattern for tonal/print-risk warnings.
+- **Complementary to session 168** — the tone-map histogram shows WHERE the colors are in the tonal range; the flat-tone filter makes the "all-mid-tone" condition actionable at the library level.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Filter after `a11yFiltered`, before `printReadyOnly`** — flat-tone is a library-level tonal quality filter, not an accessibility gate. It naturally slots between the WCAG accessibility filter (positive quality) and the print-safety filter (negative risk filter). The order means all three can stack without priority conflicts.
+- **`l > 20 && l < 80` (strict)**  — exclusive bounds match `bins[0] === 0 && bins[4] === 0` in PaletteCard: a color at exactly L=20 falls in the "Shadows" bin (0–20), so it would NOT be flat-tone. Matching PaletteCard ensures the filter and the amber dot on the tone histogram agree on which palettes are flat-tone.
+- **Amber, not orange or yellow** — amber reads as "caution/advisory" in this UI (print-risk overlay, flat-tone dot). Using it here reinforces the signal: "this isn't wrong, but worth knowing about."
+- **`anyFlatTone` computed from `a11yFiltered`, not `freezeFiltered`** — this way the flat-tone pill's count reflects the current A11y filter state. If you filter to AA-only and then also toggle flat-tone, you see "how many of these good-A11y palettes are still all-mid-tone?" — which is the most interesting intersection.
+
+### What's next (Session 170)
+- **Print check: per-swatch Caution mute** — in the print check overlay, add a small per-swatch mute button for Caution-risk colors (C 0.12–0.25), complementing the existing "→ safe" bulk mute
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut overlay (may already be implemented; verify)
+- **Collection sidebar cohesion score badge** — show the last recorded cohesion score as a small badge on collection rows in the left sidebar, saving a click into CohesionModal
