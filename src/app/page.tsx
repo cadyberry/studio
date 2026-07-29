@@ -94,6 +94,48 @@ function AnimatedStat({ value, suffix }: { value: number; suffix?: string }): JS
   return <>{shown}{suffix}</>
 }
 
+const HUE_SECTOR_NAMES = [
+  "Red", "Orange", "Yellow", "Chartreuse",
+  "Green", "Spring Green", "Cyan", "Azure",
+  "Blue", "Violet", "Magenta", "Rose",
+];
+
+function polarXY(cx: number, cy: number, r: number, deg: number): [number, number] {
+  const rad = (deg * Math.PI) / 180;
+  return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+}
+
+function donutArc(cx: number, cy: number, rOut: number, rIn: number, startDeg: number, endDeg: number): string {
+  const [ox1, oy1] = polarXY(cx, cy, rOut, startDeg);
+  const [ox2, oy2] = polarXY(cx, cy, rOut, endDeg);
+  const [ix2, iy2] = polarXY(cx, cy, rIn, endDeg);
+  const [ix1, iy1] = polarXY(cx, cy, rIn, startDeg);
+  const large = endDeg - startDeg > 180 ? 1 : 0;
+  return `M${ox1.toFixed(2)},${oy1.toFixed(2)} A${rOut},${rOut} 0 ${large},1 ${ox2.toFixed(2)},${oy2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${rIn},${rIn} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`;
+}
+
+function LibraryHueWheel({ buckets }: { buckets: number[] }): JSX.Element {
+  const maxCount = Math.max(...buckets, 1);
+  const CX = 30, CY = 30, ROUT = 26, RIN = 14, GAP = 2.5, DEG = 30;
+  return (
+    <svg width={60} height={60} viewBox="0 0 60 60" aria-label="Library hue coverage wheel">
+      {buckets.map((count, i) => {
+        const hue = i * 30 + 15;
+        const fill = `hsl(${hue}, 85%, 58%)`;
+        const startDeg = i * DEG - 90 + GAP / 2;
+        const endDeg = (i + 1) * DEG - 90 - GAP / 2;
+        const opacity = count === 0 ? 0.08 : 0.2 + (count / maxCount) * 0.8;
+        return (
+          <g key={i}>
+            <title>{HUE_SECTOR_NAMES[i]}: {count} swatch{count !== 1 ? "es" : ""}</title>
+            <path d={donutArc(CX, CY, ROUT, RIN, startDeg, endDeg)} fill={fill} opacity={opacity} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function Home() {
   const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection, updatePalette, togglePin } = usePaletteStore();
   const [search, setSearch] = useState("");
@@ -355,6 +397,19 @@ export default function Home() {
   const bucketMax   = Math.max(bucketSmall, bucketMed, bucketLarge, 1);
   const pinnedCount = palettes.filter((p) => p.pinned).length;
   const frozenCount = palettes.filter((p) => p.frozen).length;
+
+  // Hue distribution across the library (12 sectors of 30° each, achromatic colors excluded)
+  const hueBuckets: number[] = Array(12).fill(0);
+  for (const p of palettes) {
+    for (const c of p.colors) {
+      const rgb = hexToRgb(c.hex);
+      if (!rgb) continue;
+      const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+      if (s < 10 || l < 5 || l > 95) continue;
+      hueBuckets[Math.floor(h / 30) % 12]++;
+    }
+  }
+  const hueCoveredCount = hueBuckets.filter((n) => n > 0).length;
 
   // All tags across the library, used for bulk-tag autocomplete
   const allLibraryTagsForBulk = [...new Set(palettes.flatMap((p) => p.tags ?? []))].sort();
@@ -823,6 +878,19 @@ export default function Home() {
                         );
                       })}
                     </div>
+                  </div>
+                  {/* Hue coverage wheel */}
+                  <div className="border-t border-[var(--border)] px-3 py-2.5 bg-[var(--surface)] flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mb-1">hue coverage</div>
+                      <div className="text-[9px] text-[var(--muted)]/60 tabular-nums leading-snug">
+                        {hueCoveredCount}/12 sectors
+                      </div>
+                      <div className="text-[8px] text-[var(--muted)]/40 mt-0.5 leading-snug">
+                        hover arcs for detail
+                      </div>
+                    </div>
+                    <LibraryHueWheel buckets={hueBuckets} />
                   </div>
                 </div>
               </div>
