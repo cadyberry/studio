@@ -151,6 +151,15 @@ export default function Home() {
     if (best >= 3.0) return "AA Large";
     return null;
   }, []);
+
+  const isPaletteFlatTone = useCallback((p: Palette): boolean => {
+    if (p.colors.length < 2) return false;
+    const ls = p.colors.map((c) => {
+      const rgb = hexToRgb(c.hex);
+      return rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
+    });
+    return ls.every((l) => l > 20 && l < 80);
+  }, []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -164,6 +173,7 @@ export default function Home() {
   const [activeFreezeFilter, setActiveFreezeFilter] = useState<"all" | "locked">("all");
   const [printReadyOnly, setPrintReadyOnly] = useState(false);
   const [a11yFilter, setA11yFilter] = useState<"all" | "AA" | "AA Large">("all");
+  const [flatToneFilter, setFlatToneFilter] = useState(false);
   const [highlightedPaletteId, setHighlightedPaletteId] = useState<string | null>(null);
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -381,6 +391,7 @@ export default function Home() {
     activeFreezeFilter !== "all" ||
     printReadyOnly ||
     a11yFilter !== "all" ||
+    flatToneFilter ||
     activeColorCount !== "all" ||
     sortBy !== "newest";
 
@@ -397,6 +408,7 @@ export default function Home() {
         p.freezeFilter === activeFreezeFilter &&
         p.printReadyOnly === printReadyOnly &&
         (p.a11yFilter ?? "all") === a11yFilter &&
+        !!(p.flatToneFilter) === flatToneFilter &&
         p.colorCount === activeColorCount &&
         p.sortBy === sortBy
       );
@@ -414,6 +426,7 @@ export default function Home() {
       freezeFilter: activeFreezeFilter,
       printReadyOnly,
       a11yFilter,
+      flatToneFilter,
       colorCount: activeColorCount,
       sortBy,
       createdAt: new Date().toISOString(),
@@ -430,6 +443,7 @@ export default function Home() {
     setActiveFreezeFilter(preset.freezeFilter);
     setPrintReadyOnly(preset.printReadyOnly);
     setA11yFilter(preset.a11yFilter ?? "all");
+    setFlatToneFilter(preset.flatToneFilter ?? false);
     setActiveColorCount(preset.colorCount);
     setSortBy(preset.sortBy as typeof sortBy);
   }, []);
@@ -493,8 +507,11 @@ export default function Home() {
   const a11yFiltered = a11yFilter === "all" ? freezeFiltered
     : a11yFilter === "AA Large" ? freezeFiltered.filter((p) => { const l = getPaletteA11yLevel(p); return l === "AA" || l === "AA Large"; })
     : freezeFiltered.filter((p) => getPaletteA11yLevel(p) === "AA");
-  const printSafeCount = a11yFiltered.filter((p) => !palettePrintRiskAny(p)).length;
-  const filtered = printReadyOnly ? a11yFiltered.filter((p) => !palettePrintRiskAny(p)) : a11yFiltered;
+  const anyFlatTone = a11yFiltered.some((p) => isPaletteFlatTone(p));
+  const flatToneCount = a11yFiltered.filter((p) => isPaletteFlatTone(p)).length;
+  const flatToneFiltered = flatToneFilter ? a11yFiltered.filter((p) => isPaletteFlatTone(p)) : a11yFiltered;
+  const printSafeCount = flatToneFiltered.filter((p) => !palettePrintRiskAny(p)).length;
+  const filtered = printReadyOnly ? flatToneFiltered.filter((p) => !palettePrintRiskAny(p)) : flatToneFiltered;
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -1703,7 +1720,7 @@ export default function Home() {
 
             {/* Mood + Locked filter pills — hidden when color search is active (inline strip handles it) */}
             <AnimatePresence>
-              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y) && (
+              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -1824,6 +1841,30 @@ export default function Home() {
                           <span className="text-[10px] opacity-60">
                             {a11yFilter === "AA" ? aaInView : aaLargeInView}
                           </span>
+                        </button>
+                      </>
+                    )}
+                    {anyFlatTone && (
+                      <>
+                        {(moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y) && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                        <button
+                          onClick={() => setFlatToneFilter(!flatToneFilter)}
+                          title={
+                            flatToneFilter
+                              ? `Showing flat-tone palettes (all colors L 20–80%) — click to clear`
+                              : `Filter to flat-tone palettes — all colors mid-range lightness, limited contrast spread`
+                          }
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                            flatToneFilter
+                              ? "bg-amber-100 text-amber-700 border-amber-300 shadow-sm dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+                              : "bg-[var(--surface)] text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50/50 dark:text-amber-400 dark:border-amber-800/60 dark:hover:bg-amber-950/20"
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                          Flat Tone
+                          <span className="text-[10px] opacity-60">{flatToneCount}</span>
                         </button>
                       </>
                     )}

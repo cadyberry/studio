@@ -51,6 +51,7 @@ export interface FilterPreset {
   freezeFilter: "all" | "locked";
   printReadyOnly: boolean;
   a11yFilter?: "all" | "AA" | "AA Large";
+  flatToneFilter?: boolean;
   colorCount: number | "all";
   sortBy: string;
   createdAt: string;
