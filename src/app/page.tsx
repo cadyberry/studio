@@ -11,6 +11,7 @@ import ExportModal from "@/components/palette/ExportModal";
 import RenameModal from "@/components/palette/RenameModal";
 import CollectionModal from "@/components/palette/CollectionModal";
 import HarmonyModal from "@/components/palette/HarmonyModal";
+import ContrastModal from "@/components/palette/ContrastModal";
 import SwatchEditor from "@/components/palette/SwatchEditor";
 import CohesionModal from "@/components/palette/CohesionModal";
 import TrendLibrary from "@/components/palette/TrendLibrary";
@@ -144,6 +145,7 @@ export default function Home() {
   const [renameTarget, setRenameTarget] = useState<Palette | null>(null);
   const [collectionTarget, setCollectionTarget] = useState<Palette | null>(null);
   const [harmonyTarget, setHarmonyTarget] = useState<Palette | null>(null);
+  const [contrastTarget, setContrastTarget] = useState<Palette | null>(null);
   const [editTarget, setEditTarget] = useState<{ palette: Palette; swatchIndex: number } | null>(null);
   const [shadeTarget, setShadeTarget] = useState<{ hex: string; name?: string } | null>(null);
   const [compareAnchor, setCompareAnchor] = useState<Palette | null>(null);
@@ -2299,6 +2301,7 @@ export default function Home() {
                         onRename={setRenameTarget}
                         onAssignCollection={setCollectionTarget}
                         onHarmony={setHarmonyTarget}
+                        onContrast={setContrastTarget}
                         onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
                         onShadeScale={(p, i) => setShadeTarget({ hex: p.colors[i].hex, name: p.colors[i].name })}
                         onCompare={(p) => {
@@ -2365,6 +2368,7 @@ export default function Home() {
                         onRename={setRenameTarget}
                         onAssignCollection={setCollectionTarget}
                         onHarmony={setHarmonyTarget}
+                        onContrast={setContrastTarget}
                         onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
                         onShadeScale={(p, i) => setShadeTarget({ hex: p.colors[i].hex, name: p.colors[i].name })}
                         onCompare={(p) => {
@@ -2424,6 +2428,7 @@ export default function Home() {
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />
       <HarmonyModal palette={harmonyTarget} onClose={() => setHarmonyTarget(null)} />
+      <ContrastModal palette={contrastTarget} onClose={() => setContrastTarget(null)} />
       <SwatchEditor
         palette={editTarget?.palette ?? null}
         swatchIndex={editTarget?.swatchIndex ?? 0}

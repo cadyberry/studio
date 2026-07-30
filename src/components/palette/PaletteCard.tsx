@@ -128,6 +128,7 @@ interface PaletteCardProps {
   isPinned?: boolean;
   isHighlighted?: boolean;
   cardId?: string;
+  onContrast?: (palette: Palette) => void;
 }
 
 type NamingState =
@@ -136,7 +137,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -1591,17 +1592,32 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </span>
             )}
             {a11yBadge && (
-              <span
-                title={`WCAG ${a11yBadge.level} — best contrast ${a11yBadge.ratio.toFixed(1)}:1 between ${a11yBadge.pair[0]} and ${a11yBadge.pair[1]}`}
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-default select-none ${
-                  a11yBadge.level === "AA"
-                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
-                    : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-                }`}
-              >
-                <ShieldCheck size={8} className="shrink-0" />
-                {a11yBadge.level}
-              </span>
+              onContrast ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onContrast(palette); }}
+                  title={`WCAG ${a11yBadge.level} — best contrast ${a11yBadge.ratio.toFixed(1)}:1 · click for full contrast matrix`}
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium select-none transition-opacity hover:opacity-80 ${
+                    a11yBadge.level === "AA"
+                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                      : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                  }`}
+                >
+                  <ShieldCheck size={8} className="shrink-0" />
+                  {a11yBadge.level}
+                </button>
+              ) : (
+                <span
+                  title={`WCAG ${a11yBadge.level} — best contrast ${a11yBadge.ratio.toFixed(1)}:1 between ${a11yBadge.pair[0]} and ${a11yBadge.pair[1]}`}
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-default select-none ${
+                    a11yBadge.level === "AA"
+                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                      : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                  }`}
+                >
+                  <ShieldCheck size={8} className="shrink-0" />
+                  {a11yBadge.level}
+                </span>
+              )
             )}
           </div>
           {inlineNotesEditing ? (
