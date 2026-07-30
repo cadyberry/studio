@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-07-30 — Session 164: Contrast Accessibility Grid — Live WCAG Matrix
+
+### What was done
+- **ContrastModal component** — a dedicated contrast checker showing the full N×N pairwise WCAG 2.1 contrast matrix for any palette. Opens directly from the a11y badge on the PaletteCard.
+- **Live "Aa" text preview in each cell** — the key improvement over the existing compact matrix in HarmonyModal. Each cell shows the actual foreground color text rendered on the actual background color. If a pair fails WCAG AA, the "Aa" is barely visible; if it passes AAA, it's crisp and clear. This gives Cady an immediate visceral sense of usability without reading any numbers.
+- **Contrast-aware ratio chip** — below the "Aa" demo, a semi-transparent overlay chip shows the ratio (e.g., 4.8) and tier (AA, AA L, Fail). The chip uses `getContrastColor(bg)` so the metadata is always readable regardless of the tested fg/bg pair — it's legible even when the pair itself fails.
+- **Adaptive cell sizing** — cells scale from 62px (4 colors) to 38px (8 colors) so the grid fits the modal without horizontal overflow for typical palette sizes.
+- **Summary bar** — top of the modal shows chip counts: "12 pairs · 4 AAA · 5 AA · 2 AA Large · 1 Fail" — at a glance Cady can see how accessible her palette is.
+- **Named row/column headers** — each header shows the swatch color chip + hex or swatch name (if named), so columns/rows are identifiable without hovering.
+- **Copy as Markdown** — copies the full matrix as a pipe-delimited markdown table with tier labels, for pasting into design docs.
+- **a11y badge → direct modal access** — the "AA" or "AA Large" badge on each PaletteCard is now a button (when `onContrast` is wired). Clicking it opens ContrastModal immediately. No need to navigate to Harmony → Matrix tab.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes.
+
+### Key decisions
+- **Dedicated ContrastModal, not an enhanced HarmonyModal tab** — the HarmonyModal's Matrix tab uses tiny cells (30px) optimized for information density; ContrastModal's larger cells (38–62px) prioritize visual demonstration. Both serve different needs and coexist.
+- **"Aa" in fg.hex, chip in contrast-aware color** — showing the demo text in the actual fg color is the whole point (you see how it reads). But using fg.hex for the ratio/tier chip too would make those unreadable when the pair fails — hence the separate contrast-aware overlay chip.
+- **Ordered pairs, not unique pairs** — the matrix shows all N×(N-1) ordered (bg, fg) pairs, not just N*(N-1)/2 unique unordered pairs. Row=bg, column=fg is a directional distinction (some applications care about which is background).
+- **`onContrast` optional prop** — PaletteCard falls back to a non-clickable `<span>` when the prop is absent, so any place that renders PaletteCard without `onContrast` (e.g., future shared views) still works correctly.
+
+### What's next (Session 165)
+- **"Add swatch" button in palette card** — allow Cady to add a new color directly from the card without going through the Extractor. A small `+` button at the end of the swatch strip opens a mini hex/EyeDropper input.
+- **Palette export: copy as Tailwind config** — export palette as a `theme.extend.colors` object for Tailwind CSS projects
+- **ContrastModal: filter to show only failing pairs** — a toggle to hide AAA/AA cells and show only AL and Fail pairs, for quick problem identification in large palettes
+
+---
+
 ## 2026-07-30 — Session 163: EyeDropper API — Pick Any On-Screen Color
 
 ### What was done
