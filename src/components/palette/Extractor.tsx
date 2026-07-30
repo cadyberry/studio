@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Wand2, Save, X, Hash, ImageIcon } from "lucide-react";
+import { Upload, Wand2, Save, X, Hash, ImageIcon, Pipette } from "lucide-react";
 import { extractColorsFromImage } from "@/lib/colorExtract";
 import { usePaletteStore } from "@/store/paletteStore";
 import { getContrastColor } from "@/lib/utils";
@@ -50,6 +50,28 @@ export default function Extractor({ seedHex, seedName, onSeedConsumed }: Extract
 
   const inputRef = useRef<HTMLInputElement>(null);
   const addPalette = usePaletteStore((s) => s.addPalette);
+  const [hasEyeDropper, setHasEyeDropper] = useState(false);
+  const [eyeDropperActive, setEyeDropperActive] = useState(false);
+
+  useEffect(() => {
+    setHasEyeDropper("EyeDropper" in window);
+  }, []);
+
+  const handleEyeDropper = async () => {
+    if (!("EyeDropper" in window)) return;
+    if (hexColors.length >= 8) return;
+    setEyeDropperActive(true);
+    try {
+      const dropper = new (window as unknown as { EyeDropper: new () => { open(): Promise<{ sRGBHex: string }> } }).EyeDropper();
+      const { sRGBHex } = await dropper.open();
+      setSaved(false);
+      setHexInput((prev) => (prev.trim() ? `${prev.trim()}\n${sRGBHex}` : sRGBHex));
+    } catch {
+      // Dismissed
+    } finally {
+      setEyeDropperActive(false);
+    }
+  };
 
   // Seed from Trend Library: switch to hex mode and pre-fill
   useEffect(() => {
@@ -276,6 +298,26 @@ export default function Extractor({ seedHex, seedName, onSeedConsumed }: Extract
               spellCheck={false}
               className="w-full text-sm font-mono bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] px-3 py-2.5 outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--muted)] resize-none leading-relaxed"
             />
+            {hasEyeDropper && (
+              <button
+                onClick={() => void handleEyeDropper()}
+                disabled={eyeDropperActive || hexColors.length >= 8}
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-[var(--radius-sm)] border transition-colors w-fit ${
+                  eyeDropperActive
+                    ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/5 cursor-wait"
+                    : hexColors.length >= 8
+                    ? "border-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+                    : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                }`}
+                title={hexColors.length >= 8 ? "Max 8 colors" : "Pick a color from anywhere on screen"}
+              >
+                <Pipette size={11} className="shrink-0" />
+                <span>{eyeDropperActive ? "Pick a color…" : "Pick from screen"}</span>
+                {hexColors.length > 0 && hexColors.length < 8 && (
+                  <span className="text-[10px] opacity-60">{hexColors.length}/8</span>
+                )}
+              </button>
+            )}
             {/* Live preview strip */}
             <AnimatePresence>
               {hexColors.length > 0 && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2, StickyNote } from "lucide-react";
+import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2, StickyNote, Pipette } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
@@ -45,6 +45,8 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
   const [swatchNote, setSwatchNote] = useState(palette?.colors[swatchIndex]?.note ?? "");
   const [suggestions, setSuggestions] = useState<string[]>(() => getColorNameSuggestions(originalHex));
   const [hexCopied, setHexCopied] = useState(false);
+  const [hasEyeDropper, setHasEyeDropper] = useState(false);
+  const [eyeDropperActive, setEyeDropperActive] = useState(false);
   const [aiName, setAiName] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [oklchState, setOklchState] = useState<OklchValues>(
@@ -88,6 +90,25 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
     const timer = setTimeout(() => setSuggestions(getColorNameSuggestions(hex)), 380);
     return () => clearTimeout(timer);
   }, [hex]);
+
+  useEffect(() => {
+    setHasEyeDropper("EyeDropper" in window);
+  }, []);
+
+  const handleEyeDropper = async () => {
+    if (!("EyeDropper" in window)) return;
+    setEyeDropperActive(true);
+    try {
+      // EyeDropper is a Chromium-only API; use type assertion since TS dom lib may not include it
+      const dropper = new (window as unknown as { EyeDropper: new () => { open(): Promise<{ sRGBHex: string }> } }).EyeDropper();
+      const { sRGBHex } = await dropper.open();
+      applyHex(sRGBHex);
+    } catch {
+      // User pressed Escape or browser denied
+    } finally {
+      setEyeDropperActive(false);
+    }
+  };
 
   const applyHex = useCallback((newHex: string) => {
     const parsed = hexToHsl(newHex);
@@ -401,6 +422,20 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
                   ? <Check size={11} className="text-emerald-500" />
                   : <Copy size={11} />}
               </button>
+              {hasEyeDropper && (
+                <button
+                  onClick={() => void handleEyeDropper()}
+                  disabled={eyeDropperActive}
+                  className={`w-6 h-6 flex items-center justify-center rounded transition-colors shrink-0 ${
+                    eyeDropperActive
+                      ? "text-[var(--accent)] bg-[var(--accent)]/10 cursor-wait"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                  }`}
+                  title="Pick color from screen"
+                >
+                  <Pipette size={11} />
+                </button>
+              )}
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded select-none ${
                   contrastWhite >= 4.5
