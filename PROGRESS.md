@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-07-30 — Session 163: EyeDropper API — Pick Any On-Screen Color
+
+### What was done
+- **EyeDropper in SwatchEditor** — a `Pipette` button appears next to the hex input when the browser supports the EyeDropper API (Chrome/Edge). Clicking it opens the OS-native color picker; the picked color immediately updates HSL, oklch, and hex state through the existing `applyHex()` function. Hidden on unsupported browsers via `useEffect` feature detection (avoids SSR hydration mismatch). Active state shows accent ring + wait cursor so Cady knows to click anywhere on screen.
+- **EyeDropper in Extractor hex mode** — a "Pick from screen" button appears below the hex textarea in hex input mode. Each click appends one hex code to the list on a new line. Disabled once 8 colors are added (max palette size). Shows a live `x/8` count while building so Cady knows how many slots remain.
+- **Use case** — Cady can now point at any color on any open window (inspiration Pinterest board, AI art tool, another app) and capture it directly into a swatch edit or a new palette — no more reading hex codes off a screen and typing them in.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes.
+
+### Key decisions
+- **`useEffect` for feature detection** — `"EyeDropper" in window` runs only client-side; starting as `false` prevents SSR/hydration mismatch. The button never shows during SSR, so unsupported browser users never see it flash and disappear.
+- **Narrow type cast, not `any`** — the EyeDropper API is typed with a minimal interface literal inside the cast expression, keeping strict mode clean without a global ambient declaration that might conflict with future TypeScript dom lib versions.
+- **Append, not replace in Extractor** — picking a color appends to the textarea rather than replacing it, matching the "build up a palette color by color" mental model. The hex textarea is the canonical list; the EyeDropper is just a faster way to add to it.
+- **8-color cap enforcement** — the button goes disabled (with opacity) once `hexColors.length >= 8`, matching the parser's own 8-color limit so Cady never wonders why a pick "didn't work."
+
+### What's next (Session 164)
+- **Contrast accessibility grid** — a dedicated modal/overlay showing the full N×N pairwise WCAG contrast matrix for a palette: all color pairs, their contrast ratios, and AA/AAA pass/fail at normal and large text sizes. The existing `a11yBadge` only shows the best single pair; the full matrix reveals which specific pairings are usable.
+- **"Add swatch" button in palette card** — allow Cady to add a new color directly from the card (with an EyeDropper or hex input) without going through the Extractor
+- **Palette export: copy as Tailwind config** — export palette as a `theme.extend.colors` object for Tailwind CSS projects
+
+---
+
 ## 2026-07-25 — Session 162: Story Mood Board Light Variant + Download List Discoverability
 
 ### What was done
