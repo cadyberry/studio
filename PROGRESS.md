@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-07-31 — Session 165: Add Swatch Button — Direct Color Addition from Palette Card
+
+### What was done
+- **`+` add swatch button** — a semi-transparent overlay button appears at the right edge of each palette card's swatch strip on hover (when palette is unfrozen and has fewer than 8 colors). Clicking it adds a new color to the palette and immediately opens the SwatchEditor for that new slot — no need to go through the Extractor.
+- **Derived initial color** — the new swatch starts with a hue-shifted (120°) variant of the last swatch's oklch values, capped at C=0.14 for print safety. Gives Cady a visually interesting starting point that's related to the existing palette, easy to adjust in the editor.
+- **Atomic open** — `updatePalette()` and `onEditSwatch()` are called with the same updated colors array, so SwatchEditor receives a palette that already contains the new slot. SwatchEditor's `handleSave` correctly maps over this array and persists the edited color.
+- **Guarded conditions** — button is hidden when palette is frozen (`palette.frozen`) or at max capacity (`palette.colors.length >= 8`). Tooltip shows current count: `Add color (5/8)`.
+- Production build: clean Turbopack compile, zero TypeScript errors, 8 routes.
+
+### Key decisions
+- **Absolute overlay, not a flex column** — adding a flex sibling next to the Reorder.Group would shift the swatch strip width and potentially affect drag physics. An absolute-positioned button at `right-0 top-0` is layout-neutral: the swatches fill the full width, and the button overlays a narrow strip on the right edge only when hovered.
+- **Hue +120° (triadic shift) as default** — random gray (#aaa) is always safe but boring; triadic shift gives a complementary starting point the user can edit. Stays in a similar lightness band (`max(28, min(72, lastOk.l))`) so the initial appearance isn't jarring.
+- **Pass updated palette to `onEditSwatch`** — SwatchEditor receives `{ ...palette, colors: newColors }` (not the old palette snapshot), so `handleSave`'s `palette.colors.map` can find the new swatch at the correct index. Without this, saving would discard the new color.
+- **`z-[5]`** — sits above the reorder items (z-auto/z-20 during drag) but below the story button and cover image overlays (`z-10`).
+
+### What's next (Session 166)
+- **Palette export: copy as Tailwind config** — export palette as a `theme.extend.colors` object, with swatch names as keys (falling back to `color-1`, `color-2`, ...). Useful when Cady shares palettes with developers.
+- **ContrastModal: filter to failing pairs only** — a toggle to hide AAA/AA cells and show only AA Large and Fail pairs, for quick problem identification in large palettes
+- **Swatch delete button** — a small ✕ on each swatch in SwatchEditor or in the palette card (with at least 2 colors remaining), as the inverse of the new add button
+
+---
+
 ## 2026-07-30 — Session 164: Contrast Accessibility Grid — Live WCAG Matrix
 
 ### What was done
