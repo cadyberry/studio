@@ -4754,3 +4754,27 @@
 - **Hue gap badge** — if hueCoveredCount < 6 (less than half the wheel), show a small "Narrow range" advisory on the stats panel; complement to the wheel
 - **Click-to-filter by hue sector** — clicking a sector arc on the wheel fires a hue-range color search to show all palettes containing that hue band
 - **Collection-scoped hue wheel** — when a collection is active, show the wheel for that collection's colors only (already have `activeCollection` state, just scope `palettes` before the loop)
+
+---
+
+## 2026-07-31 — Session 171: Hue Sector Click-to-Filter
+
+### What was done
+- **Click-to-filter on Library Hue Coverage Wheel** — the sidebar stats panel hue wheel is now interactive. Clicking any of the 12 hue sector arcs filters the palette library to show only palettes that contain at least one chromatic color (S ≥ 10%, 5% ≤ L ≤ 95%) in that 30° hue range. Clicking the same sector again clears the filter; clicking a different sector switches to it directly.
+- **LibraryHueWheel props** — component gains `activeSector?: number | null` and `onSectorClick?: (sector: number) => void`. Active arc: full opacity + white 1.5px stroke. Inactive arcs when a sector is active: dimmed to 40% of their normal opacity so the selection reads clearly against the ring.
+- **`activeHueSector` state** — `number | null`, starts null. Wired into the filter pipeline after `flatToneFiltered` and before the print-safe filter. `hueFilteredCount` is derived from the result.
+- **Filter pill** — appears in the existing Mood/A11y/Print pills row. Uses a live hue-tinted background (`hsl(H, 85%, 92%)`) matching the selected sector's color family, with a colored dot indicator. Click the pill to clear the filter.
+- **Sidebar label** — when a sector is active, the stats label changes from `{N}/12 sectors` to `{SectorName} · {count} palettes` in the sector's hue color. Help text updates from "click arc to filter · hover for name" to "click arc to change · click again to clear".
+- **Full filter integration** — `isFilterActive` includes the hue state; empty-state filter chip list includes a hue chip; "Clear all filters" calls `setActiveHueSector(null)`. Composes with all other filters (collection, mood, A11y, flat-tone, print-safe).
+- Build: clean Turbopack compile, zero errors, 10 routes passing.
+
+### Key decisions
+- **`s < 10 || l < 5 || l > 95` achromatic exclusion in filter** — mirrors the hue bucket computation exactly. A palette that is all-grays will never match any sector even if `activeHueSector` is set, preventing false positives.
+- **Opacity dimming (40%) on inactive arcs** — rather than hiding them or keeping them at full opacity, dimming to 40% preserves the ring's shape and relative density information while making the active sector unmistakably the focus. Less aggressive than hiding; more directed than no change.
+- **Filter position: after flatTone, before print** — hue is a creative/collection filter (which colors are here), not a quality filter (are they good for print?). Slots cleanly after the quality filters.
+- **Hue-tinted pill** — inline `style=` rather than Tailwind class because the hue value is dynamic (one of 12). Keeps the pill consistent with the established shape/size pattern while making it immediately identifiable as a hue filter.
+
+### What's next (Session 172)
+- **Collection-scoped hue wheel** — when a collection is active in the sidebar, compute `hueBuckets` from that collection's palettes only (scope `palettes.filter(p => p.collectionId === activeCollection)`)
+- **Hue gap badge** — if `hueCoveredCount < 6`, show a small "Narrow range" advisory label below the wheel
+- **Print check: per-swatch Caution mute** — in the print check overlay, add a per-swatch mute button for Caution-risk colors (C 0.12–0.25)
