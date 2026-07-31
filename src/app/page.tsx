@@ -115,21 +115,52 @@ function donutArc(cx: number, cy: number, rOut: number, rIn: number, startDeg: n
   return `M${ox1.toFixed(2)},${oy1.toFixed(2)} A${rOut},${rOut} 0 ${large},1 ${ox2.toFixed(2)},${oy2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${rIn},${rIn} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`;
 }
 
-function LibraryHueWheel({ buckets }: { buckets: number[] }): JSX.Element {
+function LibraryHueWheel({
+  buckets,
+  activeSector,
+  onSectorClick,
+}: {
+  buckets: number[];
+  activeSector?: number | null;
+  onSectorClick?: (sector: number) => void;
+}): JSX.Element {
   const maxCount = Math.max(...buckets, 1);
   const CX = 30, CY = 30, ROUT = 26, RIN = 14, GAP = 2.5, DEG = 30;
+  const hasActive = activeSector !== null && activeSector !== undefined;
   return (
-    <svg width={60} height={60} viewBox="0 0 60 60" aria-label="Library hue coverage wheel">
+    <svg
+      width={60}
+      height={60}
+      viewBox="0 0 60 60"
+      aria-label={hasActive ? `Hue wheel — ${HUE_SECTOR_NAMES[activeSector!]} filtered` : "Library hue coverage wheel — click an arc to filter"}
+    >
       {buckets.map((count, i) => {
         const hue = i * 30 + 15;
         const fill = `hsl(${hue}, 85%, 58%)`;
         const startDeg = i * DEG - 90 + GAP / 2;
         const endDeg = (i + 1) * DEG - 90 - GAP / 2;
-        const opacity = count === 0 ? 0.08 : 0.2 + (count / maxCount) * 0.8;
+        const isActive = activeSector === i;
+        const baseOpacity = count === 0 ? 0.08 : 0.2 + (count / maxCount) * 0.8;
+        const opacity = isActive ? 1 : hasActive ? baseOpacity * 0.4 : baseOpacity;
         return (
-          <g key={i}>
-            <title>{HUE_SECTOR_NAMES[i]}: {count} swatch{count !== 1 ? "es" : ""}</title>
-            <path d={donutArc(CX, CY, ROUT, RIN, startDeg, endDeg)} fill={fill} opacity={opacity} />
+          <g
+            key={i}
+            onClick={() => onSectorClick?.(i)}
+            style={{ cursor: onSectorClick ? "pointer" : "default" }}
+            role={onSectorClick ? "button" : undefined}
+            aria-pressed={onSectorClick ? isActive : undefined}
+          >
+            <title>
+              {HUE_SECTOR_NAMES[i]}: {count} swatch{count !== 1 ? "es" : ""}
+              {onSectorClick ? (isActive ? " — active filter, click to clear" : " — click to filter") : ""}
+            </title>
+            <path
+              d={donutArc(CX, CY, ROUT, RIN, startDeg, endDeg)}
+              fill={fill}
+              opacity={opacity}
+              stroke={isActive ? "white" : "none"}
+              strokeWidth={isActive ? 1.5 : 0}
+            />
           </g>
         );
       })}
@@ -218,6 +249,7 @@ export default function Home() {
   const [printReadyOnly, setPrintReadyOnly] = useState(false);
   const [a11yFilter, setA11yFilter] = useState<"all" | "AA" | "AA Large">("all");
   const [flatToneFilter, setFlatToneFilter] = useState(false);
+  const [activeHueSector, setActiveHueSector] = useState<number | null>(null);
   const [highlightedPaletteId, setHighlightedPaletteId] = useState<string | null>(null);
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -449,6 +481,7 @@ export default function Home() {
     printReadyOnly ||
     a11yFilter !== "all" ||
     flatToneFilter ||
+    activeHueSector !== null ||
     activeColorCount !== "all" ||
     sortBy !== "newest";
 
@@ -567,8 +600,20 @@ export default function Home() {
   const anyFlatTone = a11yFiltered.some((p) => isPaletteFlatTone(p));
   const flatToneCount = a11yFiltered.filter((p) => isPaletteFlatTone(p)).length;
   const flatToneFiltered = flatToneFilter ? a11yFiltered.filter((p) => isPaletteFlatTone(p)) : a11yFiltered;
-  const printSafeCount = flatToneFiltered.filter((p) => !palettePrintRiskAny(p)).length;
-  const filtered = printReadyOnly ? flatToneFiltered.filter((p) => !palettePrintRiskAny(p)) : flatToneFiltered;
+  const hueFiltered = activeHueSector === null
+    ? flatToneFiltered
+    : flatToneFiltered.filter((p) =>
+        p.colors.some((c) => {
+          const rgb = hexToRgb(c.hex);
+          if (!rgb) return false;
+          const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+          if (s < 10 || l < 5 || l > 95) return false;
+          return Math.floor(h / 30) % 12 === activeHueSector;
+        })
+      );
+  const hueFilteredCount = hueFiltered.length;
+  const printSafeCount = hueFiltered.filter((p) => !palettePrintRiskAny(p)).length;
+  const filtered = printReadyOnly ? hueFiltered.filter((p) => !palettePrintRiskAny(p)) : hueFiltered;
 
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
@@ -886,13 +931,20 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                       <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mb-1">hue coverage</div>
                       <div className="text-[9px] text-[var(--muted)]/60 tabular-nums leading-snug">
-                        {hueCoveredCount}/12 sectors
+                        {activeHueSector !== null
+                          ? <span style={{ color: `hsl(${activeHueSector * 30 + 15}, 70%, 50%)` }}>{HUE_SECTOR_NAMES[activeHueSector]} · {hueFilteredCount} palette{hueFilteredCount !== 1 ? "s" : ""}</span>
+                          : <>{hueCoveredCount}/12 sectors</>
+                        }
                       </div>
                       <div className="text-[8px] text-[var(--muted)]/40 mt-0.5 leading-snug">
-                        hover arcs for detail
+                        {activeHueSector !== null ? "click arc to change · click again to clear" : "click arc to filter · hover for name"}
                       </div>
                     </div>
-                    <LibraryHueWheel buckets={hueBuckets} />
+                    <LibraryHueWheel
+                      buckets={hueBuckets}
+                      activeSector={activeHueSector}
+                      onSectorClick={(s) => setActiveHueSector(activeHueSector === s ? null : s)}
+                    />
                   </div>
                 </div>
               </div>
@@ -1790,7 +1842,7 @@ export default function Home() {
 
             {/* Mood + Locked filter pills — hidden when color search is active (inline strip handles it) */}
             <AnimatePresence>
-              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone) && (
+              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone || activeHueSector !== null) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -1935,6 +1987,30 @@ export default function Home() {
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
                           Flat Tone
                           <span className="text-[10px] opacity-60">{flatToneCount}</span>
+                        </button>
+                      </>
+                    )}
+                    {activeHueSector !== null && (
+                      <>
+                        {(moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone) && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                        <button
+                          onClick={() => setActiveHueSector(null)}
+                          title={`Showing palettes with ${HUE_SECTOR_NAMES[activeHueSector]} tones — click to clear hue filter`}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border shadow-sm"
+                          style={{
+                            backgroundColor: `hsl(${activeHueSector * 30 + 15}, 85%, 92%)`,
+                            color: `hsl(${activeHueSector * 30 + 15}, 60%, 32%)`,
+                            borderColor: `hsl(${activeHueSector * 30 + 15}, 60%, 75%)`,
+                          }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: `hsl(${activeHueSector * 30 + 15}, 85%, 55%)` }}
+                          />
+                          {HUE_SECTOR_NAMES[activeHueSector]}
+                          <span className="text-[10px] opacity-70">{hueFilteredCount}</span>
                         </button>
                       </>
                     )}
@@ -2230,6 +2306,19 @@ export default function Home() {
                       <X size={10} className="shrink-0" />
                     </button>
                   )}
+                  {activeHueSector !== null && (
+                    <button
+                      onClick={() => setActiveHueSector(null)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: `hsl(${activeHueSector * 30 + 15}, 85%, 58%)` }}
+                      />
+                      {HUE_SECTOR_NAMES[activeHueSector]} hue
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
                 </div>
 
                 <Button
@@ -2244,6 +2333,7 @@ export default function Home() {
                     setPrintReadyOnly(false);
                     setColorSearchActive(false);
                     setColorSearchHex("");
+                    setActiveHueSector(null);
                   }}
                   className="gap-1.5"
                 >
