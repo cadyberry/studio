@@ -674,6 +674,20 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setTimeout(() => setCautionMutedAll(false), 1400);
   };
 
+  const addSwatchAndEdit = () => {
+    if (palette.colors.length >= 8 || palette.frozen) return;
+    // Shift hue 120° from the last swatch for visual variety; cap chroma for print safety
+    const lastHex = palette.colors[palette.colors.length - 1]?.hex ?? "#888888";
+    const lastOk = hexToOklch(lastHex);
+    const newHex = lastOk
+      ? oklchToHex(Math.min(72, Math.max(28, lastOk.l)), Math.min(lastOk.c, 0.14), (lastOk.h + 120) % 360)
+      : "#aaaaaa";
+    const newColors = [...palette.colors, { hex: newHex }];
+    updatePalette(palette.id, { colors: newColors });
+    // Pass the updated palette so SwatchEditor can map over the correct array
+    onEditSwatch({ ...palette, colors: newColors }, palette.colors.length);
+  };
+
   const handleNameSwatches = async () => {
     setSwatchNaming("loading");
     try {
@@ -1111,6 +1125,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               );
             })}
           </Reorder.Group>
+        )}
+
+        {/* + Add swatch — right-edge overlay, hover-revealed, disabled on frozen/full palettes */}
+        {!palette.frozen && palette.colors.length < 8 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); addSwatchAndEdit(); }}
+            title={`Add color (${palette.colors.length}/8)`}
+            className={`absolute right-0 top-0 z-[5] flex items-center justify-center ${isCover ? "h-40" : "h-28"} w-8 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-black/20 hover:bg-black/50 backdrop-blur-[2px] border-l border-white/15 text-white/75 hover:text-white`}
+          >
+            <Plus size={13} />
+          </button>
         )}
 
         {/* ✨ Color Story quick-access button — hover-revealed, centered at the bottom of the swatch strip */}
