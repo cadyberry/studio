@@ -140,8 +140,10 @@ function LibraryHueWheel({
         const startDeg = i * DEG - 90 + GAP / 2;
         const endDeg = (i + 1) * DEG - 90 - GAP / 2;
         const isActive = activeSector === i;
-        const baseOpacity = count === 0 ? 0.08 : 0.2 + (count / maxCount) * 0.8;
+        const isGap = count === 0;
+        const baseOpacity = isGap ? 0.1 : 0.2 + (count / maxCount) * 0.8;
         const opacity = isActive ? 1 : hasActive ? baseOpacity * 0.4 : baseOpacity;
+        const ventOpacity = isActive ? 0 : hasActive ? 0.12 : 0.32;
         return (
           <g
             key={i}
@@ -161,6 +163,22 @@ function LibraryHueWheel({
               stroke={isActive ? "white" : "none"}
               strokeWidth={isActive ? 1.5 : 0}
             />
+            {isGap && [0.25, 0.5, 0.75].map((frac) => {
+              const lineDeg = startDeg + (endDeg - startDeg) * frac;
+              const [ix, iy] = polarXY(CX, CY, RIN + 1.5, lineDeg);
+              const [ox, oy] = polarXY(CX, CY, ROUT - 1.5, lineDeg);
+              return (
+                <line
+                  key={frac}
+                  x1={ix.toFixed(2)} y1={iy.toFixed(2)}
+                  x2={ox.toFixed(2)} y2={oy.toFixed(2)}
+                  stroke={fill}
+                  strokeWidth={0.75}
+                  opacity={ventOpacity}
+                  strokeLinecap="round"
+                />
+              );
+            })}
           </g>
         );
       })}
