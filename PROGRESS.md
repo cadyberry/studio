@@ -2,6 +2,49 @@
 
 ---
 
+## 2026-08-01 — Session 173: Hue Gap Visual — Radial Vent Lines for Missing Sectors
+
+### What was done
+- **Radial vent lines for gap sectors** — empty hue sectors in the Library Hue Coverage Wheel now show three thin radial lines (spaced at 25%, 50%, 75% of the sector's angular span) instead of just a dim opacity fill. This makes missing hue ranges visually unmistakable: covered sectors are solid-colored arcs, gap sectors show a "vented" or "slotted" appearance. Lines use the sector's natural hue color at 32% opacity; they dim with the rest of the wheel when a different sector is active as a filter.
+- **Empty sector fill opacity raised to 0.1** (from 0.08) — the slightly higher base opacity makes the sector boundary walls visible alongside the new lines, so the overall slot shape reads clearly rather than just the lines floating in void.
+- **`ventOpacity` respects active-filter dimming** — when a sector filter is active, gap vent lines dim to 12% opacity (matching the dimming applied to non-active solid sectors), so they don't distract from the highlighted active sector.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes.
+
+### Key decisions
+- **Radial lines, not dashed arcs** — a `stroke-dasharray` on the donut path dashes tangentially (along the arc), giving curved pills that are too small at this SVG size (60×60px). Radial lines are more legible at small scale and reinforce the "fan" / donut geometry of the wheel.
+- **3 lines per sector** — at the 25°-per-sector size (minus 2.5° gap = ~22°), three lines at 25/50/75% give a clear hatch-like appearance without crowding. One line reads as a pointer; five looks like noise.
+- **1.5px margin from ROUT/RIN** — lines stop 1.5px short of each edge to avoid bleeding through the narrow gap between sectors and to look intentional rather than clipped.
+- **`strokeLinecap="round"`** — softens the line endings so the vent lines feel designed rather than mechanical at low opacity.
+
+### What's next (Session 174)
+- **Palette export: copy as Tailwind config** — export palette as a `theme.extend.colors` object with swatch names as keys (falling back to `color-1`, `color-2`, ...); copy to clipboard from ExportModal
+- **ContrastModal: failing-pairs-only filter** — toggle to hide AAA/AA cells and show only AA Large and Fail pairs for quick triage in large palettes
+- **Swatch delete button** — small ✕ on each swatch in SwatchEditor or in the palette card (with at least 2 colors remaining), inverse of the existing add swatch button
+
+---
+
+## 2026-08-01 — Session 172: Collection-Scoped Hue Wheel + Narrow Range Badge
+
+### What was done
+- **Collection-scoped hue wheel** — when a collection is active in the left sidebar, the Library Hue Coverage Wheel now computes `hueBuckets` from that collection's palettes only (filtered by `collectionId === activeCollection`). When viewing "All", the wheel reflects the full library as before.
+- **Collection name chip** — a small accent-colored chip showing the active collection's name appears next to the "hue coverage" label when a collection is selected, making clear that the wheel is scoped (not showing the whole library).
+- **Narrow range badge** — when `hueCoveredCount > 0 && hueCoveredCount < 6` (fewer than half the 12 hue sectors covered), a small amber dot + "Narrow range" advisory text appears below the sector count. Clears automatically when a hue sector filter is active (to avoid duplicate messaging). Applies to both the full library and collection views.
+- `huePaletteScope` const — isolates the palette set for bucket computation, keeping the mutation-free pattern consistent with other derived stats.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Scope only `hueBuckets`, not `hueCoveredCount`** — the filter pipeline (`hueFiltered`, `hueFilteredCount`) already uses the full filtered list; only the wheel's visual data source changes. This ensures the filter pill still shows the right count regardless of the wheel's scope.
+- **`< 6` threshold for "Narrow range"** — fewer than half the wheel covered. At 5 sectors you have good warm or cool coverage but a clear gap on the other side. At 6+ you've touched both hemispheres. This matches the threshold the previous session's PROGRESS.md targeted.
+- **Amber dot, not badge** — consistent with the flat-tone indicator pattern established in session 168. Small, advisory, non-blocking.
+- **Collection chip: accent color, truncated at 70px** — uses CSS variable `var(--accent)` so it respects the app theme. Truncates long names with `title` tooltip for full name on hover.
+
+### What's next (Session 173)
+- **Print check: per-swatch Caution mute** — in the print check overlay on PaletteCard, add a small per-swatch mute/clamp button for Caution-risk swatches (Oklch C 0.12–0.25). The existing "→ safe" button bulk-mutes all at once; a per-swatch version allows keeping some vivid colors while taming others.
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut overlay
+- **Hue gap visual** — shade the missing sectors more visibly (e.g. a thin dashed arc) vs the current dim opacity approach
+
+---
+
 ## 2026-07-31 — Session 165: Add Swatch Button — Direct Color Addition from Palette Card
 
 ### What was done
