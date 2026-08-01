@@ -432,9 +432,12 @@ export default function Home() {
   const pinnedCount = palettes.filter((p) => p.pinned).length;
   const frozenCount = palettes.filter((p) => p.frozen).length;
 
-  // Hue distribution across the library (12 sectors of 30° each, achromatic colors excluded)
+  // Hue distribution: scoped to the active collection when one is selected
+  const huePaletteScope = activeCollection === "all"
+    ? palettes
+    : palettes.filter((p) => p.collectionId === activeCollection);
   const hueBuckets: number[] = Array(12).fill(0);
-  for (const p of palettes) {
+  for (const p of huePaletteScope) {
     for (const c of p.colors) {
       const rgb = hexToRgb(c.hex);
       if (!rgb) continue;
@@ -444,6 +447,7 @@ export default function Home() {
     }
   }
   const hueCoveredCount = hueBuckets.filter((n) => n > 0).length;
+  const hueIsNarrow = hueCoveredCount > 0 && hueCoveredCount < 6;
 
   // All tags across the library, used for bulk-tag autocomplete
   const allLibraryTagsForBulk = [...new Set(palettes.flatMap((p) => p.tags ?? []))].sort();
@@ -929,13 +933,26 @@ export default function Home() {
                   {/* Hue coverage wheel */}
                   <div className="border-t border-[var(--border)] px-3 py-2.5 bg-[var(--surface)] flex items-center gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide mb-1">hue coverage</div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="text-[9px] text-[var(--muted)] uppercase tracking-wide">hue coverage</div>
+                        {activeCollection !== "all" && (
+                          <div className="text-[8px] text-[var(--accent)] bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-1 py-px rounded leading-none truncate max-w-[70px]" title={activeCollectionInfo?.name}>
+                            {activeCollectionInfo?.name}
+                          </div>
+                        )}
+                      </div>
                       <div className="text-[9px] text-[var(--muted)]/60 tabular-nums leading-snug">
                         {activeHueSector !== null
                           ? <span style={{ color: `hsl(${activeHueSector * 30 + 15}, 70%, 50%)` }}>{HUE_SECTOR_NAMES[activeHueSector]} · {hueFilteredCount} palette{hueFilteredCount !== 1 ? "s" : ""}</span>
                           : <>{hueCoveredCount}/12 sectors</>
                         }
                       </div>
+                      {hueIsNarrow && activeHueSector === null && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                          <span className="text-[8px] text-amber-500 leading-none">Narrow range</span>
+                        </div>
+                      )}
                       <div className="text-[8px] text-[var(--muted)]/40 mt-0.5 leading-snug">
                         {activeHueSector !== null ? "click arc to change · click again to clear" : "click arc to filter · hover for name"}
                       </div>
