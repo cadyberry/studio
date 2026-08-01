@@ -4800,3 +4800,25 @@
 - **Collection-scoped hue wheel** — when a collection is active in the sidebar, compute `hueBuckets` from that collection's palettes only (scope `palettes.filter(p => p.collectionId === activeCollection)`)
 - **Hue gap badge** — if `hueCoveredCount < 6`, show a small "Narrow range" advisory label below the wheel
 - **Print check: per-swatch Caution mute** — in the print check overlay, add a per-swatch mute button for Caution-risk colors (C 0.12–0.25)
+
+---
+
+## 2026-08-01 — Session 172: Collection-Scoped Hue Wheel + Narrow Range Badge
+
+### What was done
+- **Collection-scoped hue wheel** — when a collection is active in the left sidebar, the Library Hue Coverage Wheel now computes `hueBuckets` from that collection's palettes only (filtered by `collectionId === activeCollection`). When viewing "All", the wheel reflects the full library as before.
+- **Collection name chip** — a small accent-colored chip showing the active collection's name appears next to the "hue coverage" label when a collection is selected, making clear that the wheel is scoped (not showing the whole library).
+- **Narrow range badge** — when `hueCoveredCount > 0 && hueCoveredCount < 6` (fewer than half the 12 hue sectors covered), a small amber dot + "Narrow range" advisory text appears below the sector count. Clears automatically when a hue sector filter is active (to avoid duplicate messaging). Applies to both the full library and collection views.
+- `huePaletteScope` const — isolates the palette set for bucket computation, keeping the mutation-free pattern consistent with other derived stats.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Scope only `hueBuckets`, not `hueCoveredCount`** — the filter pipeline (`hueFiltered`, `hueFilteredCount`) already uses the full filtered list; only the wheel's visual data source changes. This ensures the filter pill still shows the right count regardless of the wheel's scope.
+- **`< 6` threshold for "Narrow range"** — fewer than half the wheel covered. At 5 sectors you have good warm or cool coverage but a clear gap on the other side. At 6+ you've touched both hemispheres. This matches the threshold the previous session's PROGRESS.md targeted.
+- **Amber dot, not badge** — consistent with the flat-tone indicator pattern established in session 168. Small, advisory, non-blocking.
+- **Collection chip: accent color, truncated at 70px** — uses CSS variable `var(--accent)` so it respects the app theme. Truncates long names with `title` tooltip for full name on hover.
+
+### What's next (Session 173)
+- **Print check: per-swatch Caution mute** — in the print check overlay on PaletteCard, add a small per-swatch mute/clamp button for Caution-risk swatches (Oklch C 0.12–0.25). The existing "→ safe" button bulk-mutes all at once; a per-swatch version allows keeping some vivid colors while taming others.
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut overlay
+- **Hue gap visual** — shade the missing sectors more visibly (e.g. a thin dashed arc) vs the current dim opacity approach
