@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, Filter } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
 import { getContrastRatio, getContrastColor } from "@/lib/utils";
@@ -48,6 +48,7 @@ function buildMarkdown(palette: Palette): string {
 
 export default function ContrastModal({ palette, onClose }: ContrastModalProps) {
   const [copied, setCopied] = useState(false);
+  const [showProblemsOnly, setShowProblemsOnly] = useState(false);
 
   if (!palette || palette.colors.length < 2) return null;
 
@@ -135,15 +136,26 @@ export default function ContrastModal({ palette, onClose }: ContrastModalProps) 
                 { key: "AA"  as TierKey, count: aaCount  },
                 { key: "AL"  as TierKey, count: alCount  },
                 { key: "fail" as TierKey, count: failCount },
-              ]).filter(({ count }) => count > 0).map(({ key, count }) => (
-                <span
-                  key={key}
-                  className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                  style={{ backgroundColor: TIER_META[key].chipBg, color: TIER_META[key].chipText }}
-                >
-                  {count} {TIER_META[key].label}
-                </span>
-              ))}
+              ]).filter(({ count }) => count > 0).map(({ key, count }) => {
+                const isPassing = key === "AAA" || key === "AA";
+                const dimmed = showProblemsOnly && isPassing;
+                return (
+                  <span
+                    key={key}
+                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-opacity duration-150"
+                    style={{
+                      backgroundColor: TIER_META[key].chipBg,
+                      color: TIER_META[key].chipText,
+                      opacity: dimmed ? 0.35 : 1,
+                    }}
+                  >
+                    {count} {TIER_META[key].label}
+                  </span>
+                );
+              })}
+              {showProblemsOnly && (alCount + failCount === 0) && (
+                <span className="text-[11px] text-emerald-600 font-medium">All pairs pass ✓</span>
+              )}
             </div>
 
             {/* Matrix grid */}
@@ -247,21 +259,48 @@ export default function ContrastModal({ palette, onClose }: ContrastModalProps) 
 
                       const ratio = ratios[i][j];
                       const tier = getTier(ratio);
+                      const isPassing = tier === "AAA" || tier === "AA";
+
+                      // When filtering to problems only, dim passing cells
+                      if (showProblemsOnly && isPassing) {
+                        return (
+                          <div
+                            key={`cell-${i}-${j}`}
+                            className="rounded-[5px] flex items-center justify-center transition-opacity duration-150"
+                            style={{
+                              backgroundColor: "var(--surface-raised, var(--surface))",
+                              width: cellSize,
+                              height: cellSize,
+                              border: "1px solid var(--border)",
+                              opacity: 0.28,
+                            }}
+                            title={`${bg.hex} bg · ${fg.hex} fg · ${ratio.toFixed(2)}:1 · ${TIER_META[tier].fullLabel} — passing`}
+                          >
+                            <span style={{ fontSize: 9, color: "var(--muted)", userSelect: "none" }}>✓</span>
+                          </div>
+                        );
+                      }
+
                       // bg color for the chip — semi-transparent so the bg swatch shows through
                       const chipBgStyle = getContrastColor(bg.hex) === "#fafaf8"
                         ? "rgba(0,0,0,0.32)"
                         : "rgba(255,255,255,0.52)";
                       const chipTextStyle = getContrastColor(bg.hex);
 
+                      // In problems-only mode, highlight AL/fail cells with a colored ring
+                      const problemsBorder = showProblemsOnly
+                        ? `2px solid ${tier === "fail" ? "#ef4444" : "#f59e0b"}`
+                        : `1px solid ${getContrastColor(bg.hex) === "#fafaf8" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.07)"}`;
+
                       return (
                         <div
                           key={`cell-${i}-${j}`}
-                          className="rounded-[5px] flex flex-col items-center justify-center gap-[2px] select-none cursor-default"
+                          className="rounded-[5px] flex flex-col items-center justify-center gap-[2px] select-none cursor-default transition-all duration-150"
                           style={{
                             backgroundColor: bg.hex,
                             width: cellSize,
                             height: cellSize,
-                            border: `1px solid ${getContrastColor(bg.hex) === "#fafaf8" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.07)"}`,
+                            border: problemsBorder,
                           }}
                           title={`${bg.hex} bg · ${fg.hex} fg · ${ratio.toFixed(2)}:1 · WCAG ${TIER_META[tier].fullLabel}`}
                         >
@@ -312,31 +351,53 @@ export default function ContrastModal({ palette, onClose }: ContrastModalProps) 
               </div>
             </div>
 
-            {/* Legend + copy row */}
+            {/* Legend + actions row */}
             <div className="mt-4 flex items-start gap-3 justify-between">
               <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-                {(["AAA", "AA", "AL", "fail"] as TierKey[]).map((key) => (
-                  <div key={key} className="flex items-center gap-1.5">
-                    <span
-                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold"
-                      style={{ backgroundColor: TIER_META[key].chipBg, color: TIER_META[key].chipText }}
+                {(["AAA", "AA", "AL", "fail"] as TierKey[]).map((key) => {
+                  const isPassing = key === "AAA" || key === "AA";
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center gap-1.5 transition-opacity duration-150"
+                      style={{ opacity: showProblemsOnly && isPassing ? 0.4 : 1 }}
                     >
-                      {TIER_META[key].label}
-                    </span>
-                    <span className="text-[10px] text-[var(--muted)]">
-                      {key === "AAA" ? "≥7:1" : key === "AA" ? "≥4.5:1" : key === "AL" ? "≥3:1 large text" : "<3:1"}
-                    </span>
-                  </div>
-                ))}
+                      <span
+                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold"
+                        style={{ backgroundColor: TIER_META[key].chipBg, color: TIER_META[key].chipText }}
+                      >
+                        {TIER_META[key].label}
+                      </span>
+                      <span className="text-[10px] text-[var(--muted)]">
+                        {key === "AAA" ? "≥7:1" : key === "AA" ? "≥4.5:1" : key === "AL" ? "≥3:1 large text" : "<3:1"}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <button
-                onClick={handleCopy}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--foreground)]/30 text-[11px] font-medium transition-colors"
-                title="Copy as Markdown table"
-              >
-                {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                {copied ? "Copied!" : "Copy MD"}
-              </button>
+              <div className="flex-shrink-0 flex items-center gap-2">
+                <button
+                  onClick={() => setShowProblemsOnly((v) => !v)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border text-[11px] font-medium transition-colors"
+                  style={{
+                    borderColor: showProblemsOnly ? "#ef4444" : "var(--border)",
+                    color: showProblemsOnly ? "#ef4444" : "var(--muted)",
+                    backgroundColor: showProblemsOnly ? "#fef2f2" : "transparent",
+                  }}
+                  title={showProblemsOnly ? "Show all pairs" : "Show only AL and Fail pairs"}
+                >
+                  <Filter size={11} />
+                  {showProblemsOnly ? "Problems only" : "All pairs"}
+                </button>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--foreground)]/30 text-[11px] font-medium transition-colors"
+                  title="Copy as Markdown table"
+                >
+                  {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                  {copied ? "Copied!" : "Copy MD"}
+                </button>
+              </div>
             </div>
 
             <p className="text-[10px] text-[var(--muted)] mt-3 leading-relaxed">
