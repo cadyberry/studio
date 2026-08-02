@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-02 — Session 174: Copy as Tailwind Config Export
+
+### What was done
+- **`copyTailwindConfig(palette)` function** — added to `exportPalette.ts`. Generates a `theme.extend.colors` object entry namespaced under the palette's slugified name. Each swatch key uses the swatch's name (slugified) when present, falling back to `color-1`, `color-2`, etc. Duplicate keys after slugification get a numeric suffix (`-2`, `-3`, …) so the output is always valid JS.
+- **"Copy Tailwind Config" button** — wired into ExportModal's Copy section between "CSS Variables" and "Copy JSON". Uses the `Braces` lucide icon. Flashes "Copied!" on click like all other copy actions.
+- **Output format** — clipboard receives a comment + indented object ready to paste into `tailwind.config.js → theme.extend.colors`. Named swatches become human-readable keys; a palette named "Desert Dunes" with a swatch named "Terracotta Red" yields `"desert-dunes": { "terracotta-red": "#c0634b", … }`.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes.
+
+### Key decisions
+- **Namespace under palette slug** — flat keys (`"terracotta-red": "#hex"`) would collide across palettes in the same config. Nesting under the palette name keeps each palette's colors grouped and avoids conflicts when pasting multiple palettes.
+- **Comment header `// Paste into tailwind.config.js → theme.extend.colors`** — makes the snippet self-documenting for Cady and anyone she shares the config snippet with.
+- **Suffix-based deduplication, not skip** — if two swatches slugify to the same key (e.g. both unnamed → `color-1` is impossible but two swatches named "Blue" both → `blue`), the second gets `blue-2`. Skipping would silently drop a color; suffixing keeps all colors present.
+- **`Braces` icon** — more specific than the already-used `Code2` (CSS Variables). `Braces` (`{ }`) immediately signals "object/config" in the UI.
+
+### What's next (Session 175)
+- **ContrastModal: failing-pairs-only filter** — toggle to hide AAA/AA cells and show only AA Large and Fail pairs for quick triage in large palettes
+- **Swatch delete button** — small ✕ on each swatch in SwatchEditor (with at least 2 colors remaining), inverse of the existing add button
+- **Palette export: download as Figma tokens JSON** — Style Dictionary / W3C design token format, compatible with the Figma Tokens plugin
+
+---
+
 ## 2026-08-01 — Session 173: Hue Gap Visual — Radial Vent Lines for Missing Sectors
 
 ### What was done
