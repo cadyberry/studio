@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-08-02 — Session 175: ContrastModal Failing-Pairs Filter
+
+### What was done
+- **"Problems only" toggle button** — a `Filter`-icon button added to the ContrastModal footer row (next to "Copy MD"). Clicking it switches between "All pairs" and "Problems only" mode. Active state: red border + red text + red-tinted background so it reads as a live filter.
+- **Passing cells dim to gray placeholders** — when `showProblemsOnly` is active, cells with tier AAA or AA render as a muted gray box at 28% opacity with a small `✓` symbol. The grid maintains its full layout (same rows, columns, cell sizes) so spatial relationships remain intact.
+- **AL and Fail cells gain colored rings** — in problems-only mode, AA-Large cells get an amber 2px border and Fail cells get a red 2px border, making the problem pairs unmistakable against the dimmed field.
+- **Summary chips dim for passing tiers** — AAA and AA count chips drop to 35% opacity when filtering, matching the visual weight reduction in the grid. A "All pairs pass ✓" message appears if no AL or Fail pairs exist.
+- **Legend row matches filter state** — the AAA and AA legend entries dim to 40% opacity in problems-only mode, so the legend's emphasis mirrors the grid.
+- **`showProblemsOnly` state** — simple boolean, starts false, toggled in place. No additional state or derived values needed; the cell render branches inline on `isPassing`.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes.
+
+### Key decisions
+- **Dim-not-hide** — hiding passing cells would collapse the grid columns/rows, making the AL/Fail cells jump position between modes and breaking the spatial pair-finding workflow. Dimming preserves layout: the user can still see WHERE passing pairs are relative to failing ones.
+- **✓ symbol at 9px** — small enough to not distract, clear enough to signal "this was passing, I hid it on purpose." A blank cell would be ambiguous (looks broken). A strikethrough would be too emphatic.
+- **Colored ring on AL/fail cells** — adds a second visual cue beyond the existing "Aa" text preview. When the grid is mostly dimmed, the ring ensures the eye goes directly to the problem pairs without searching.
+- **Toggle in footer, not summary bar** — the footer row is the natural home for matrix-level controls (next to Copy MD). Adding it to the summary chips bar would crowd the counts; adding it to the title row would make it feel like a view mode (it's a filter, not a mode).
+
+### What's next (Session 176)
+- **Swatch delete button** — small ✕ on each swatch in SwatchEditor (with at least 2 colors remaining), the inverse of the existing add-swatch button added in session 165
+- **Palette export: download as Figma tokens JSON** — Style Dictionary / W3C design token format, compatible with the Figma Tokens plugin
+- **ContrastModal: copy filtered view** — when "Problems only" is active, "Copy MD" should copy only the AL/Fail rows, not the full matrix
+
+---
+
 ## 2026-08-02 — Session 174: Copy as Tailwind Config Export
 
 ### What was done
