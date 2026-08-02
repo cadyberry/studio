@@ -328,6 +328,29 @@ export function copyHexList(palette: Palette): void {
   navigator.clipboard.writeText(hexes);
 }
 
+export function copyTailwindConfig(palette: Palette): void {
+  const slugPalette = palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
+
+  // Deduplicate key collisions (e.g. two unnamed swatches after slugification)
+  const seenSlugs = new Map<string, number>();
+  const keys = palette.colors.map((c, i) => {
+    let base: string;
+    if (c.name) {
+      const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      base = slug || `color-${i + 1}`;
+    } else {
+      base = `color-${i + 1}`;
+    }
+    const count = seenSlugs.get(base) ?? 0;
+    seenSlugs.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count + 1}`;
+  });
+
+  const inner = keys.map((key, i) => `    "${key}": "${palette.colors[i].hex}",`).join("\n");
+  const output = `// Paste into tailwind.config.js → theme.extend.colors\n"${slugPalette}": {\n${inner}\n},`;
+  navigator.clipboard.writeText(output);
+}
+
 export function copyCmykList(palette: Palette): void {
   const lines = palette.colors
     .map((c) => {
