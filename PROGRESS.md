@@ -4933,3 +4933,70 @@
 - **Print check: per-swatch Caution mute** — in the print check overlay on PaletteCard, add a small per-swatch mute/clamp button for Caution-risk swatches (Oklch C 0.12–0.25). The existing "→ safe" button bulk-mutes all at once; a per-swatch version allows keeping some vivid colors while taming others.
 - **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut overlay
 - **Hue gap visual** — shade the missing sectors more visibly (e.g. a thin dashed arc) vs the current dim opacity approach
+
+---
+
+## 2026-08-01 — Session 173: Hue Gap Visual (radial vent lines)
+
+### What was done
+- **Radial vent lines for missing hue sectors** — the Library Hue Coverage Wheel gained visual vent lines (thin radial spokes) for hue sectors with zero swatches, making gaps clearly distinguishable from dim but present sectors.
+
+### What's next (Session 174)
+- Copy as Tailwind config export
+- Print check: per-swatch Caution mute
+
+---
+
+## 2026-08-01 — Session 174: Copy as Tailwind Config Export
+
+### What was done
+- **"Copy Tailwind Config" export action** — new copy action in ExportModal generates a `theme.extend.colors` object with palette name as the key group and swatch names/indices as sub-keys. Handles key collisions and slug normalization.
+- `copyTailwindConfig(palette)` added to `exportPalette.ts`.
+
+### What's next (Session 175)
+- ContrastModal failing-pairs filter
+- Keyboard shortcut overlay
+
+---
+
+## 2026-08-02 — Session 175: ContrastModal Failing-Pairs Filter
+
+### What was done
+- **Failing-pairs filter in ContrastModal (Harmony Modal Matrix view)** — a "Show failing" toggle dims all AAA/AA cells and highlights AL/Fail cells with a colored ring. Makes it easy to spot which pairings don't meet WCAG without reading every cell.
+
+### What's next (Session 176)
+- Swatch delete button in SwatchEditor
+- Keyboard shortcut overlay
+
+---
+
+## 2026-08-02 — Session 176: Swatch Delete Button in SwatchEditor
+
+### What was done
+- **Delete swatch button in SwatchEditor** — a Trash2 button in the SwatchEditor footer removes the currently selected swatch from the palette. Disabled (with tooltip) when the palette has only 2 colors. Confirms via store `updatePalette` call.
+
+### What's next (Session 177)
+- CSS gradient generator in Export Modal
+- Keyboard shortcut overlay (hold ? over card)
+
+---
+
+## 2026-08-03 — Session 177: CSS Gradient Generator in Export Modal
+
+### What was done
+- **CSS Gradient Generator section in ExportModal** — a new "GRADIENT" section between Copy and AI displays a live preview strip, a direction picker (→ / ↘ / ↓ / ○ radial), an order picker (Original / ☀→● light-dark / ●→☀ dark-light / Hue), a selectable CSS string, and a "Copy CSS Gradient" button with a gradient mini-swatch icon and a Check flash on copy.
+- **`getGradientCss(palette, direction, order)` helper** — pure function in `exportPalette.ts` that generates the correct `linear-gradient(…)` or `radial-gradient(circle at center, …)` CSS value string. `GradientDirection` and `GradientOrder` types exported for reuse.
+- **`sortedGradientColors` helper** — sorts palette hex values by HSL lightness (light-dark or dark-light) or HSL hue for rainbow-order gradients. Falls back to palette order when `order === "palette"`.
+- **Gradient preview as copy button icon** — the gradient mini-square in the copy row is itself styled with the current gradient (live preview at thumbnail scale), reinforcing the WYSIWYG feel.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **IIFE pattern (`{(() => { ... })()}`) for the gradient section** — the section needs local consts (DIRS, ORDERS, computations) without introducing new state setters in the IIFE; state setters come from the outer component. This matches the existing `printCheckOpen` overlay pattern in PaletteCard and keeps the gradient section self-contained in JSX without a separate component.
+- **`rgbToHsl` for sort, not Oklch** — HSL hue and lightness are fast, accurate enough for sorting, and already imported. Oklch would give perceptually-uniform lightness but the sort difference is imperceptible at 8 swatches.
+- **4 directions** — "to right" (web banner default), "135deg" (diagonal background), "to bottom" (page header), and "radial" cover ~95% of real use cases. More choices would add noise without value.
+- **`select-all` on CSS string** — clicking the monospace preview selects the whole string for fast copy-paste without needing to triple-click. The Copy button is still the primary action.
+
+### What's next (Session 178)
+- **Gradient download as PNG** — add a "Download Gradient PNG" button below the CSS copy that exports a 1200×400px banner PNG with the current gradient, palette name, and hex codes overlaid
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (distinct from the full KeyboardHelpModal)
+- **Gradient export to SVG** — a `<linearGradient>` SVG snippet for Figma, Illustrator, or web inline use
