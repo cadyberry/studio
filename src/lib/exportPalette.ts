@@ -351,6 +351,32 @@ export function copyTailwindConfig(palette: Palette): void {
   navigator.clipboard.writeText(output);
 }
 
+export type GradientDirection = "to right" | "135deg" | "to bottom" | "radial";
+export type GradientOrder = "palette" | "light-dark" | "dark-light" | "hue";
+
+function sortedGradientColors(palette: Palette, order: GradientOrder): string[] {
+  const hexes = palette.colors.map((c) => c.hex);
+  if (order === "palette") return hexes;
+  const withMeta = hexes.map((hex) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return { hex, l: 0, h: 0 };
+    const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    return { hex, l: hsl.l, h: hsl.h };
+  });
+  if (order === "light-dark") return [...withMeta].sort((a, b) => b.l - a.l).map((c) => c.hex);
+  if (order === "dark-light") return [...withMeta].sort((a, b) => a.l - b.l).map((c) => c.hex);
+  return [...withMeta].sort((a, b) => a.h - b.h).map((c) => c.hex);
+}
+
+export function getGradientCss(palette: Palette, direction: GradientDirection, order: GradientOrder): string {
+  const colors = sortedGradientColors(palette, order);
+  if (colors.length === 0) return "";
+  if (direction === "radial") {
+    return `radial-gradient(circle at center, ${colors.join(", ")})`;
+  }
+  return `linear-gradient(${direction}, ${colors.join(", ")})`;
+}
+
 export function copyCmykList(palette: Palette): void {
   const lines = palette.colors
     .map((c) => {

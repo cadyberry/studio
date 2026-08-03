@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard } from "@/lib/exportPalette";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -23,6 +23,9 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [promptCopied, setPromptCopied] = useState(false);
   const [tagged, setTagged] = useState(false);
   const [taggedNewCount, setTaggedNewCount] = useState(0);
+  const [gradDir, setGradDir] = useState<GradientDirection>("to right");
+  const [gradOrder, setGradOrder] = useState<GradientOrder>("palette");
+  const [gradCopied, setGradCopied] = useState(false);
 
   const updatePalette = usePaletteStore((s) => s.updatePalette);
   const cachedStory = usePaletteStore((s) => s.colorStoryCache[palette?.id ?? ""] ?? null);
@@ -352,6 +355,108 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                 </div>
               );
             })}
+
+            {/* CSS Gradient Generator */}
+            {(() => {
+              if (!palette) return null;
+              const gradientCss = getGradientCss(palette, gradDir, gradOrder);
+
+              const DIRS: { value: GradientDirection; label: string; title: string }[] = [
+                { value: "to right", label: "→", title: "Left to right" },
+                { value: "135deg",   label: "↘", title: "Diagonal (135°)" },
+                { value: "to bottom", label: "↓", title: "Top to bottom" },
+                { value: "radial",   label: "○", title: "Radial from center" },
+              ];
+
+              const ORDERS: { value: GradientOrder; label: string; title: string }[] = [
+                { value: "palette",    label: "Original", title: "Palette swatch order" },
+                { value: "light-dark", label: "☀→●",     title: "Light to dark" },
+                { value: "dark-light", label: "●→☀",     title: "Dark to light" },
+                { value: "hue",        label: "Hue",       title: "Sorted by hue (rainbow order)" },
+              ];
+
+              const copyGradient = () => {
+                navigator.clipboard.writeText(`background: ${gradientCss};`);
+                setGradCopied(true);
+                setTimeout(() => setGradCopied(false), 1500);
+              };
+
+              return (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">Gradient</span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+
+                  {/* Live preview */}
+                  <div
+                    className="w-full h-12 rounded-[var(--radius-sm)] mb-2.5 border border-[var(--border)]"
+                    style={{ background: gradientCss }}
+                  />
+
+                  {/* Controls */}
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-[var(--muted)] uppercase tracking-wider mr-0.5">Dir</span>
+                      {DIRS.map(({ value, label, title }) => (
+                        <button
+                          key={value}
+                          onClick={() => setGradDir(value)}
+                          title={title}
+                          className={`w-7 h-6 rounded text-sm flex items-center justify-center transition-colors ${
+                            gradDir === value
+                              ? "bg-[var(--accent)] text-white"
+                              : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--border)]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-[var(--muted)] uppercase tracking-wider mr-0.5">Order</span>
+                      {ORDERS.map(({ value, label, title }) => (
+                        <button
+                          key={value}
+                          onClick={() => setGradOrder(value)}
+                          title={title}
+                          className={`h-6 px-1.5 rounded text-[10px] font-medium flex items-center justify-center transition-colors ${
+                            gradOrder === value
+                              ? "bg-[var(--accent)] text-white"
+                              : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--border)]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CSS string */}
+                  <div className="font-mono text-[9px] text-[var(--muted)] bg-[var(--surface-2)] px-2.5 py-1.5 rounded mb-1.5 overflow-x-auto whitespace-nowrap select-all">
+                    background: {gradientCss};
+                  </div>
+
+                  {/* Copy button */}
+                  <button
+                    onClick={copyGradient}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-md shrink-0 border border-[var(--border)]"
+                      style={{ background: gradientCss }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{gradCopied ? "Copied!" : "Copy CSS Gradient"}</div>
+                      <div className="text-xs text-[var(--muted)] truncate">background: linear-gradient(…) — paste anywhere</div>
+                    </div>
+                    <div className="text-[var(--muted)] shrink-0">
+                      {gradCopied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                    </div>
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* AI Color Story */}
             <div>
