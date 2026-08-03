@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2, StickyNote, Pipette } from "lucide-react";
+import { X, RotateCcw, Minus, Plus, Copy, Check, Sparkles, Loader2, StickyNote, Pipette, Trash2 } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import type { Palette } from "@/types";
@@ -185,6 +185,13 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
         ? { ...c, hex, name: trimmedName || undefined, note: trimmedNote || undefined }
         : c
     );
+    updatePalette(palette.id, { colors: newColors });
+    onClose();
+  };
+
+  const handleDelete = () => {
+    if (!palette || palette.colors.length <= 2) return;
+    const newColors = palette.colors.filter((_, i) => i !== swatchIndex);
     updatePalette(palette.id, { colors: newColors });
     onClose();
   };
@@ -784,6 +791,17 @@ export default function SwatchEditor({ palette, swatchIndex, onClose }: SwatchEd
               >
                 <RotateCcw size={12} />
                 <span className="ml-1">Reset</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={!palette || palette.colors.length <= 2}
+                title={palette && palette.colors.length <= 2 ? "Cannot delete — minimum 2 colors" : `Delete swatch ${swatchIndex + 1} of ${palette?.colors.length}`}
+                className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-40 disabled:text-[var(--muted)]"
+              >
+                <Trash2 size={12} />
+                <span className="ml-1">Delete</span>
               </Button>
               <div className="flex-1" />
               <Button variant="outline" size="sm" onClick={onClose}>
