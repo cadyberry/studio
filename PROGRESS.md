@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-08-03 — Session 176: Swatch Delete Button in SwatchEditor
+
+### What was done
+- **"Delete" button in SwatchEditor footer** — a `Trash2`-icon `Delete` button appears in the actions row of SwatchEditor, to the right of "Reset". Clicking it removes the current swatch from the palette and closes the editor.
+- **Minimum 2 colors guard** — the button is disabled (`disabled:opacity-40`) when the palette has exactly 2 colors, preventing deletion below the minimum useful palette size. The title tooltip explains why: "Cannot delete — minimum 2 colors."
+- **`handleDelete` function** — filters `palette.colors` to exclude `swatchIndex`, calls `updatePalette`, then `onClose()`. Pure, no extra state needed.
+- **`Trash2` icon imported** — added to the existing lucide-react import line.
+- **Rose-colored destructive styling** — the button uses `text-rose-500 hover:text-rose-600 hover:bg-rose-50` so it reads as a destructive action, visually distinct from Reset/Save/Cancel.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **SwatchEditor footer, not palette card swatch strip** — placing delete in SwatchEditor keeps the swatch strip uncluttered (already has pencil, shade-scale, and copy-on-click). The editor is the "editing context" — delete belongs there, next to Reset, Save, Cancel.
+- **Disabled (not hidden) at 2 colors** — hiding the button would make it feel like a conditional feature. Disabled + tooltip teaches the minimum; the creator knows delete is always available once they have 3+.
+- **`onClose()` after delete** — the editor was opened for a specific swatch index; that index is gone after deletion, so closing is the only correct response. Reopening on a neighbor swatch would be surprising.
+- **19 lines changed** — minimal footprint. Only SwatchEditor.tsx modified; no store changes, no prop drilling, no type additions.
+
+### What's next (Session 177)
+- **Palette export: download as Figma tokens JSON** — Style Dictionary / W3C design token format with `$value`, `$type: "color"`, and `$description` from swatch names/notes; compatible with the Figma Tokens plugin
+- **ContrastModal: copy filtered view** — when "Problems only" is active, "Copy MD" should export only the AL/Fail rows rather than the full matrix
+- **Palette card: swatch count badge on export button** — small number badge showing how many swatches will export, visible in ExportModal
+
+---
+
 ## 2026-08-02 — Session 175: ContrastModal Failing-Pairs Filter
 
 ### What was done
