@@ -377,6 +377,114 @@ export function getGradientCss(palette: Palette, direction: GradientDirection, o
   return `linear-gradient(${direction}, ${colors.join(", ")})`;
 }
 
+export function exportAsGradientPng(
+  palette: Palette,
+  direction: GradientDirection,
+  order: GradientOrder
+): void {
+  if (typeof document === "undefined") return;
+
+  const W = 1200;
+  const H = 400;
+  const SANS = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+  const MONO = "'Courier New', Courier, monospace";
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const colors = sortedGradientColors(palette, order);
+
+  // Full-canvas gradient background
+  let grad: CanvasGradient;
+  if (direction === "radial") {
+    grad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.hypot(W, H) / 2);
+  } else {
+    const coords: [number, number, number, number] =
+      direction === "to right"  ? [0, 0, W, 0] :
+      direction === "to bottom" ? [0, 0, 0, H] :
+                                  [0, 0, W, H];
+    grad = ctx.createLinearGradient(...coords);
+  }
+  const stops = colors.length > 1 ? colors.length - 1 : 1;
+  colors.forEach((hex, i) => grad.addColorStop(i / stops, hex));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bottom frosted panel
+  const PANEL_H = 128;
+  const panelY = H - PANEL_H;
+  const panelGrad = ctx.createLinearGradient(0, panelY - 40, 0, H);
+  panelGrad.addColorStop(0, "rgba(0,0,0,0)");
+  panelGrad.addColorStop(0.35, "rgba(0,0,0,0.52)");
+  panelGrad.addColorStop(1, "rgba(0,0,0,0.72)");
+  ctx.fillStyle = panelGrad;
+  ctx.fillRect(0, panelY - 40, W, PANEL_H + 40);
+
+  // Palette name (left side of panel)
+  ctx.fillStyle = "rgba(255,255,255,0.96)";
+  ctx.font = `bold 28px ${SANS}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 8;
+  const nameTrunc = palette.name.length > 44 ? palette.name.slice(0, 44) + "…" : palette.name;
+  ctx.fillText(nameTrunc, 44, panelY + 32);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "rgba(255,255,255,0.50)";
+  ctx.font = `14px ${SANS}`;
+  ctx.fillText(`${palette.colors.length} color${palette.colors.length !== 1 ? "s" : ""}`, 44, panelY + 60);
+
+  // Swatch row with hex labels (right side of panel)
+  const SW = 36;
+  const GAP = 8;
+  const n = colors.length;
+  const totalSwatchW = n * SW + (n - 1) * GAP;
+  const swatchStartX = W - 44 - totalSwatchW;
+  const swatchY = panelY + 18;
+  const HEX_Y = swatchY + SW + 14;
+
+  colors.forEach((hex, i) => {
+    const sx = swatchStartX + i * (SW + GAP);
+    // Swatch square with subtle shadow
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.45)";
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    roundRectPath(ctx, sx, swatchY, SW, SW, 6);
+    ctx.fillStyle = hex;
+    ctx.fill();
+    ctx.restore();
+    // White ring
+    ctx.strokeStyle = "rgba(255,255,255,0.30)";
+    ctx.lineWidth = 1;
+    roundRectPath(ctx, sx, swatchY, SW, SW, 6);
+    ctx.stroke();
+    // Hex label
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = `9px ${MONO}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(hex.slice(1).toUpperCase(), sx + SW / 2, HEX_Y);
+  });
+
+  // Branding watermark (top-right)
+  ctx.fillStyle = "rgba(255,255,255,0.38)";
+  ctx.font = `bold 12px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  ctx.fillText("Palette", W - 28, 22);
+
+  const slug = palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const link = document.createElement("a");
+  link.download = `${slug}-gradient.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
 export function copyCmykList(palette: Palette): void {
   const lines = palette.colors
     .map((c) => {

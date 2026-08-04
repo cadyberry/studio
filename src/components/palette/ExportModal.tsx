@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -444,7 +444,7 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                     background: {gradientCss};
                   </div>
 
-                  {/* Copy button */}
+                  {/* Copy + Download buttons */}
                   <button
                     onClick={copyGradient}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group"
@@ -459,6 +459,24 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                     </div>
                     <div className="text-[var(--muted)] shrink-0">
                       {gradCopied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => exportAsGradientPng(palette, gradDir, gradOrder)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-md shrink-0 border border-[var(--border)] flex items-center justify-center bg-[var(--surface-2)] group-hover:bg-[var(--border)] transition-colors"
+                    >
+                      <Download size={14} className="text-[var(--muted)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">Download Gradient PNG</div>
+                      <div className="text-xs text-[var(--muted)] truncate">1200×400 banner — swatches + hex codes overlaid</div>
+                    </div>
+                    <div className="text-[var(--muted)] shrink-0">
+                      <Download size={14} />
                     </div>
                   </button>
                 </div>
