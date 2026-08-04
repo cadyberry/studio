@@ -1054,6 +1054,44 @@ export function exportAsLightStoryMoodBoard(palette: Palette, story: ColorStory)
   link.click();
 }
 
+// W3C Design Token Community Group format — compatible with the Figma Tokens plugin (Token Studio).
+// Structure: { "<palette-slug>": { "$description"?: "...", "<swatch-key>": { "$type": "color", "$value": "#hex", "$description"?: "..." } } }
+export function exportAsFigmaTokensJson(palette: Palette): void {
+  const paletteSlug =
+    palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
+
+  const seenSlugs = new Map<string, number>();
+  const group: Record<string, unknown> = {};
+  if (palette.notes) group["$description"] = palette.notes;
+
+  palette.colors.forEach((c, i) => {
+    let base: string;
+    if (c.name) {
+      const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      base = slug || `color-${i + 1}`;
+    } else {
+      base = `color-${i + 1}`;
+    }
+    const count = seenSlugs.get(base) ?? 0;
+    seenSlugs.set(base, count + 1);
+    const key = count === 0 ? base : `${base}-${count + 1}`;
+
+    const descParts = [c.name, c.note].filter(Boolean);
+    const entry: Record<string, string> = { $type: "color", $value: c.hex };
+    if (descParts.length > 0) entry["$description"] = descParts.join(" — ");
+    group[key] = entry;
+  });
+
+  const json = JSON.stringify({ [paletteSlug]: group }, null, 2);
+  const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = `${paletteSlug}-tokens.json`;
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 // Procreate .swatches — ZIP archive containing Swatches.json with HSB values.
 // Padded to exactly 30 slots (Procreate's fixed palette size) with null.
 export async function exportAsProcreateSwatches(palette: Palette): Promise<void> {
