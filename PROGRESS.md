@@ -5024,3 +5024,28 @@
 - **Gradient download as PNG** — add a "Download Gradient PNG" button below the CSS copy that exports a 1200×400px banner PNG with the current gradient, palette name, and hex codes overlaid
 - **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (distinct from the full KeyboardHelpModal)
 - **Gradient export to SVG** — a `<linearGradient>` SVG snippet for Figma, Illustrator, or web inline use
+
+---
+
+## 2026-08-04 — Session 178: Gradient PNG Banner Export
+
+### What was done
+- **`exportAsGradientPng(palette, direction, order)` in `exportPalette.ts`** — draws a 1200×400px canvas using the same direction/order state as the CSS gradient generator. The canvas:
+  - Fills the full area with the gradient (linear or radial, using `createLinearGradient`/`createRadialGradient`)
+  - Adds a dark gradient vignette overlay at the bottom
+  - Shows the palette name (left) and color count below it in the bottom panel
+  - Renders the sorted swatch squares with hex labels on the right side of the bottom panel
+  - Drops a subtle "Palette" watermark at the top-right
+- **"Download Gradient PNG" button in ExportModal** — appears immediately below "Copy CSS Gradient" in the Gradient section. Shows a Download icon thumbnail and the label "1200×400 banner — swatches + hex codes overlaid". Inherits the current dir/order state, so what you preview in the live strip is exactly what you get in the PNG.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Gradient vignette (not flat dark bar)** — `createLinearGradient` from transparent to 0.72 opacity gives a smooth photo-overlay feel rather than a hard-edged panel. Visually integrates with the gradient background.
+- **Swatch squares (not circles)** — consistent with the existing swatch card design language in the app. 36×36px with 6px radius and a white 30% ring border.
+- **Right-aligned swatch row** — palette name anchors left, swatches anchor right. Natural split for a web banner template: left for label context, right for color reference.
+- **9px MONO hex labels** — small enough to not compete with the gradient, large enough to be readable at download resolution.
+- **Inherited dir/order state** — no new state needed. The download button reads `gradDir` / `gradOrder` from the parent IIFE scope, so it always matches the live preview strip.
+
+### What's next (Session 179)
+- **Gradient SVG export** — a `<linearGradient>` / `<radialGradient>` SVG snippet for Figma, Illustrator, or web inline use (copy to clipboard)
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (distinct from the full KeyboardHelpModal)
