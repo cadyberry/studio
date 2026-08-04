@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-08-04 — Session 177: Figma Tokens JSON Export
+
+### What was done
+- **`exportAsFigmaTokensJson(palette)` function** — added to `exportPalette.ts`. Generates a W3C Design Token Community Group (DTCG) format JSON file and triggers a download. The file is compatible with the Figma Tokens plugin (Token Studio) and Style Dictionary.
+- **Token format** — palette is nested under its slugified name: `{ "palette-slug": { "$description"?: "...", "swatch-key": { "$type": "color", "$value": "#hex", "$description"?: "swatch name — note" } } }`. The `$description` on a swatch is built from the swatch's `name` and/or `note`, joined with " — ". The `$description` at the group level comes from `palette.notes`.
+- **Deduplication** — swatch key slugification uses the same suffix-based deduplication as the Tailwind Config export (`blue`, `blue-2`, `blue-3`, …).
+- **"Download Figma Tokens JSON" entry in ExportModal** — added after "Download Adobe Swatches (.ase)" in the Download section. Uses the `Shapes` lucide icon. Description: "W3C design token format — import via the Figma Tokens plugin".
+- **File download** — `<palette-slug>-tokens.json`, triggers immediately via Blob URL.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **W3C DTCG format over Figma's old proprietary format** — the `$value`/`$type` dollar-prefixed format is the current standard that both the Figma Tokens (Token Studio) plugin and Style Dictionary accept, making the export future-proof.
+- **Swatch `name + note` in `$description`** — both fields carry design intent; combining them gives the importing tool (and any future developer reading the JSON) the full context in one field.
+- **Group-level `$description` from `palette.notes`** — the palette's notes are the closest thing to a "group description" — it documents the collection as a whole.
+- **`Shapes` icon** — no `Figma` icon exists in lucide-react 1.16.0. `Shapes` (geometry-focused, multi-shape) clearly signals "design tokens/components" and is semantically distinct from all other icons in the Export modal.
+- **Download, not copy** — the Figma Tokens plugin imports from file, not clipboard. A download is the right primitive; a "copy JSON" button for tokens would require users to paste into a file anyway.
+
+### What's next (Session 178)
+- **ContrastModal: copy filtered view** — when "Problems only" is active, "Copy MD" should export only the AL/Fail rows rather than the full matrix
+- **Palette card: swatch count badge on export button** — small number badge showing how many swatches will export, visible in ExportModal header
+- **CVD export from palette card** — quick-export CVD comparison strip directly from the palette card (not just from the CVD modal)
+
+---
+
 ## 2026-08-03 — Session 176: Swatch Delete Button in SwatchEditor
 
 ### What was done
