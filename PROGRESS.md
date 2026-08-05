@@ -5049,3 +5049,27 @@
 ### What's next (Session 179)
 - **Gradient SVG export** — a `<linearGradient>` / `<radialGradient>` SVG snippet for Figma, Illustrator, or web inline use (copy to clipboard)
 - **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (distinct from the full KeyboardHelpModal)
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (distinct from the full KeyboardHelpModal)
+
+---
+
+## 2026-08-05 — Session 179: Gradient SVG Export
+
+### What was done
+- **`copyGradientSvg(palette, direction, order)` in `exportPalette.ts`** — generates a self-contained inline SVG string (`1200×400` viewBox) with a `<linearGradient>` or `<radialGradient>` definition and a `<rect>` filled from it. Direction-to-SVG coord mapping:
+  - `to right` → `x1="0%" y1="50%" x2="100%" y2="50%"`
+  - `to bottom` → `x1="50%" y1="0%" x2="50%" y2="100%"`
+  - `135deg` → `x1="0%" y1="0%" x2="100%" y2="100%"`
+  - `radial` → `<radialGradient cx="50%" cy="50%" r="70.7%">`
+  - Stop offsets computed as `round(i / (n-1) * 100)%` for even distribution.
+- **"Copy SVG Gradient" button in ExportModal** — appears immediately below "Download Gradient PNG" in the Gradient section. Uses a `FileCode2` icon and the same `svgCopied` flash pattern as the other copy buttons. Desc: "Inline SVG — paste into Figma, Illustrator, or web".
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **Single `<rect>` fill, no `preserveAspectRatio`** — the rect fills the full viewBox, making the SVG scale cleanly to any size in Figma or Illustrator without distortion.
+- **70.7% radius for radial** — `sqrt(0.5)` ≈ 0.707 ensures the radial gradient reaches all four corners of a square viewBox, preventing clipped corners that `50%` would produce.
+- **Inherited `gradDir` / `gradOrder` state** — same principle as the PNG export: the SVG matches exactly what you see in the live CSS preview strip, no extra state needed.
+
+### What's next (Session 180)
+- **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (shows common card actions: rename, export, compare, etc.)
+- **Per-swatch Caution mute in print check** — add individual mute buttons to Caution-risk swatches in the PaletteCard print check overlay
