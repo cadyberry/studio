@@ -5073,3 +5073,21 @@
 ### What's next (Session 180)
 - **Keyboard shortcut overlay** — hold `?` over a palette card for an inline shortcut tooltip (shows common card actions: rename, export, compare, etc.)
 - **Per-swatch Caution mute in print check** — add individual mute buttons to Caution-risk swatches in the PaletteCard print check overlay
+
+---
+
+## 2026-08-05 — Session 180: Color Vision Simulation Panel in Export Modal
+
+### What was done
+- **Color Vision Simulation section in ExportModal** — a new "VISION" section (between Gradient and AI) shows four live mini swatch-strip previews: Normal vision, Deuteranopia (green-blind, ~5% of men), Protanopia (red-blind, ~1% of men), and Tritanopia (blue-yellow blind, rare). Each CVD row renders the palette colors transformed by the Machado/Oliveira/Fernandes matrix in a 24px strip.
+- **Per-type download button** — each CVD row has a Download icon button that calls `exportAsCvdStrip(palette, cvdType)`, producing an 800px normal-vs-simulated side-by-side PNG for accessibility documentation.
+- **Wires up existing but unused utilities** — `simulateColorBlind`, `ColorBlindType`, and `exportAsCvdStrip` were all already implemented in `utils.ts` and `exportPalette.ts` but had no ExportModal UI. This session exposes them.
+
+### Key decisions
+- **Inline live strip preview** — the visual comparison (normal vs. simulated) right in the modal lets creators immediately see if their palette loses distinction under CVD. No need to open the download to understand the impact.
+- **Compact row layout** — 108px label column + flex swatch strip + 28px download button. Fits 4 rows without scrolling in a standard modal height.
+- **VISION as section label** — short, visual, non-jargon. Peers with "GRADIENT" and "AI" as modal section headings.
+
+### What's next (Session 181)
+- **Palette duplicates detector** — scan the library for near-identical palettes (ΔE < 5 across all swatches) and surface them with a merge/dismiss UI
+- **Per-swatch chroma slider in SwatchEditor** — add a C (chroma) slider to complement the existing Lightness and Hue sliders
