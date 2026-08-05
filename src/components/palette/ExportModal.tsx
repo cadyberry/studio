@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2 } from "lucide-react";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
@@ -26,6 +26,7 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [gradDir, setGradDir] = useState<GradientDirection>("to right");
   const [gradOrder, setGradOrder] = useState<GradientOrder>("palette");
   const [gradCopied, setGradCopied] = useState(false);
+  const [svgCopied, setSvgCopied] = useState(false);
 
   const updatePalette = usePaletteStore((s) => s.updatePalette);
   const cachedStory = usePaletteStore((s) => s.colorStoryCache[palette?.id ?? ""] ?? null);
@@ -388,6 +389,12 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                 setTimeout(() => setGradCopied(false), 1500);
               };
 
+              const copySvg = () => {
+                copyGradientSvg(palette, gradDir, gradOrder);
+                setSvgCopied(true);
+                setTimeout(() => setSvgCopied(false), 1500);
+              };
+
               return (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -477,6 +484,22 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                     </div>
                     <div className="text-[var(--muted)] shrink-0">
                       <Download size={14} />
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={copySvg}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-md shrink-0 border border-[var(--border)] flex items-center justify-center bg-[var(--surface-2)] group-hover:bg-[var(--border)] transition-colors">
+                      <FileCode2 size={14} className="text-[var(--muted)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{svgCopied ? "Copied!" : "Copy SVG Gradient"}</div>
+                      <div className="text-xs text-[var(--muted)] truncate">Inline SVG — paste into Figma, Illustrator, or web</div>
+                    </div>
+                    <div className="text-[var(--muted)] shrink-0">
+                      {svgCopied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </div>
                   </button>
                 </div>

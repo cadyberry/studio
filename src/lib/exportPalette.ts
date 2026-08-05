@@ -485,6 +485,31 @@ export function exportAsGradientPng(
   link.click();
 }
 
+export function copyGradientSvg(palette: Palette, direction: GradientDirection, order: GradientOrder): void {
+  const colors = sortedGradientColors(palette, order);
+  if (colors.length === 0) return;
+
+  const stops = colors.length > 1 ? colors.length - 1 : 1;
+  const stopTags = colors
+    .map((hex, i) => `      <stop offset="${Math.round((i / stops) * 100)}%" stop-color="${hex}"/>`)
+    .join("\n");
+
+  const id = "palette-gradient";
+  let gradDef: string;
+  if (direction === "radial") {
+    gradDef = `    <radialGradient id="${id}" cx="50%" cy="50%" r="70.7%" gradientUnits="objectBoundingBox">\n${stopTags}\n    </radialGradient>`;
+  } else {
+    const coords =
+      direction === "to right"  ? ["0%", "50%", "100%", "50%"] :
+      direction === "to bottom" ? ["50%", "0%", "50%", "100%"] :
+                                  ["0%", "0%", "100%", "100%"];
+    gradDef = `    <linearGradient id="${id}" x1="${coords[0]}" y1="${coords[1]}" x2="${coords[2]}" y2="${coords[3]}">\n${stopTags}\n    </linearGradient>`;
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400">\n  <defs>\n${gradDef}\n  </defs>\n  <rect width="1200" height="400" fill="url(#${id})"/>\n</svg>`;
+  navigator.clipboard.writeText(svg);
+}
+
 export function copyCmykList(palette: Palette): void {
   const lines = palette.colors
     .map((c) => {
