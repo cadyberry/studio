@@ -3,10 +3,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2 } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
-import { getContrastColor, simulateCmykPrint } from "@/lib/utils";
+import { getContrastColor, simulateCmykPrint, simulateColorBlind, type ColorBlindType } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 
 interface ExportModalProps {
@@ -502,6 +502,58 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                       {svgCopied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </div>
                   </button>
+                </div>
+              );
+            })()}
+
+            {/* Color Vision Simulation */}
+            {(() => {
+              const CVD_ROWS = [
+                { key: "normal",       label: "Normal vision",  desc: null                        },
+                { key: "deuteranopia", label: "Deuteranopia",   desc: "Green-blind · ~5% of men"  },
+                { key: "protanopia",   label: "Protanopia",     desc: "Red-blind · ~1% of men"    },
+                { key: "tritanopia",   label: "Tritanopia",     desc: "Blue-yellow blind · rare"  },
+              ] as const;
+              return (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">Vision</span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+                  <div className="space-y-1.5">
+                    {CVD_ROWS.map(({ key, label, desc }) => {
+                      const hexes = key === "normal"
+                        ? palette.colors.map((c) => c.hex)
+                        : palette.colors.map((c) => simulateColorBlind(c.hex, key as ColorBlindType));
+                      return (
+                        <div key={key} className="flex items-center gap-2.5">
+                          <div className="w-[108px] shrink-0">
+                            <div className="text-[10px] font-medium leading-tight text-[var(--foreground)]">{label}</div>
+                            {desc && <div className="text-[9px] text-[var(--muted)] leading-tight">{desc}</div>}
+                          </div>
+                          <div className="flex-1 h-6 rounded-[4px] overflow-hidden flex border border-black/[0.06] dark:border-white/[0.06]">
+                            {hexes.map((hex, i) => (
+                              <div key={i} style={{ flex: 1, backgroundColor: hex }} />
+                            ))}
+                          </div>
+                          {key !== "normal" ? (
+                            <button
+                              onClick={() => exportAsCvdStrip(palette, key as ColorBlindType)}
+                              title={`Download ${label} side-by-side strip — normal vs. simulated`}
+                              className="shrink-0 flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] bg-[var(--surface-2)] hover:bg-[var(--border)] transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
+                            >
+                              <Download size={13} />
+                            </button>
+                          ) : (
+                            <div className="w-7 shrink-0" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[9px] text-[var(--muted)] mt-2 leading-relaxed">
+                    Simulates how viewers with color vision deficiency see your palette · Download strips for accessibility review
+                  </p>
                 </div>
               );
             })()}
