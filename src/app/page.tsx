@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -20,6 +20,7 @@ import KeyboardHelpModal from "@/components/palette/KeyboardHelpModal";
 import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
 import ColorBrowser from "@/components/palette/ColorBrowser";
+import DuplicatesModal from "@/components/palette/DuplicatesModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
@@ -203,6 +204,7 @@ export default function Home() {
   const [showTrendLibrary, setShowTrendLibrary] = useState(false);
   const [trendSeed, setTrendSeed] = useState<{ hex: string; name: string } | undefined>();
   const [showImport, setShowImport] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first">("newest");
@@ -1014,6 +1016,20 @@ export default function Home() {
                   <div className="text-[11px] text-[var(--muted)]">Hex codes or from a URL</div>
                 </div>
               </button>
+              {palettes.length >= 2 && (
+                <button
+                  onClick={() => setShowDuplicates(true)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-2)] transition-all text-sm group mt-1"
+                >
+                  <div className="w-7 h-7 rounded-md bg-gradient-to-br from-violet-100 to-rose-100 dark:from-violet-900/30 dark:to-rose-900/30 flex items-center justify-center flex-shrink-0">
+                    <ScanSearch size={13} className="text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-[var(--foreground)]">Find Duplicates</div>
+                    <div className="text-[11px] text-[var(--muted)]">Detect near-identical palettes</div>
+                  </div>
+                </button>
+              )}
               {/* Tag inventory — compact count summary */}
               {palettes.length > 0 && (allUniqueTags.length > 0 || untaggedCount > 0) && (
                 <div className="mt-2 flex flex-wrap gap-x-2.5 gap-y-0.5 pl-1">
@@ -2839,6 +2855,9 @@ export default function Home() {
 
       {/* Keyboard help overlay */}
       <KeyboardHelpModal open={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* Duplicates detector */}
+      {showDuplicates && <DuplicatesModal onClose={() => setShowDuplicates(false)} />}
 
       {/* Fork-from-share toast */}
       <AnimatePresence>
