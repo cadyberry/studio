@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-06 — Session 178: ContrastModal Filtered Copy MD
+
+### What was done
+- **`buildFilteredMarkdown(palette)` function** — added to `ContrastModal.tsx`. Generates a flat Markdown table of only AL and Fail pairs: columns are Background, Foreground, Ratio, WCAG Level. When all pairs pass, outputs a readable "All pairs pass" note instead of an empty table.
+- **"Copy filtered MD" button** — when `showProblemsOnly` is active, the Copy MD button changes label to "Copy filtered MD" and gains amber styling (`borderColor: #f59e0b`, amber-tinted background) to visually signal that the output is scoped to problems only. In default mode the button is identical to before.
+- **`handleCopy` branches on `showProblemsOnly`** — the clipboard payload is now `buildFilteredMarkdown(palette)` when filtering, `buildMarkdown(palette)` otherwise. No new state needed; the existing boolean drives both the grid appearance and the copy output.
+- Build: clean Next.js build, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Flat pairs table, not a filtered matrix** — a filtered matrix (only rows with AL/Fail) would still need column headers for all colors, making it as wide as the full matrix for palettes where problems appear in only a few rows. A flat list of `(bg, fg, ratio, level)` rows is immediately scannable and avoids the "why are some columns missing?" confusion.
+- **Amber styling for filtered button** — the Filter button already uses red to signal "problems only" mode. Using amber for the copy button avoids visual collision while still marking it as "state is non-default." Amber ≈ "caution/action" without the alarming weight of red.
+- **"All pairs pass" fallback** — copying an empty table would be silent and confusing. The fallback message is a useful confirmation that Cady could paste into a design review doc as a sign-off.
+
+### What's next (Session 179)
+- **Palette card: swatch count badge on export button** — small number badge showing how many swatches will export, visible in ExportModal header
+- **CVD export from palette card** — quick-export CVD comparison strip directly from the palette card (not just from the CVD modal)
+- **ContrastModal: copy filtered view respects row sort** — currently pairs are ordered (bg-order × fg-order); sort by ratio ascending so the worst pairs appear first in the copied table
+
+---
+
 ## 2026-08-04 — Session 177: Figma Tokens JSON Export
 
 ### What was done
