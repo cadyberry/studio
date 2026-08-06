@@ -46,6 +46,39 @@ function buildMarkdown(palette: Palette): string {
   return [headers, sep, ...rows].map((r) => `| ${r.join(" | ")} |`).join("\n");
 }
 
+function buildFilteredMarkdown(palette: Palette): string {
+  const colors = palette.colors;
+  const label = (c: (typeof colors)[0]) =>
+    c.name ? `${c.name} (${c.hex.toUpperCase()})` : c.hex.toUpperCase();
+
+  const problemPairs: { bg: (typeof colors)[0]; fg: (typeof colors)[0]; ratio: number; tier: TierKey }[] = [];
+  for (const bg of colors) {
+    for (const fg of colors) {
+      if (bg.hex.toLowerCase() === fg.hex.toLowerCase()) continue;
+      const ratio = getContrastRatio(bg.hex, fg.hex);
+      const tier = getTier(ratio);
+      if (tier === "AL" || tier === "fail") {
+        problemPairs.push({ bg, fg, ratio, tier });
+      }
+    }
+  }
+
+  if (problemPairs.length === 0) {
+    return `## Contrast Problems — ${palette.name}\n\n_All pairs pass WCAG 2.1 (minimum AA Large / 3:1)._`;
+  }
+
+  const headers = ["Background", "Foreground", "Ratio", "WCAG Level"];
+  const sep = headers.map(() => "---");
+  const rows = problemPairs.map(({ bg, fg, ratio, tier }) => [
+    label(bg),
+    label(fg),
+    `${ratio.toFixed(2)}:1`,
+    TIER_META[tier].fullLabel,
+  ]);
+  const title = `## Contrast Problems — ${palette.name}\n\n`;
+  return title + [headers, sep, ...rows].map((r) => `| ${r.join(" | ")} |`).join("\n");
+}
+
 export default function ContrastModal({ palette, onClose }: ContrastModalProps) {
   const [copied, setCopied] = useState(false);
   const [showProblemsOnly, setShowProblemsOnly] = useState(false);
@@ -82,7 +115,8 @@ export default function ContrastModal({ palette, onClose }: ContrastModalProps) 
   const tierFontSize = n <= 5 ? 7 : 6.5;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(buildMarkdown(palette));
+    const md = showProblemsOnly ? buildFilteredMarkdown(palette) : buildMarkdown(palette);
+    await navigator.clipboard.writeText(md);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -391,11 +425,20 @@ export default function ContrastModal({ palette, onClose }: ContrastModalProps) 
                 </button>
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--foreground)]/30 text-[11px] font-medium transition-colors"
-                  title="Copy as Markdown table"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border text-[11px] font-medium transition-colors"
+                  style={{
+                    borderColor: showProblemsOnly ? "#f59e0b" : "var(--border)",
+                    color: showProblemsOnly ? "#92400e" : "var(--muted)",
+                    backgroundColor: showProblemsOnly ? "#fffbeb" : "transparent",
+                  }}
+                  title={
+                    showProblemsOnly
+                      ? "Copy AL & Fail pairs as Markdown table (filtered)"
+                      : "Copy full contrast matrix as Markdown table"
+                  }
                 >
                   {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                  {copied ? "Copied!" : "Copy MD"}
+                  {copied ? "Copied!" : showProblemsOnly ? "Copy filtered MD" : "Copy MD"}
                 </button>
               </div>
             </div>
