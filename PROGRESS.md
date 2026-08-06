@@ -5091,3 +5091,29 @@
 ### What's next (Session 181)
 - **Palette duplicates detector** — scan the library for near-identical palettes (ΔE < 5 across all swatches) and surface them with a merge/dismiss UI
 - **Per-swatch chroma slider in SwatchEditor** — add a C (chroma) slider to complement the existing Lightness and Hue sliders
+
+---
+
+## 2026-08-06 — Session 181: Palette Duplicates Detector
+
+### What was done
+- **`DuplicatesModal.tsx`** — new modal that scans the entire palette library for near-identical pairs using bidirectional nearest-neighbor ΔE (CIE76). For each pair of palettes, the algorithm computes the average min-ΔE from every color in A to its closest match in B, and vice versa. Pairs with an average distance ≤ ΔE 10 are flagged as near-duplicates.
+- **Similarity badge** — each duplicate pair displays a similarity % (0–100) derived from `max(0, 1 − distance/threshold) × 100`, color-coded rose (≥95%), amber (≥80%), or violet (lower). Raw avg ΔE shown alongside for transparency.
+- **Swatch strip comparison** — both palettes render as side-by-side color strips so visual comparison is instant, no need to navigate to each card.
+- **"Older / newer" labeling** — palettes are ordered by `createdAt` so the user always knows which is the copy.
+- **Actions per pair** — "Keep both" (dismiss without deleting), "Delete older", "Delete newer". Deletion calls the existing `deletePalette` store action and hides the pair immediately.
+- **Empty state** — a clean `CheckCheck` icon and "Your library is clean!" message when no near-duplicates are found.
+- **"Find Duplicates" sidebar button** — added in the Discover section (below Import Palette), only shown when the library has ≥ 2 palettes. Uses a violet/rose gradient icon with `ScanSearch` Lucide icon.
+- Build: clean Turbopack compile, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Bidirectional nearest-neighbor ΔE, not sorted pair-wise** — palettes often have different color counts. Bidirectional min-ΔE correctly handles: 5-color palette vs 7-color palette where 5 of the 7 are nearly identical to the 5. Sorted pair-wise ΔE would fail when counts differ.
+- **Threshold ΔE 10 per swatch** — ΔE 10 is clearly perceptible (noticeable hue/lightness difference) but still within "same palette" territory for AI-generated art that gets extracted twice from slightly different exports. Lower (ΔE 5) would miss many real duplicates; higher (ΔE 15) would flag intentionally related palettes.
+- **No "merge" for MVP** — merge is complex (which colors survive? how many?). The "Delete older/newer" pair covers 95% of the use case. Merge can be added in a future session.
+- **`dismissed` state (not deletion)** for "Keep both" — lets the creator decide later by re-opening the modal. No data is lost.
+
+### What's next (Session 182)
+- **Per-pair "Merge" action in DuplicatesModal** — deduplicate colors by ΔE proximity, surface a merged palette preview before committing
+- **Palette notes editor** — inline textarea accessible from the palette card header (currently only editable in the full edit flow)
+- **Keyboard shortcut: `D` to open Find Duplicates** from the main library view
+
