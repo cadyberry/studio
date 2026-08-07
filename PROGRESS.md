@@ -5137,3 +5137,30 @@
 - **Palette notes editor** — inline textarea accessible from the palette card header (currently only editable in the full edit flow)
 - **Keyboard shortcut: `D` to open Find Duplicates** from the main library view
 
+
+---
+
+## 2026-08-07 — Session 182: Palette Merge in DuplicatesModal + Shift+D Shortcut
+
+### What was done
+- **"Merge" action in DuplicatesModal** — each duplicate pair now has a fourth action button: "Merge". Clicking it expands an inline animated panel (Framer Motion AnimatePresence) showing:
+  - A **merged palette preview strip** — deduplicated colors from both palettes using a ΔE ≤ 5 threshold (colors within ΔE 5 of any color already in the merged set are dropped)
+  - **Removed duplicates count** — e.g. "6 colors (−2 duplicates)" so Cady can immediately see what was consolidated
+  - **Editable name input** — pre-filled with a smart default (`{shorter name} (merged)` or `{name} (merged)` for identical names), auto-focused so she can type immediately
+  - **"Confirm" / Cancel** — confirm calls `addPalette` with the merged colors, combined tags, merged notes (joined with blank line), and inherited collectionId, then `deletePalettes` both originals after a 600ms animation
+  - Inline "Merged!" flash state with a check icon before the pair animates out
+- **`Shift+D` global keyboard shortcut** — from anywhere outside an input, Shift+D toggles the Find Duplicates modal. Avoids conflict with `D` (duplicate palette, card-hover only).
+- **KeyboardHelpModal updated** — `Shift+D` documented under Global shortcuts.
+- Build: clean Turbopack compile, zero TypeScript errors, 10 routes passing.
+
+### Key decisions
+- **ΔE 5 dedup threshold (vs ΔE 10 detection threshold)** — the detection threshold (ΔE 10) decides what counts as "near-duplicate." The merge threshold (ΔE 5) decides what counts as "same color" within the merged palette. Using 5 prevents clearly perceptible differences from being collapsed (ΔE 3 is "just noticeable," ΔE 5 is "clearly noticeable" in most contexts).
+- **Inline panel, not a second modal** — a nested modal would obscure the swatch comparison. The expandable inline panel keeps both palette strips visible above the merge preview, so the relationship is obvious.
+- **`deletePalettes` (batched) after 600ms** — the brief delay lets the "Merged!" confirmation state flash before the pair disappears. Batched delete avoids two separate re-renders triggering two pair recalculations.
+- **Combined notes join with `\n\n`** — if both palettes have notes, they're concatenated with a blank line between them, preserving readability. A single note passes through unchanged. Empty notes are dropped.
+- **Shift+D, not plain D globally** — plain `D` already means "duplicate palette" on a hovered card. Shift qualifies the intent: deliberate modal open from the library level, not a card-level action.
+
+### What's next (Session 183)
+- **CMYK shift preview panel** — a dedicated section in ExportModal or a PaletteCard overlay showing each swatch's RGB→CMYK conversion, TAC (total area coverage), and a simulated print-shifted hex for high-risk colors
+- **Per-swatch chroma slider in SwatchEditor** — C (chroma) slider to complement existing Lightness and Hue sliders
+- **Palette aging indicators** — subtle visual cues on cards for palettes untouched for >30 days (useful for library hygiene)
