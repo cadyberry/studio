@@ -364,6 +364,75 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
               );
             })}
 
+            {/* CMYK Shift Preview */}
+            {(() => {
+              return (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">Print</span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+                  <div className="space-y-0.5">
+                    {palette.colors.map((color, i) => {
+                      const sim = printSims[i];
+                      const tac = sim.cmyk.c + sim.cmyk.m + sim.cmyk.y + sim.cmyk.k;
+                      const isHigh = sim.risk === "high";
+                      const isCaution = sim.risk === "caution";
+                      const badgeCls = isHigh
+                        ? "text-red-600 bg-red-50 dark:bg-red-950/30"
+                        : isCaution
+                        ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30"
+                        : "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30";
+                      return (
+                        <div key={i} className="flex items-center gap-2 py-1">
+                          {/* original → print-shifted swatch pair */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <div
+                              className="w-5 h-5 rounded-[3px] border border-black/10 dark:border-white/10"
+                              style={{ backgroundColor: color.hex }}
+                              title={`Original: ${color.hex}`}
+                            />
+                            <svg width="10" height="7" viewBox="0 0 10 7" className="text-[var(--muted)] opacity-50" fill="none">
+                              <path d="M0 3.5h7M4.5 1l2.5 2.5L4.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <div
+                              className="w-5 h-5 rounded-[3px] border border-black/10 dark:border-white/10"
+                              style={{ backgroundColor: sim.printHex }}
+                              title={`Print shift: ${sim.printHex}`}
+                            />
+                          </div>
+                          {/* CMYK values */}
+                          <div className="flex-1 font-mono text-[9px] text-[var(--muted)] leading-none tracking-tight">
+                            <span title="Cyan">C{sim.cmyk.c}</span>
+                            <span className="mx-0.5 opacity-30">·</span>
+                            <span title="Magenta">M{sim.cmyk.m}</span>
+                            <span className="mx-0.5 opacity-30">·</span>
+                            <span title="Yellow">Y{sim.cmyk.y}</span>
+                            <span className="mx-0.5 opacity-30">·</span>
+                            <span title="Key (Black)">K{sim.cmyk.k}</span>
+                          </div>
+                          {/* TAC */}
+                          <div
+                            className={`shrink-0 font-mono text-[9px] w-14 text-right ${tac > 280 ? "text-amber-600 font-semibold" : "text-[var(--muted)]"}`}
+                            title="Total Area Coverage — offset print limit is 300%"
+                          >
+                            TAC {tac}%
+                          </div>
+                          {/* ΔE risk badge */}
+                          <div className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none ${badgeCls}`}>
+                            ΔE {sim.deltaE}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[9px] text-[var(--muted)] mt-2 leading-relaxed">
+                    TAC capped at 300% (standard offset print) · arrows show simulated color shift on press
+                  </p>
+                </div>
+              );
+            })()}
+
             {/* CSS Gradient Generator */}
             {(() => {
               if (!palette) return null;
