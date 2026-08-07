@@ -351,7 +351,7 @@ export default function Home() {
     } catch {}
   }, [filterPresets]);
 
-  // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay
+  // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay; `Shift+D` opens Find Duplicates
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -361,6 +361,13 @@ export default function Home() {
       if (e.key === "?" && !inInput) {
         e.preventDefault();
         setShowHelp((v) => !v);
+        return;
+      }
+
+      // Shift+D = Find Duplicates (global, not card-hover D which duplicates a palette)
+      if (e.shiftKey && e.key === "D" && !inInput) {
+        e.preventDefault();
+        setShowDuplicates((v) => !v);
         return;
       }
 

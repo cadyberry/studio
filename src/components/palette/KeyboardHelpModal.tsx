@@ -27,6 +27,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { keys: ["/"], label: "Focus search" },
       { keys: ["?"], label: "Open this help sheet" },
+      { keys: ["Shift", "D"], label: "Open Find Duplicates" },
       { keys: ["Esc"], label: "Clear & blur search" },
     ],
   },
