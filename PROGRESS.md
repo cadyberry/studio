@@ -5164,3 +5164,27 @@
 - **CMYK shift preview panel** — a dedicated section in ExportModal or a PaletteCard overlay showing each swatch's RGB→CMYK conversion, TAC (total area coverage), and a simulated print-shifted hex for high-risk colors
 - **Per-swatch chroma slider in SwatchEditor** — C (chroma) slider to complement existing Lightness and Hue sliders
 - **Palette aging indicators** — subtle visual cues on cards for palettes untouched for >30 days (useful for library hygiene)
+
+---
+
+## 2026-08-07 — Session 183: CMYK Shift Preview Panel
+
+### What was done
+- **CMYK Shift Preview "PRINT" section in ExportModal** — a new section between Copy and Gradient that shows every palette swatch's full print analysis in one compact table:
+  - **Original → print-shifted swatch pair** — 20px squares with an inline arrow SVG. The right swatch shows the simulated CMYK round-trip color so you can see the shift visually at a glance.
+  - **C·M·Y·K channel values** — monospace dot-separated values (e.g. `C45·M22·Y0·K8`) with per-character tooltips explaining each channel.
+  - **TAC (Total Area Coverage)** — sum of all four channels; highlights in amber when TAC > 280% (approaching the standard 300% offset print limit).
+  - **ΔE risk badge** — color-coded pill: emerald (safe, ΔE < 3), amber (caution, ΔE < 10), rose/red (high, ΔE ≥ 10).
+- Reuses the existing `printSims` memoized array and `simulateCmykPrint` utility — zero new computation.
+- Build: clean TypeScript, zero new errors.
+
+### Key decisions
+- **TAC highlight threshold 280%** (not 300%) — gives a visual warning before reaching the hard limit, since printers often target 280% as their practical cap.
+- **IIFE pattern** for section rendering — consistent with the Gradient and Vision sections already in the modal.
+- **Inline arrow SVG** (not Lucide) — Lucide's `ArrowRight` at 10px was too heavy; a bare path is crisper at this size.
+- **Section placed between Copy and Gradient** — the print section contextualizes the "Copy as CMYK" button above it and sits before the more creative sections (gradient, vision, AI).
+
+### What's next (Session 184)
+- **Per-swatch chroma slider in SwatchEditor** — add C (chroma) slider alongside existing Lightness and Hue sliders
+- **Palette aging indicators** — subtle visual cues on cards for palettes untouched for >30 days
+- **Keyboard shortcut: `P` to open a palette's Export modal** from the main library view (currently requires hovering to reveal the icon)
