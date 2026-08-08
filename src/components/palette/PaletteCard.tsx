@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -69,6 +69,31 @@ function getFreshness(createdAt: string, updatedAt: string): { label: string; bg
   if (days < 21) return { label: "2w",  bgClass: "bg-amber-100 dark:bg-amber-900/30", textClass: "text-amber-600 dark:text-amber-500", opacity: 0.40, isEdited };
   return null;
 }
+
+// Returns aging info for palettes untouched for >30 days — complementary to getFreshness (which covers 0-21d).
+function getAging(createdAt: string, updatedAt: string): {
+  label: string;
+  ageClass: "subtle" | "mild" | "notable" | "old";
+  days: number;
+  formattedDate: string;
+} | null {
+  const lastTouch = Math.max(new Date(createdAt).getTime(), new Date(updatedAt).getTime());
+  const days = (Date.now() - lastTouch) / (1000 * 60 * 60 * 24);
+  if (days < 30) return null;
+  const formattedDate = formatDate(new Date(lastTouch).toISOString());
+  if (days < 60)  return { label: "~1mo",   ageClass: "subtle",  days, formattedDate };
+  if (days < 90)  return { label: "~2mo",   ageClass: "subtle",  days, formattedDate };
+  if (days < 180) return { label: "~3mo+",  ageClass: "mild",    days, formattedDate };
+  if (days < 365) return { label: "~6mo+",  ageClass: "notable", days, formattedDate };
+  return              { label: "1yr+",   ageClass: "old",    days, formattedDate };
+}
+
+const AGING_STYLES: Record<"subtle" | "mild" | "notable" | "old", { badge: string; border: string }> = {
+  subtle:  { badge: "bg-[var(--surface-2)] text-[var(--muted)]",                                              border: "" },
+  mild:    { badge: "bg-stone-100 text-stone-500 dark:bg-stone-800/40 dark:text-stone-400",                   border: "" },
+  notable: { badge: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-500",                   border: "ring-1 ring-amber-100 dark:ring-amber-900/30" },
+  old:     { badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-semibold",    border: "ring-1 ring-amber-200 dark:ring-amber-800/40" },
+};
 
 function getRecommendedVariant(colors: { hex: string }[]): { variant: PaletteVariant; reason: string } {
   if (colors.length === 0) return { variant: "lighter", reason: "Add some light" };
@@ -480,6 +505,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const mood = getPaletteMood(palette.colors);
   const moodStyle = MOOD_STYLES[mood];
   const freshness = getFreshness(palette.createdAt, palette.updatedAt);
+  const aging = getAging(palette.createdAt, palette.updatedAt);
   const harmonyColors = getHarmonyColors(palette.colors);
 
   // oklch L-range for the gradient bar (darkest → lightest sorted by perceptual lightness)
@@ -804,6 +830,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         isPinned ? "border-orange-200 dark:border-orange-800/60 ring-1 ring-orange-100/60 dark:ring-orange-900/30" :
         isSelected ? "border-[var(--accent)] shadow-sm" :
         (compareActive && !isCompareAnchor) ? "border-violet-200 dark:border-violet-800/50 ring-1 ring-violet-200/40 dark:ring-violet-800/30" :
+        aging ? `border-[var(--border)] ${AGING_STYLES[aging.ageClass].border}` :
         "border-[var(--border)]"
       } ${className ?? ""}`}
     >
@@ -1520,6 +1547,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               >
                 {freshness.isEdited && <Pencil size={7} className="flex-shrink-0" />}
                 {freshness.label}
+              </span>
+            )}
+            {!freshness && aging && (
+              <span
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] ${AGING_STYLES[aging.ageClass].badge}`}
+                title={`Last touched ${aging.formattedDate} · ${Math.floor(aging.days)} days ago — consider reviewing`}
+              >
+                <Clock size={8} className="flex-shrink-0 opacity-70" />
+                {aging.label}
               </span>
             )}
             {palette.collectionId && (
