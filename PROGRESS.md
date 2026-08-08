@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-08-08 — Session 184: Palette Aging Indicators
+
+### What was done
+- **`getAging(createdAt, updatedAt)` function** — returns a `{ label, ageClass, days, formattedDate }` object for palettes whose last-touch timestamp exceeds 30 days. Age classes: `subtle` (30–89d), `mild` (90–179d), `notable` (180–364d), `old` (365d+). Returns `null` for recently-touched palettes.
+- **`AGING_STYLES` lookup** — maps each age class to a badge class string and an optional border ring class, keeping all severity styling co-located.
+- **Aging badge in the tag strip** — a `Clock` icon + human-readable label (`~1mo`, `~2mo`, `~3mo+`, `~6mo+`, `1yr+`) appears below the swatch strip, in the same row as the freshness badge (the two are mutually exclusive: freshness covers 0–21d, aging shows from 30d onward). Tooltip shows the exact last-touch date and day count.
+- **Subtle card border treatment** — for `notable` (6mo+) and `old` (1yr+) palettes, a faint amber ring is applied to the card border. This is suppressed when the card already has a higher-priority border state (highlighted, frozen, pinned, selected, compare-active).
+- Build: clean Next.js build, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **30d gap between freshness and aging** — freshness fades to null at 21d; aging starts at 30d. The 9-day quiet window avoids any jitter on palettes right at the boundary and keeps the two systems clearly separate in the creator's mental model (freshness = "new work," aging = "library hygiene").
+- **Mutually exclusive with freshness** — `{!freshness && aging && ...}` guard ensures only one temporal badge shows at a time. A palette cannot be both "new" and "aged."
+- **Badge + border as independent signals** — the badge shows at all aging levels (≥30d); the border ring only appears at notable/old (≥180d). This gives Cady a visible prompt at 30 days without visual noise, escalating only when true library hygiene is needed.
+- **`Clock` icon** — semantically unambiguous (time passed), subtle at 8px, visually distinct from other badges (which use shape-based icons).
+
+### What's next (Session 185)
+- **Keyboard shortcut: `P` to open a palette's Export modal** from the main library view (currently requires hovering to reveal the export icon)
+- **Swatch count badge on ExportModal header** — small "(N colors)" next to the palette name in the modal header
+- **Per-swatch chroma slider nudge keyboard support** — Shift+Arrow support for the Oklch C slider in SwatchEditor (currently only documented but not wired to a step override)
+
+---
+
 ## 2026-08-06 — Session 178: ContrastModal Filtered Copy MD
 
 ### What was done
