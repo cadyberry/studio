@@ -154,6 +154,8 @@ interface PaletteCardProps {
   isHighlighted?: boolean;
   cardId?: string;
   onContrast?: (palette: Palette) => void;
+  isFocused?: boolean;
+  keyboardFocusActive?: boolean;
 }
 
 type NamingState =
@@ -162,7 +164,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast, isFocused = false, keyboardFocusActive = false }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -237,11 +239,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   onCompareRef.current = onCompare;
   const colorStoryOpenRef = useRef(false);
   const openColorStoryRef = useRef<() => void>(() => {});
+  const isFocusedRef = useRef(isFocused);
+  isFocusedRef.current = isFocused;
+  const keyboardFocusActiveRef = useRef(keyboardFocusActive);
+  keyboardFocusActiveRef.current = keyboardFocusActive;
 
   // Keyboard shortcuts — active when this card is hovered, no text field is focused
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!isHoveredRef.current) return;
+      if (!isHoveredRef.current && !isFocusedRef.current) return;
+      // When any card has keyboard focus, suppress hover-based shortcuts on non-focused cards
+      if (keyboardFocusActiveRef.current && !isFocusedRef.current) return;
       const target = e.target as HTMLElement;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -832,7 +840,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         (compareActive && !isCompareAnchor) ? "border-violet-200 dark:border-violet-800/50 ring-1 ring-violet-200/40 dark:ring-violet-800/30" :
         aging ? `border-[var(--border)] ${AGING_STYLES[aging.ageClass].border}` :
         "border-[var(--border)]"
-      } ${className ?? ""}`}
+      } ${isFocused ? "ring-2 ring-[var(--accent)]/40 shadow-md" : ""} ${className ?? ""}`}
     >
       {/* Selection checkbox */}
       {onSelect && (

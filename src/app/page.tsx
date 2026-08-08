@@ -289,6 +289,8 @@ export default function Home() {
   const [savePresetOpen, setSavePresetOpen] = useState(false);
   const [presetNameInput, setPresetNameInput] = useState("");
   const presetNameInputRef = useRef<HTMLInputElement>(null);
+  const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
+  const displayListRef = useRef<Palette[]>([]);
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -371,6 +373,30 @@ export default function Home() {
         return;
       }
 
+      // J / K — navigate between palette cards (vim-style, no wrap)
+      if ((e.key === "j" || e.key === "J") && !inInput && !e.shiftKey) {
+        e.preventDefault();
+        setFocusedCardId((prev) => {
+          const ids = displayListRef.current.map((p) => p.id);
+          if (!ids.length) return null;
+          if (!prev || !ids.includes(prev)) return ids[0];
+          const idx = ids.indexOf(prev);
+          return idx < ids.length - 1 ? ids[idx + 1] : prev;
+        });
+        return;
+      }
+      if ((e.key === "k" || e.key === "K") && !inInput && !e.shiftKey) {
+        e.preventDefault();
+        setFocusedCardId((prev) => {
+          const ids = displayListRef.current.map((p) => p.id);
+          if (!ids.length) return null;
+          if (!prev || !ids.includes(prev)) return ids[ids.length - 1];
+          const idx = ids.indexOf(prev);
+          return idx > 0 ? ids[idx - 1] : prev;
+        });
+        return;
+      }
+
       if (e.key !== "/" || inInput) return;
       e.preventDefault();
       if (colorSearchActive) {
@@ -386,6 +412,12 @@ export default function Home() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [colorSearchActive]);
+
+  // Scroll focused card into view when J/K navigation moves it
+  useEffect(() => {
+    if (!focusedCardId) return;
+    document.getElementById(`pc-${focusedCardId}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [focusedCardId]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -695,6 +727,8 @@ export default function Home() {
   })();
   const pinnedDisplay = displayList.filter((p) => p.pinned);
   const unpinnedDisplay = displayList.filter((p) => !p.pinned);
+  // Keep ref current so J/K handler always sees the latest ordered list without re-registering
+  displayListRef.current = displayList;
 
   // Color Browser: all unique hex values from currently-filtered palettes, sorted by oklch hue
   const colorIndex = useMemo(() => {
@@ -794,6 +828,14 @@ export default function Home() {
   const selectAllVisible = useCallback(() => {
     setSelectedIds(new Set(sorted.map((p) => p.id)));
     setBulkDeleteConfirm(false);
+  }, [sorted]);
+
+  // Clear keyboard focus when the focused palette is filtered out of view
+  useEffect(() => {
+    if (focusedCardId && !displayList.some((p) => p.id === focusedCardId)) {
+      setFocusedCardId(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sorted]);
 
   const toggleTag = useCallback((tag: string) => {
@@ -2481,6 +2523,8 @@ export default function Home() {
                         onPin={(p) => togglePin(p.id)}
                         isPinned={!!palette.pinned}
                         isHighlighted={palette.id === highlightedPaletteId}
+                        isFocused={focusedCardId === palette.id}
+                        keyboardFocusActive={focusedCardId !== null}
                       />
                     );
                   })}
@@ -2548,6 +2592,8 @@ export default function Home() {
                         onPin={(p) => togglePin(p.id)}
                         isPinned={!!palette.pinned}
                         isHighlighted={palette.id === highlightedPaletteId}
+                        isFocused={focusedCardId === palette.id}
+                        keyboardFocusActive={focusedCardId !== null}
                       />
                     );
                   })}
