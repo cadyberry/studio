@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-08-08 — Session 185: J/K Keyboard Card Navigation
+
+### What was done
+- **Global J/K keydown handlers** in `page.tsx` — `J` moves focus to the next palette card in display order (pinned-first, cover-first, then sorted order); `K` moves to the previous. Both clamp at the ends (no wrap). Fires only when not in an input field and no modifier keys held.
+- **`focusedCardId` state + `displayListRef`** — tracks the keyboard-focused palette ID. `displayListRef.current` is updated each render so the J/K handler always sees the latest ordered list without re-registering the listener.
+- **Exclusive keyboard focus model** — when any card has keyboard focus (`focusedCardId !== null`), hover-based shortcuts on all OTHER cards are suppressed (`keyboardFocusActiveRef`). Only the focused card fires on key events. When no card is keyboard-focused, hover works as normal.
+- **PaletteCard: `isFocused` + `keyboardFocusActive` props** — two new props control whether this card fires shortcuts and whether to show the focus indicator. `isFocusedRef` and `keyboardFocusActiveRef` are updated during render (ref pattern, no re-registration).
+- **Keyboard handler guard updated** — `if (!isHoveredRef.current && !isFocusedRef.current) return;` plus `if (keyboardFocusActiveRef.current && !isFocusedRef.current) return;` — the focused card fires, hovered non-focused cards do not when focus is active.
+- **Visual indicator** — a `ring-2 ring-[var(--accent)]/40 shadow-md` ring is added to the focused card's outer div, layered additively with the existing border/ring states.
+- **Auto-scroll** — `useEffect` on `focusedCardId` calls `el?.scrollIntoView({ behavior: "smooth", block: "nearest" })` so the focused card is always visible.
+- **Cleanup effect** — clears `focusedCardId` when the focused palette is filtered out of view (dependes on `sorted` changing).
+- **KeyboardHelpModal updated** — `J / K` added to the Global shortcuts section: "Focus next / previous card (then use E, H, etc.)".
+- Build: clean Next.js build, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Clamp, not wrap** — at the last card, J does nothing; at the first, K does nothing. Predictable, mirrors editor behavior (vim wraps but VS Code arrow navigation doesn't). Less disorienting with pinned sections.
+- **Exclusive focus model** — hover shortcuts disable for non-focused cards when any card has keyboard focus. This avoids the confusing case where the user hovers card A while focused on card B and pressing E exports both. Keyboard focus takes priority; moving mouse clears focus via the display cleanup effect on next filter change.
+- **Ref update in render body** — `displayListRef.current = displayList` is set during render (valid React pattern for refs) so the stable `useEffect` closure always reads the latest display order without being re-registered.
+- **`!e.shiftKey` guard on J/K** — Shift+J or Shift+K are free for future shortcuts; the plain J/K handler won't fire on them.
+
+### What's next (Session 186)
+- **`Escape` to clear keyboard focus** — press Escape when focused on a card (no modal open) to release keyboard focus; currently only clearing happens when the filter changes
+- **Focus indicator: keyboard icon badge** — small `⌨` icon in top-right of focused card (above other badges) as a second signal beyond the ring, especially useful in dark mode where the ring may be subtle
+- **J/K navigation wraps at collection boundaries** — optionally, when active collection is set, J past the last card wraps to first rather than clamping
+
+---
+
 ## 2026-08-08 — Session 184: Palette Aging Indicators
 
 ### What was done
