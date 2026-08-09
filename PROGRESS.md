@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-09 — Session 186: Escape Clears Focus + Keyboard Icon Badge
+
+### What was done
+- **`Escape` to clear keyboard focus** — added to the global `keydown` handler in `page.tsx`. When `!inInput`, pressing Escape calls `setFocusedCardId(null)`. Does not `preventDefault` or `return` so modals can still handle their own Escape events independently. Fires even if `focusedCardId` is already null (harmless no-op call — avoids a stale-closure ref and keeps the handler simple).
+- **Keyboard icon badge on focused card** — when `isFocused` is true, a small `18×18` accent-colored circle with a `Keyboard` icon (9px) appears at the top-right corner of the card. Positions at `top-2 right-2` when no cover/pin badge is present; shifts to `top-8 right-2` when a cover or pin badge occupies `top-2 right-2` (stacks below without overlap). `z-20` so it renders above other card decoration but below interactive overlays. Tooltip: `"Keyboard focused — J/K to navigate, E/H/C/etc. for actions, Esc to clear"`.
+- **KeyboardHelpModal updated** — `Esc` label updated from "Clear & blur search" → "Clear card focus / blur search" to reflect dual behavior.
+- Build: clean Next.js build, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **No ref needed for Escape handler** — since `setFocusedCardId(null)` is always safe to call, no stale-closure issue arises. Adding a ref would be cleaner for conditional logic, but the no-op setter is simpler.
+- **Badge stacks below cover/pin, not on top** — "above" in the session plan meant z-order, but visually stacking below avoids obscuring the cover crown and pin text. The ring is the primary focus signal; the badge is secondary confirmation.
+- **Suppress badge when cover/pin present at same corner? No — stack it** — hiding the badge when another badge is present would silently lose the focus indicator for pinned palettes. The `top-8` offset makes both visible.
+
+### What's next (Session 187)
+- **J/K wrap at collection boundary** — when `activeCollection` is set, pressing J past the last card wraps to first (currently clamps). Optional toggle in settings or hold Shift+J/Shift+K to wrap.
+- **Palette card: swatch count badge on ExportModal header** — small `(N colors)` next to the palette name in the modal header
+- **CVD export from palette card** — quick-export CVD comparison strip directly from the palette card (not just from the CVD modal)
+
+---
+
 ## 2026-08-08 — Session 185: J/K Keyboard Card Navigation
 
 ### What was done
