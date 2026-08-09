@@ -402,6 +402,30 @@ export default function Home() {
         return;
       }
 
+      // Shift+J / Shift+K — same navigation but wraps at ends instead of clamping
+      if ((e.key === "j" || e.key === "J") && !inInput && e.shiftKey) {
+        e.preventDefault();
+        setFocusedCardId((prev) => {
+          const ids = displayListRef.current.map((p) => p.id);
+          if (!ids.length) return null;
+          if (!prev || !ids.includes(prev)) return ids[0];
+          const idx = ids.indexOf(prev);
+          return ids[(idx + 1) % ids.length];
+        });
+        return;
+      }
+      if ((e.key === "k" || e.key === "K") && !inInput && e.shiftKey) {
+        e.preventDefault();
+        setFocusedCardId((prev) => {
+          const ids = displayListRef.current.map((p) => p.id);
+          if (!ids.length) return null;
+          if (!prev || !ids.includes(prev)) return ids[ids.length - 1];
+          const idx = ids.indexOf(prev);
+          return ids[(idx - 1 + ids.length) % ids.length];
+        });
+        return;
+      }
+
       if (e.key !== "/" || inInput) return;
       e.preventDefault();
       if (colorSearchActive) {

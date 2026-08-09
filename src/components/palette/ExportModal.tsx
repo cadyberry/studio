@@ -288,8 +288,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
           <div className="p-5 overflow-y-auto flex-1">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-base font-semibold">{palette.name}</h2>
-                <p className="text-xs text-[var(--muted)]">{palette.colors.length} colors — choose an export format</p>
+                <h2 className="text-base font-semibold flex items-center gap-2 flex-wrap leading-tight">
+                  {palette.name}
+                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted)] border border-[var(--border)] tabular-nums tracking-tight select-none">
+                    {palette.colors.length} color{palette.colors.length !== 1 ? "s" : ""}
+                  </span>
+                </h2>
+                <p className="text-xs text-[var(--muted)]">choose an export format</p>
               </div>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X size={14} />
