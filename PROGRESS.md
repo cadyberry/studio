@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-09 — Session 187: Swatch Count Badge + Shift+J/K Wrap Navigation
+
+### What was done
+- **Swatch count badge in ExportModal header** — a small pill badge `(N colors)` now appears inline next to the palette name in the modal header (`h2`). Badge uses `bg-[var(--surface-2)]` with a border, `tabular-nums tracking-tight` for clean number rendering. The subtitle simplified to "choose an export format" since the count moved up to the header where it's more immediately visible. Handles singular correctly: "1 color" vs "5 colors".
+- **Shift+J / Shift+K wrapping card navigation** — same J/K vim-style card focus but wraps at list ends instead of clamping. Shift+J at the last card jumps to first; Shift+K at the first card jumps to last. Uses modulo arithmetic: `(idx + 1) % ids.length` / `(idx - 1 + ids.length) % ids.length`. Guard: `e.shiftKey` enables wrap, `!e.shiftKey` keeps plain J/K clamping behavior unchanged.
+- **KeyboardHelpModal updated** — added `{ keys: ["Shift", "J / K"], label: "Focus next / previous — wraps at ends" }` entry in the Global section, following the established `["Shift", "↑ / ↓"]` pattern for chord + alternatives notation.
+- Build: clean Next.js build, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Count stays in subtitle too? No — moved it up only** — the subtitle previously read "N colors — choose an export format". Now it reads "choose an export format" cleanly. The count in the h2 header is more prominent and co-located with the name; doubling it in the subtitle would be redundant.
+- **Pill badge vs plain text** — a `rounded-full` pill with a border distinguishes the count from the title text without being visually noisy. Using `text-[var(--muted)]` keeps it clearly secondary to the name.
+- **Plain J/K clamps, Shift+J/K wraps** — makes the distinction explicit and memorable (Shift = more powerful). Users familiar with vim's `gg`/`G` will find the modifier+wrapping pattern intuitive. No toggle state needed; the modifier is the toggle.
+
+### What's next (Session 188)
+- **CVD export from palette card** — quick-export CVD comparison strip directly from the palette card (not just from the CVD modal). A new card action `V` (for "vision") or via the export icon.
+- **Palette card: swatch editor shortcut** — press `W` (or another key) on a hovered card to open SwatchEditor for the first swatch
+- **ExportModal: section count badges** — small count pills on the Download / Copy section headers showing how many export options are in each section
+
+---
+
 ## 2026-08-09 — Session 186: Escape Clears Focus + Keyboard Icon Badge
 
 ### What was done
