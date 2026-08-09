@@ -887,6 +887,16 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         </div>
       )}
 
+      {/* Keyboard focus badge — small indicator when card has J/K focus */}
+      {isFocused && (
+        <div
+          className={`absolute ${isCover || isPinned ? "top-8" : "top-2"} right-2 z-20 flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--accent)]/85 shadow-sm pointer-events-none`}
+          title="Keyboard focused — J/K to navigate, E/H/C/etc. for actions, Esc to clear"
+        >
+          <Keyboard size={9} className="text-[var(--accent-fg)]" />
+        </div>
+      )}
+
       {/* Swatch strip */}
       <div className="relative">
         {palette.frozen ? (

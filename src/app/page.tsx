@@ -373,6 +373,11 @@ export default function Home() {
         return;
       }
 
+      // Escape — clear keyboard card focus (harmless if already null; modals handle their own Escape)
+      if (e.key === "Escape" && !inInput) {
+        setFocusedCardId(null);
+      }
+
       // J / K — navigate between palette cards (vim-style, no wrap)
       if ((e.key === "j" || e.key === "J") && !inInput && !e.shiftKey) {
         e.preventDefault();
