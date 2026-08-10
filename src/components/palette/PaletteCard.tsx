@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock, Glasses } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
+import { exportAsCvdStrip } from "@/lib/exportPalette";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
 import Button from "@/components/ui/Button";
@@ -218,6 +219,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [colorStory, setColorStory] = useState<{ vibe: string; products: string[]; prompt: string } | null>(() => cachedColorStory);
   const [colorStoryError, setColorStoryError] = useState(false);
   const [colorStoryPromptCopied, setColorStoryPromptCopied] = useState(false);
+  const [cvdExported, setCvdExported] = useState(false);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -286,6 +288,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         case "e": case "E":
           e.preventDefault();
           onExportRef.current(pal);
+          break;
+        case "v": case "V":
+          e.preventDefault();
+          exportAsCvdStrip(pal, "deuteranopia");
+          setCvdExported(true);
+          setTimeout(() => setCvdExported(false), 1800);
           break;
         case "s": case "S":
           e.preventDefault();
@@ -1949,6 +1957,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 }`}
               />
             </span>
+          </Button>
+          <Button
+            variant={cvdExported ? "outline" : "ghost"}
+            size="sm"
+            onClick={() => {
+              exportAsCvdStrip(palette, "deuteranopia");
+              setCvdExported(true);
+              setTimeout(() => setCvdExported(false), 1800);
+            }}
+            title="Quick-export CVD preview PNG (Deuteranopia — V)"
+            className={cvdExported ? "text-sky-600 border-sky-300 dark:text-sky-400 dark:border-sky-700" : ""}
+          >
+            {cvdExported ? <Check size={13} className="text-sky-500" /> : <Glasses size={13} />}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => onExport(palette)} title="Export">
             <Download size={13} />
