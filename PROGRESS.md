@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-10 — Session 188: CVD Quick-Export (V shortcut + Glasses button)
+
+### What was done
+- **`V` keyboard shortcut for CVD export** — pressing `V` on any hovered or keyboard-focused palette card instantly downloads a Deuteranopia CVD comparison PNG. Uses the existing `exportAsCvdStrip(palette, "deuteranopia")` function from `exportPalette.ts`. No modal required — Deuteranopia was chosen as the default because it's the most common form (~5% of men, green-blind). Flash state `cvdExported` shows a sky-blue Check icon for 1.8s after the download triggers.
+- **Glasses icon button in the action row** — `Glasses` icon from lucide-react added to the card's hover-revealed action button row, positioned to the left of the Download button. Clicking exports the same Deuteranopia CVD strip. Tooltip: "Quick-export CVD preview PNG (Deuteranopia — V)". Shares the same `cvdExported` flash state as the keyboard shortcut (either path lights up the same button).
+- **KeyboardHelpModal updated** — `{ keys: ["V"], label: "Quick-export CVD preview PNG (Deuteranopia)" }` added to the Palette Card section, below E (Export) and above S (Color Story).
+- Build: clean Next.js build, zero TypeScript errors, 8 routes passing.
+
+### Key decisions
+- **Deuteranopia as the single default** — offering a picker before downloading would add friction to a "quick export" use case. Deuteranopia is the canonical accessibility test case (most common, covers green-red discrimination which is the most impactful for color palette work). Full CVD type selection remains available in HarmonyModal's CVD mode.
+- **Glasses icon over Eye/EyeOff** — `Eye` is already used for Harmony View. `Glasses` is semantically clear (viewing through a different lens) and visually distinct in the action row. `EyeOff` would imply hidden/disabled rather than simulated.
+- **Button position: left of Download** — thematically, CVD preview is an output/export operation, so placing it next to the main Download button groups related actions. The print-check button (Printer) is further left — both are "output quality" tools but the CVD button's primary use is download, not inspection.
+
+### What's next (Session 189)
+- **Palette card: swatch editor shortcut `W`** — press `W` on a hovered card to open SwatchEditor for the first (or last-clicked) swatch
+- **CVD: allow cycling through types** — `Shift+V` could export Protanopia, `Alt+V` Tritanopia, keeping default V as Deuteranopia
+- **ExportModal: section count badges** — small count pills on the Download / Copy section headers showing how many export options are in each section
+
+---
+
 ## 2026-08-09 — Session 187: Swatch Count Badge + Shift+J/K Wrap Navigation
 
 ### What was done
