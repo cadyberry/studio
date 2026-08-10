@@ -21,6 +21,7 @@ import ShadeModal from "@/components/palette/ShadeModal";
 import CompareModal from "@/components/palette/CompareModal";
 import ColorBrowser from "@/components/palette/ColorBrowser";
 import DuplicatesModal from "@/components/palette/DuplicatesModal";
+import GeneratePaletteModal from "@/components/palette/GeneratePaletteModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
@@ -205,6 +206,7 @@ export default function Home() {
   const [trendSeed, setTrendSeed] = useState<{ hex: string; name: string } | undefined>();
   const [showImport, setShowImport] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showGeneratePalette, setShowGeneratePalette] = useState(false);
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first">("newest");
@@ -1092,6 +1094,18 @@ export default function Home() {
                 <div className="text-left">
                   <div className="font-medium text-[var(--foreground)]">Import Palette</div>
                   <div className="text-[11px] text-[var(--muted)]">Hex codes or from a URL</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setShowGeneratePalette(true)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] hover:border-violet-400 hover:bg-[var(--surface-2)] transition-all text-sm group mt-1"
+              >
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-violet-100 via-fuchsia-100 to-pink-100 dark:from-violet-900/30 dark:via-fuchsia-900/30 dark:to-pink-900/30 flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={13} className="text-violet-500" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-[var(--foreground)]">Generate from Text</div>
+                  <div className="text-[11px] text-[var(--muted)]">AI palette from a description</div>
                 </div>
               </button>
               {palettes.length >= 2 && (
@@ -2940,6 +2954,14 @@ export default function Home() {
 
       {/* Duplicates detector */}
       {showDuplicates && <DuplicatesModal onClose={() => setShowDuplicates(false)} />}
+
+      {/* AI palette generator */}
+      {showGeneratePalette && (
+        <GeneratePaletteModal
+          onClose={() => setShowGeneratePalette(false)}
+          onSaved={() => setShowGeneratePalette(false)}
+        />
+      )}
 
       {/* Fork-from-share toast */}
       <AnimatePresence>
