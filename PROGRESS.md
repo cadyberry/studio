@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-10 — Session 184: AI Palette Generator from Text Description
+
+### What was done
+- **POST `/api/generate-palette`** — new API route calling `claude-haiku-4-5`. Accepts a text `prompt` (max 500 chars), asks Claude to return a 6-color palette as strict JSON with `name`, `mood`, and `colors` (hex array). Extracts JSON from the response with a regex guard, validates and normalizes each hex value (`#rrggbb` lowercase), rejects palettes with fewer than 3 valid colors.
+- **`GeneratePaletteModal.tsx`** — modal component with: textarea prompt input (placeholder cycles through 8 example prompts), `Enter` to generate, loading spinner on the generate button, animated color strip preview (6 swatches with hex tooltips on hover), palette name + mood phrase display, Regenerate and Save to Library actions. `AnimatePresence` for mount/unmount. Saved state prevents double-save.
+- **Discover section in `page.tsx`** — "Generate from Text" button added between Import Palette and Find Duplicates, with a violet gradient icon square and subtitle "AI palette from a description". State: `showGeneratePalette` / `setShowGeneratePalette`. `onSaved` callback closes the modal after adding to library.
+- Build: TypeScript checks match existing project pattern (environment-level missing node_modules — same pre-existing errors as all other API routes); code structure is correct.
+
+### Key decisions
+- **claude-haiku-4-5 not Opus** — other generative routes in the project (`name-palette`, `name-swatches`) use Haiku for speed. This call is latency-sensitive (user is waiting for a preview) and creative quality at Haiku level is sufficient for palette generation. Keeping it consistent with the project convention.
+- **JSON extraction via regex rather than strict parsing** — Claude sometimes wraps JSON in Markdown fences. The `/{[\s\S]*}/` regex robustly extracts the JSON block without requiring perfect formatting, matching the pattern used in `color-story/route.ts`.
+- **6 colors fixed** — fewer than 5 feels thin for a palette; more than 7 is hard to scan in the strip preview. 6 is the sweet spot for the print-on-demand use case.
+- **onSaved closes modal** — after saving, the user's immediate next action is to see the new palette in the library. Closing the modal brings it into view automatically since `addPalette` prepends to the list.
+
+### What's next (Session 185+)
+- **`G` keyboard shortcut** — pressing `G` in the sidebar area (or as a global shortcut) could open the Generate modal, keeping it accessible without reaching for the sidebar button
+- **Tag the generated palette** — auto-apply an `ai-generated` tag when saving from the modal, so users can filter/identify AI-created palettes later
+- **Temperature / style picker** — a row of style chips ("Muted", "Vivid", "Earthy", "Pastels") that influence the prompt before sending, giving users coarse control without free-text complexity
+
+---
+
 ## 2026-08-10 — Session 188: CVD Quick-Export (V shortcut + Glasses button)
 
 ### What was done
