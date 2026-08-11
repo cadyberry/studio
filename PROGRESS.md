@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-11 — Session 189: W Shortcut — SwatchEditor from Palette Card
+
+### What was done
+- **`W` keyboard shortcut on palette card** — pressing `W` while hovering or focusing a palette card opens SwatchEditor on the first swatch (`index 0`). Guards: only fires when `palette.colors.length > 0`; respects the existing keyboard-focus model (hover-based when no card has focus, focused-card-only when focus is active). Same ref pattern as all other card shortcuts so the handler never re-registers.
+- **`onEditSwatchRef`** — added alongside the existing callback refs so the handler always sees the latest `onEditSwatch` prop without stale closure.
+- **`?`-overlay updated** — added `V` (CVD Export — Deuteranopia) and `W` (Edit first swatch) to the card shortcuts peek overlay. `V` was previously missing from the overlay despite being a live shortcut since Session 188; this closes that gap.
+- **KeyboardHelpModal updated** — `{ keys: ["W"], label: "Open SwatchEditor for first swatch" }` added to the "Palette Card" section, between V and S.
+- Build: clean Next.js 16.2.6 build, 11 routes, zero TypeScript errors.
+
+### Key decisions
+- **First swatch (index 0) not last-hovered** — tracking a "last-hovered swatch index" per card would require more state and refs. Index 0 is always unambiguous. Users who want a specific swatch can navigate left/right inside SwatchEditor with ←/→ (already documented). The `W` shortcut is an entry point, not a precision tool.
+- **`W` vs `W`orkshop** — `W` is the obvious mnemonic for "Workshop" (the editor panel) and is not yet taken by any card shortcut. It pairs naturally with `E` (Export) as two "action panel" openers.
+- **No flash state** — other shortcuts that open modals (H, E, S) don't show a flash indicator either; the modal opening is its own feedback. Keeping `W` consistent.
+
+### What's next (Session 190+)
+- **`Shift+V` / `Alt+V` for other CVD types** — Shift+V exports Protanopia, Alt+V exports Tritanopia, keeping default V as Deuteranopia
+- **ExportModal section count badges** — small count pills on the Download / Copy section headers showing option counts at a glance
+- **`G` global shortcut** — opens GeneratePaletteModal from anywhere (sidebar button already exists; keyboard path would keep hands on keyboard)
+
+---
+
 ## 2026-08-10 — Session 184: AI Palette Generator from Text Description
 
 ### What was done
