@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-11 — Session 190: G Global Shortcut — Open AI Palette Generator from Anywhere
+
+### What was done
+- **`G` global keyboard shortcut** — pressing `G` from anywhere outside an input toggles the GeneratePaletteModal. Follows the exact pattern of existing global shortcuts (`/` for search, `?` for help, `Shift+D` for Find Duplicates). Functional update form (`setShowGeneratePalette((v) => !v)`) ensures no stale-closure issue without extra deps.
+- **Sidebar button keyboard hint** — the "Generate from Text" sidebar button now shows a `G` kbd chip on hover (hidden by default via `group-hover:inline-flex`), making the shortcut discoverable without opening the `?` help sheet. Pattern matches the rest of the Discover section buttons being fully self-documenting.
+- **KeyboardHelpModal updated** — `{ keys: ["G"], label: "Generate palette from text (AI)" }` added to the Global section, between `Shift+D` (Find Duplicates) and `J/K` (card navigation).
+- Build: clean Next.js 16.2.6 build, 11 routes, zero TypeScript errors.
+
+### Key decisions
+- **Toggle not just open** — `G` toggles so pressing it again closes the modal, consistent with `?` toggling the help modal. Keeps the keyboard flow clean: `G` to open, `Esc` or `G` to close.
+- **No `G` conflicts** — `G` is unused in both the global handler and the card-level handler. Card-level `g/G` would be for "Generate" but that context is global (one generator for the whole library), so global scope is correct.
+- **Hover-only kbd hint on button** — always showing `G` would create visual noise across all three Discover buttons. Hover reveal is a soft disclosure: users who never touch keyboards don't see it; keyboard users find it when they hover the button once.
+
+### What's next (Session 191+)
+- **`Shift+V` / `Alt+V` for other CVD types** — Shift+V exports Protanopia, Alt+V exports Tritanopia, keeping default V as Deuteranopia
+- **ExportModal section count badges** — small count pills on the Download / Copy section headers showing option counts at a glance
+- **Tag autocomplete in GeneratePaletteModal** — auto-apply an `ai-generated` tag when saving, so users can filter AI palettes later
+
+---
+
 ## 2026-08-11 — Session 189: W Shortcut — SwatchEditor from Palette Card
 
 ### What was done
