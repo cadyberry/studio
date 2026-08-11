@@ -375,6 +375,13 @@ export default function Home() {
         return;
       }
 
+      // G = Generate palette from text (AI) — toggle modal
+      if ((e.key === "g" || e.key === "G") && !inInput && !e.shiftKey) {
+        e.preventDefault();
+        setShowGeneratePalette((v) => !v);
+        return;
+      }
+
       // Escape — clear keyboard card focus (harmless if already null; modals handle their own Escape)
       if (e.key === "Escape" && !inInput) {
         setFocusedCardId(null);
@@ -1098,15 +1105,17 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setShowGeneratePalette(true)}
+                title="Generate palette from text — press G from anywhere"
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] border border-[var(--border)] hover:border-violet-400 hover:bg-[var(--surface-2)] transition-all text-sm group mt-1"
               >
                 <div className="w-7 h-7 rounded-md bg-gradient-to-br from-violet-100 via-fuchsia-100 to-pink-100 dark:from-violet-900/30 dark:via-fuchsia-900/30 dark:to-pink-900/30 flex items-center justify-center flex-shrink-0">
                   <Sparkles size={13} className="text-violet-500" />
                 </div>
-                <div className="text-left">
+                <div className="text-left flex-1 min-w-0">
                   <div className="font-medium text-[var(--foreground)]">Generate from Text</div>
                   <div className="text-[11px] text-[var(--muted)]">AI palette from a description</div>
                 </div>
+                <kbd className="hidden group-hover:inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded text-[9px] font-mono font-semibold bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] leading-none shadow-[0_1px_0_0_var(--border)] flex-shrink-0">G</kbd>
               </button>
               {palettes.length >= 2 && (
                 <button

@@ -28,6 +28,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["/"], label: "Focus search" },
       { keys: ["?"], label: "Open this help sheet" },
       { keys: ["Shift", "D"], label: "Open Find Duplicates" },
+      { keys: ["G"], label: "Generate palette from text (AI)" },
       { keys: ["J", "K"], label: "Focus next / previous card (then use E, H, etc.)", sep: "/" },
       { keys: ["Shift", "J / K"], label: "Focus next / previous — wraps at ends" },
       { keys: ["Esc"], label: "Clear card focus / blur search" },
