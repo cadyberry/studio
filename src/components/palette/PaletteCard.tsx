@@ -241,6 +241,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   onCompareRef.current = onCompare;
   const colorStoryOpenRef = useRef(false);
   const openColorStoryRef = useRef<() => void>(() => {});
+  const onEditSwatchRef = useRef(onEditSwatch);
+  onEditSwatchRef.current = onEditSwatch;
   const isFocusedRef = useRef(isFocused);
   isFocusedRef.current = isFocused;
   const keyboardFocusActiveRef = useRef(keyboardFocusActive);
@@ -294,6 +296,12 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           exportAsCvdStrip(pal, "deuteranopia");
           setCvdExported(true);
           setTimeout(() => setCvdExported(false), 1800);
+          break;
+        case "w": case "W":
+          if (pal.colors.length > 0) {
+            e.preventDefault();
+            onEditSwatchRef.current(pal, 0);
+          }
           break;
         case "s": case "S":
           e.preventDefault();
@@ -2509,6 +2517,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 { key: "C", label: "Compare" },
                 { key: "H", label: "Harmony View" },
                 { key: "E", label: "Export" },
+                { key: "V", label: "CVD Export (Deuteranopia)" },
+                { key: "W", label: "Edit first swatch" },
                 { key: "S", label: "Color Story" },
                 { key: "F2", label: "Rename" },
                 { key: "L", label: palette.frozen ? "Unlock" : "Lock" },

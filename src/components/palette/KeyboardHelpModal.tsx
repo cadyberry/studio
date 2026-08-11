@@ -41,6 +41,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["H"], label: "Open Harmony View" },
       { keys: ["E"], label: "Open Export" },
       { keys: ["V"], label: "Quick-export CVD preview PNG (Deuteranopia)" },
+      { keys: ["W"], label: "Open SwatchEditor for first swatch" },
       { keys: ["S"], label: "Open / close Color Story" },
       { keys: ["L"], label: "Toggle lock / unlock" },
       { keys: ["P"], label: "Pin / unpin palette" },
