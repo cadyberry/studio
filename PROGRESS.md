@@ -5382,3 +5382,25 @@
 - **`Shift+V` / `Alt+V` for other CVD types** — Shift+V exports Protanopia, Alt+V exports Tritanopia
 - **ExportModal section count badges** — small count pills on Download / Copy section headers
 
+
+---
+
+## 2026-08-12 — Session 192: AI-Generated Tag Styling + Full CVD Keyboard Set
+
+### What was done
+- **`ai-generated` special visual treatment** — Added to `SPECIAL_TAG_STYLES` with a violet color scheme and a `Sparkles` icon (replacing the dot indicator used for other tags). Label renders as "AI-Generated" (capitalized, hyphen preserved) everywhere it appears: sidebar tag inventory, inline tag filter pills, and the search-result tag strip. Extended the `SPECIAL_TAG_STYLES` type with an optional `icon?: ElementType` field so any future tag can opt into an icon instead of a color dot.
+- **Shift+V → Protanopia CVD export** — On a hovered/focused palette card, `V` (no modifier) exports Deuteranopia and `Shift+V` exports Protanopia. Implemented by splitting the previous `case "v": case "V"` fallthrough into two separate cases.
+- **Alt+V → Tritanopia CVD export** — Handled before the `altKey` guard in the keyboard handler so it isn't blocked. Exports a Tritanopia side-by-side strip PNG.
+- **KeyboardHelpModal updated** — All three CVD shortcuts documented (V, ⇧V, ⌥V) with deficiency type names.
+- **PaletteCard ? overlay updated** — ⇧V and ⌥V entries added to the in-card shortcut panel.
+- Build: clean Turbopack compile, zero TypeScript errors, 9 routes passing.
+
+### Key decisions
+- **Sparkles icon for ai-generated, not a color dot** — The dot convention works for categorical tags (trend = rose, shared = sky) but `ai-generated` is a source tag, not a category. A Sparkles icon signals "AI-origin" immediately without relying on color alone — consistent with how Sparkles is used elsewhere in the UI (GeneratePaletteModal, sidebar button).
+- **Separate `case "v"` and `case "V"` in switch** — `e.key` reports `"V"` (uppercase) when Shift is held, `"v"` when not. Splitting the cases avoids a shiftKey branch inside a single case, which reads more clearly.
+- **Alt+V before the altKey return guard** — The existing guard (`if (e.altKey) return`) blocked all Alt combinations. Tritanopia needed Alt+V, so the check now happens before the guard, then the guard returns for any other Alt combo. MetaKey and CtrlKey guards are preserved.
+
+### What's next (Session 193)
+- **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats" / "6 formats")
+- **`ai-generated` filter chip always visible** — a persistent Sparkles chip in the filter bar when any AI palettes exist, even if the tag filter section would otherwise be collapsed
+- **Palette sort by "AI-generated first"** — surface AI palettes at the top of the library when toggled
