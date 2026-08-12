@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo, type JSX } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type JSX, type ElementType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
@@ -37,7 +37,7 @@ const MOOD_PILL_STYLES: Record<PaletteMood, { dot: string; activeClass: string; 
   dreamy: { dot: "#8b5cf6", activeClass: "bg-violet-100 text-violet-700 border-violet-300",  inactiveClass: "text-violet-500 border-violet-200 hover:border-violet-400 hover:bg-violet-50" },
 };
 
-const SPECIAL_TAG_STYLES: Record<string, { dot: string; activeClass: string; inactiveClass: string; sidebarActiveText: string }> = {
+const SPECIAL_TAG_STYLES: Record<string, { dot: string; activeClass: string; inactiveClass: string; sidebarActiveText: string; icon?: ElementType }> = {
   trend: {
     dot: "#fb7185",
     activeClass: "bg-rose-100 text-rose-700 border-rose-300 shadow-sm dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800",
@@ -61,6 +61,13 @@ const SPECIAL_TAG_STYLES: Record<string, { dot: string; activeClass: string; ina
     activeClass: "bg-stone-100 text-stone-700 border-stone-300 shadow-sm dark:bg-stone-900/40 dark:text-stone-300 dark:border-stone-700",
     inactiveClass: "bg-[var(--surface)] text-stone-500 border-stone-200 hover:border-stone-400 hover:bg-stone-50/60 dark:text-stone-400 dark:border-stone-700/60 dark:hover:bg-stone-900/20",
     sidebarActiveText: "text-stone-600",
+  },
+  "ai-generated": {
+    dot: "#8b5cf6",
+    icon: Sparkles,
+    activeClass: "bg-violet-100 text-violet-700 border-violet-300 shadow-sm dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800",
+    inactiveClass: "bg-[var(--surface)] text-violet-500 border-violet-200 hover:border-violet-400 hover:bg-violet-50/60 dark:text-violet-400 dark:border-violet-800/60 dark:hover:bg-violet-950/20",
+    sidebarActiveText: "text-violet-500",
   },
 };
 
@@ -1148,8 +1155,9 @@ export default function Home() {
                   )}
                   {allUniqueTags.map((tag) => {
                     const count = palettes.filter((p) => p.tags?.includes(tag)).length;
-                    const label = tag.charAt(0).toUpperCase() + tag.slice(1);
+                    const label = tag === "ai-generated" ? "AI-Generated" : tag.charAt(0).toUpperCase() + tag.slice(1);
                     const specialStyle = SPECIAL_TAG_STYLES[tag];
+                    const TagIcon = specialStyle?.icon;
                     return (
                       <button
                         key={tag}
@@ -1160,10 +1168,14 @@ export default function Home() {
                             : "text-[var(--muted)] hover:text-[var(--foreground)]"
                         }`}
                       >
-                        <span
-                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: specialStyle?.dot ?? getTagDotColor(tag) }}
-                        />
+                        {TagIcon ? (
+                          <TagIcon size={9} className="flex-shrink-0" />
+                        ) : (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: specialStyle?.dot ?? getTagDotColor(tag) }}
+                          />
+                        )}
                         {label} <span className="tabular-nums font-semibold">{count}</span>
                       </button>
                     );
@@ -1880,8 +1892,10 @@ export default function Home() {
                           {specialTagsInResults.map((tag) => {
                             const style = SPECIAL_TAG_STYLES[tag];
                             if (!style) return null;
+                            const InlineIcon = style.icon;
                             const count = baseFiltered.filter((p) => p.tags?.includes(tag)).length;
                             const isActive = activeTags.includes(tag);
+                            const tagLabel = tag === "ai-generated" ? "AI-Generated" : tag.charAt(0).toUpperCase() + tag.slice(1);
                             return (
                               <button
                                 key={tag}
@@ -1891,8 +1905,12 @@ export default function Home() {
                                   isActive ? style.activeClass : style.inactiveClass
                                 }`}
                               >
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: style.dot }} />
-                                {tag.charAt(0).toUpperCase() + tag.slice(1)}
+                                {InlineIcon ? (
+                                  <InlineIcon size={10} className="flex-shrink-0" />
+                                ) : (
+                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: style.dot }} />
+                                )}
+                                {tagLabel}
                                 <span className="text-[10px] opacity-60">{count}</span>
                               </button>
                             );
@@ -1937,11 +1955,12 @@ export default function Home() {
                       ...(untaggedCount > 0 ? [{ key: "__mine__", label: "Mine", count: untaggedCount }] : []),
                       ...allUniqueTags.map((tag) => ({
                         key: tag,
-                        label: tag.charAt(0).toUpperCase() + tag.slice(1),
+                        label: tag === "ai-generated" ? "AI-Generated" : tag.charAt(0).toUpperCase() + tag.slice(1),
                         count: palettes.filter((p) => p.tags?.includes(tag)).length,
                       })),
                     ].map(({ key, label, count }) => {
                       const specialStyle = SPECIAL_TAG_STYLES[key];
+                      const PillIcon = specialStyle?.icon;
                       const isActive =
                         key === "all"
                           ? activeTags.length === 0
@@ -1970,10 +1989,14 @@ export default function Home() {
                           }`}
                         >
                           {key !== "all" && key !== "__mine__" && (
-                            <span
-                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: specialStyle?.dot ?? getTagDotColor(key) }}
-                            />
+                            PillIcon ? (
+                              <PillIcon size={10} className="flex-shrink-0" />
+                            ) : (
+                              <span
+                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: specialStyle?.dot ?? getTagDotColor(key) }}
+                              />
+                            )
                           )}
                           {label}
                           <span className={`text-[10px] ${isActive ? "opacity-70" : "opacity-50"}`}>

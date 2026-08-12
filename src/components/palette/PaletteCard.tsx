@@ -256,8 +256,18 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       if (keyboardFocusActiveRef.current && !isFocusedRef.current) return;
       const target = e.target as HTMLElement;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey) return;
       const pal = paletteRef.current;
+      // Alt+V → Tritanopia CVD export (handled before the switch so altKey doesn't block it)
+      if (e.altKey) {
+        if (e.key === "v" || e.key === "V") {
+          e.preventDefault();
+          exportAsCvdStrip(pal, "tritanopia");
+          setCvdExported(true);
+          setTimeout(() => setCvdExported(false), 1800);
+        }
+        return;
+      }
       switch (e.key) {
         case "d": case "D":
           e.preventDefault();
@@ -291,9 +301,15 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           e.preventDefault();
           onExportRef.current(pal);
           break;
-        case "v": case "V":
+        case "v":
           e.preventDefault();
           exportAsCvdStrip(pal, "deuteranopia");
+          setCvdExported(true);
+          setTimeout(() => setCvdExported(false), 1800);
+          break;
+        case "V":
+          e.preventDefault();
+          exportAsCvdStrip(pal, "protanopia");
           setCvdExported(true);
           setTimeout(() => setCvdExported(false), 1800);
           break;
@@ -2518,6 +2534,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 { key: "H", label: "Harmony View" },
                 { key: "E", label: "Export" },
                 { key: "V", label: "CVD Export (Deuteranopia)" },
+                { key: "⇧V", label: "CVD Export (Protanopia)" },
+                { key: "⌥V", label: "CVD Export (Tritanopia)" },
                 { key: "W", label: "Edit first swatch" },
                 { key: "S", label: "Color Story" },
                 { key: "F2", label: "Rename" },
