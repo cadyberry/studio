@@ -9,9 +9,11 @@ export async function POST(request: Request) {
   }
 
   let prompt: string;
+  let style: string | undefined;
   try {
     const body = await request.json();
     prompt = body.prompt;
+    style = typeof body.style === "string" ? body.style : undefined;
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
     }
@@ -22,6 +24,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  const STYLE_INSTRUCTIONS: Record<string, string> = {
+    muted: "Use desaturated, dusty, understated tones — avoid anything vivid or saturated.",
+    vivid: "Use highly saturated, bold, eye-catching colors with strong contrast.",
+    earthy: "Use warm, natural, earth-toned colors: terracottas, ochres, sage, sand, bark.",
+    pastel: "Use soft, light, low-saturation pastel colors — airy and delicate.",
+    dark: "Use deep, rich, dramatic dark colors with only one or two lighter accent tones.",
+    natural: "Use organic, nature-inspired colors found in plants, stone, water, and wood.",
+  };
+  const styleNote = style && STYLE_INSTRUCTIONS[style]
+    ? `\nStyle constraint: ${STYLE_INSTRUCTIONS[style]}`
+    : "";
+
   const message = await client.messages.create({
     model: "claude-haiku-4-5",
     max_tokens: 256,
@@ -30,7 +44,7 @@ export async function POST(request: Request) {
         role: "user",
         content: `You are a color palette designer for a print-on-demand artist tool.
 
-Create a 6-color palette inspired by: "${prompt.trim()}"
+Create a 6-color palette inspired by: "${prompt.trim()}"${styleNote}
 
 Requirements:
 - Colors should work well together and reflect the mood/theme described

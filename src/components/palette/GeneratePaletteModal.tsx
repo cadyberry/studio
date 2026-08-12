@@ -21,9 +21,19 @@ const EXAMPLE_PROMPTS = [
   "vintage botanical illustration",
 ];
 
+const STYLE_CHIPS: { key: string; label: string; description: string }[] = [
+  { key: "muted",   label: "Muted",   description: "Dusty, desaturated tones" },
+  { key: "vivid",   label: "Vivid",   description: "Bold, saturated colors" },
+  { key: "earthy",  label: "Earthy",  description: "Terracotta, ochre, sage" },
+  { key: "pastel",  label: "Pastel",  description: "Soft, airy, light hues" },
+  { key: "dark",    label: "Dark",    description: "Deep, dramatic darks" },
+  { key: "natural", label: "Natural", description: "Plants, stone, water, wood" },
+];
+
 export default function GeneratePaletteModal({ onClose, onSaved }: Props) {
   const addPalette = usePaletteStore((s) => s.addPalette);
   const [prompt, setPrompt] = useState("");
+  const [style, setStyle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ name: string; mood: string; colors: string[] } | null>(null);
@@ -50,10 +60,12 @@ export default function GeneratePaletteModal({ onClose, onSaved }: Props) {
     setResult(null);
     setSaved(false);
     try {
+      const body: Record<string, string> = { prompt: trimmed };
+      if (style) body.style = style;
       const res = await fetch("/api/generate-palette", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmed }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
@@ -67,10 +79,12 @@ export default function GeneratePaletteModal({ onClose, onSaved }: Props) {
 
   function save() {
     if (!result || saved) return;
+    const tags = ["ai-generated"];
+    if (style) tags.push(style);
     const newPalette = addPalette({
       name: result.name,
       colors: result.colors.map((hex) => ({ hex })),
-      tags: [],
+      tags,
     });
     setSaved(true);
     onSaved?.(newPalette.id);
@@ -138,6 +152,33 @@ export default function GeneratePaletteModal({ onClose, onSaved }: Props) {
               </p>
             </div>
 
+            {/* Style chips */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--muted)] mb-2">
+                Style <span className="font-normal opacity-60">— optional</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {STYLE_CHIPS.map((chip) => {
+                  const active = style === chip.key;
+                  return (
+                    <button
+                      key={chip.key}
+                      onClick={() => setStyle(active ? null : chip.key)}
+                      title={chip.description}
+                      className={[
+                        "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                        active
+                          ? "bg-violet-500 text-white border-violet-500 shadow-sm"
+                          : "bg-[var(--surface-2)] text-[var(--muted)] border-[var(--border)] hover:border-violet-400 hover:text-violet-500",
+                      ].join(" ")}
+                    >
+                      {chip.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button
               onClick={generate}
               disabled={!canGenerate}
@@ -196,6 +237,18 @@ export default function GeneratePaletteModal({ onClose, onSaved }: Props) {
                     <p className="text-sm font-semibold text-[var(--foreground)]">{result.name}</p>
                     {result.mood && (
                       <p className="text-xs text-[var(--muted)] mt-0.5">{result.mood}</p>
+                    )}
+                  </div>
+
+                  {/* Tags preview */}
+                  <div className="flex gap-1.5">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300">
+                      ai-generated
+                    </span>
+                    {style && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--surface-2)] text-[var(--muted)] border border-[var(--border)]">
+                        {style}
+                      </span>
                     )}
                   </div>
 
