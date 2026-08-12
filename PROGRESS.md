@@ -5359,3 +5359,26 @@
 - **Per-swatch chroma slider in SwatchEditor** — add C (chroma) slider alongside existing Lightness and Hue sliders
 - **Palette aging indicators** — subtle visual cues on cards for palettes untouched for >30 days
 - **Keyboard shortcut: `P` to open a palette's Export modal** from the main library view (currently requires hovering to reveal the icon)
+
+---
+
+## 2026-08-12 — Session 191: Style Chips + ai-generated Auto-Tag in GeneratePaletteModal
+
+### What was done
+- **Style picker chips in GeneratePaletteModal** — a row of 6 style chips (Muted, Vivid, Earthy, Pastel, Dark, Natural) sits between the prompt textarea and the Generate button. Chips are toggle-on/off with only one active at a time. Active chip: violet-filled. Inactive: neutral with violet hover ring. Each chip has a `title` tooltip with a short description of the style.
+- **Style-conditioned API prompt** — selecting a chip passes a `style` key to `POST /api/generate-palette`. The API route maps each key to a one-sentence constraint appended to the Claude system prompt (e.g. "Use desaturated, dusty, understated tones — avoid anything vivid or saturated." for Muted). Unmapped or missing style values are ignored gracefully, so existing calls with no `style` field continue to work.
+- **`ai-generated` auto-tag on save** — the Save to Library button now applies `["ai-generated"]` to every palette saved from the modal. If a style chip is active, its key (e.g. "earthy") is added as a second tag. Previously `tags: []` was passed.
+- **Tags preview in result panel** — before saving, a row of tag pills shows below the mood phrase: a violet `ai-generated` pill always present, and the style chip's label in neutral if a style was selected. Makes it clear what will be tagged without any surprises.
+- Build: clean Turbopack compile, 9 routes, zero TypeScript errors.
+
+### Key decisions
+- **Chips, not a dropdown** — 6 styles fit in one flex row at the modal width. Chips are faster to scan and tap than a dropdown, and the visual toggle state reinforces "I have a style modifier active."
+- **Toggle semantics (not radio)** — clicking an active chip deselects it (no style), so style is truly optional. A radio group would force at least one selection.
+- **Style appended to system prompt, not user prompt** — keeping it in the instructions layer means Claude interprets the style as a constraint on the palette output rather than as part of the scene description. Separating concerns: user describes the *mood*, system describes the *color treatment*.
+- **Auto-tag `ai-generated` always, style key conditionally** — `ai-generated` lets Cady filter AI palettes from extracted ones at any time. The style tag gives a secondary filter axis without cluttering every palette's tag list when no style was chosen.
+
+### What's next (Session 192)
+- **Filter by `ai-generated` tag in sidebar** — add a quick-filter chip in the tag filter area so Cady can show only AI-generated palettes
+- **`Shift+V` / `Alt+V` for other CVD types** — Shift+V exports Protanopia, Alt+V exports Tritanopia
+- **ExportModal section count badges** — small count pills on Download / Copy section headers
+
