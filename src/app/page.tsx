@@ -216,7 +216,7 @@ export default function Home() {
   const [showGeneratePalette, setShowGeneratePalette] = useState(false);
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first">("newest");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
@@ -744,6 +744,12 @@ export default function Home() {
           case "most-print-risk": return palettePrintRiskCount(b) - palettePrintRiskCount(a);
           case "most-varied": return paletteOklchLRange(b) - paletteOklchLRange(a);
           case "print-safe-first": return palettePrintRiskCount(a) - palettePrintRiskCount(b);
+          case "ai-first": {
+            const aAi = a.tags?.includes("ai-generated") ? 1 : 0;
+            const bAi = b.tags?.includes("ai-generated") ? 1 : 0;
+            if (bAi !== aAi) return bAi - aAi;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
         }
       });
 
@@ -1626,6 +1632,7 @@ export default function Home() {
                           <option value="most-print-risk">Most print risk</option>
                           <option value="most-varied">Most varied</option>
                           <option value="print-safe-first">Print safe first</option>
+                          <option value="ai-first">AI-generated first</option>
                         </select>
                       </div>
                     </>
