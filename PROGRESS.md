@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-13 — Session 193: Persistent AI-Generated Filter Chip
+
+### What was done
+- **Persistent Sparkles chip above tag filter pills** — when any `ai-generated` palettes exist, a Sparkles "AI-Generated {count}" chip is always visible in the filter bar, outside the AnimatePresence block. It never collapses. Clicking it toggles the `ai-generated` tag filter on/off. Active state uses the violet/Sparkles special-tag styling consistent with the rest of the app.
+- **Removed `ai-generated` from the regular tag pills** — since it now has its own persistent chip, it's excluded from the animated tag pills row to avoid duplication. The tag pills AnimatePresence now only renders when non-ai-generated tags exist.
+- **`ai-generated` in color search contextual pills** — added `"ai-generated"` to the `specialTagsInResults` list (alongside harmony, trend, shared, shades). When doing a color search, the Sparkles chip appears inline in the filter strip if any AI palettes match the search.
+- **`aiGeneratedCount` derived value** — added near `allUniqueTags` for clean inline use.
+- Build: clean Turbopack compile, 9 routes, zero TypeScript errors.
+
+### Key decisions
+- **Outside AnimatePresence** — the persistent chip is deliberately NOT inside the tag pills AnimatePresence. This means it stays visible even if all other tags are removed or the tag pills section collapses, which is the exact scenario the feature was designed for.
+- **Exclude from regular pills to avoid duplication** — showing ai-generated in two places (persistent chip + tag pills) would be confusing and noisy. The persistent chip is the canonical control; regular pills are for the rest.
+- **Color search context** — the specialTagsInResults list already handled harmony/trend/shared/shades as contextual one-click filters during color search. AI-generated deserves the same treatment since it's the most frequent source-origin tag.
+
+### What's next (Session 194)
+- **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
+- **Palette sort by "AI-generated first"** — sort option that surfaces AI palettes at the top of the library
+- **Persist `activeTags` across page reloads** — currently tag filter resets on refresh; storing in localStorage (alongside filterPresets) would preserve workflow state
+
+---
+
 ## 2026-08-11 — Session 190: G Global Shortcut — Open AI Palette Generator from Anywhere
 
 ### What was done
