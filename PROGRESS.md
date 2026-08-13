@@ -5425,3 +5425,23 @@
 - **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats" / "6 formats")
 - **`ai-generated` filter chip always visible** — a persistent Sparkles chip in the filter bar when any AI palettes exist, even if the tag filter section would otherwise be collapsed
 - **Palette sort by "AI-generated first"** — surface AI palettes at the top of the library when toggled
+
+---
+
+## 2026-08-13 — Session 193: "AI-Generated First" Sort Mode
+
+### What was done
+- **"AI-generated first" sort option in the sort dropdown** — a new sort mode that groups AI-generated palettes (those tagged `ai-generated`) at the top of the library grid, then sorts remaining palettes by newest-first within each group. Added to the `sortBy` type, the sort switch case, and the `<option>` list.
+- The new sort mode complements the persistent Sparkles chip (already in the filter bar): the chip filters to *only* AI palettes; the sort shows AI palettes *first* while keeping the full library visible. Two distinct use cases, two distinct controls.
+- Filter preset system picks up the new sort value automatically (sortBy is stored as `string` in `FilterPreset`), so presets that include AI-first ordering will round-trip correctly.
+- Build: clean Turbopack compile, zero TypeScript errors, 11 routes passing.
+
+### Key decisions
+- **ai-first secondary sort = newest** — within each group (AI and non-AI), palettes are ordered newest-first. This matches the default sort so the transition from "Newest" → "AI-generated first" feels consistent.
+- **No icon in the `<option>` element** — HTML `<option>` doesn't support icons. The label "AI-generated first" is explicit enough without decoration.
+- **No additional state or memoization** — the sort case uses `a.tags?.includes("ai-generated")`, which is a direct lookup on the existing palette data. No new computed field needed.
+
+### What's next (Session 194)
+- **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
+- **Keyboard shortcut `P`** to open a palette's Export modal from the library view
+- **Palette aging indicators** — subtle visual cues on cards for palettes untouched for >30 days
