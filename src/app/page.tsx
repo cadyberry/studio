@@ -486,6 +486,7 @@ export default function Home() {
 
   const allUniqueTags = Array.from(new Set(palettes.flatMap((p) => p.tags ?? [])));
   const untaggedCount = palettes.filter((p) => !p.tags?.length).length;
+  const aiGeneratedCount = palettes.filter((p) => p.tags?.includes("ai-generated")).length;
   const activeCollectionInfo = activeCollection !== "all" ? (collections.find((c) => c.id === activeCollection) ?? null) : null;
   const activeCollections = collections.filter((c) => !c.archived);
   const archivedCollections = collections.filter((c) => c.archived);
@@ -1883,7 +1884,7 @@ export default function Home() {
                     )}
                     {/* Special tag pills (harmony, trend, shared) present in color search results */}
                     {(() => {
-                      const specialTagsInResults = ["harmony", "trend", "shared", "shades"]
+                      const specialTagsInResults = ["ai-generated", "harmony", "trend", "shared", "shades"]
                         .filter((tag) => baseFiltered.some((p) => p.tags?.includes(tag)));
                       if (specialTagsInResults.length === 0) return null;
                       return (
@@ -1938,9 +1939,28 @@ export default function Home() {
               )}
             </AnimatePresence>
 
+            {/* Persistent AI-Generated chip — always shown outside AnimatePresence when AI palettes exist */}
+            {!colorSearchActive && aiGeneratedCount > 0 && (
+              <div className="pb-1">
+                <button
+                  onClick={() => toggleTag("ai-generated")}
+                  title={activeTags.includes("ai-generated") ? 'Clear "AI-Generated" filter' : 'Show only AI-generated palettes'}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                    activeTags.includes("ai-generated")
+                      ? SPECIAL_TAG_STYLES["ai-generated"].activeClass
+                      : SPECIAL_TAG_STYLES["ai-generated"].inactiveClass
+                  }`}
+                >
+                  <Sparkles size={10} className="flex-shrink-0" />
+                  AI-Generated
+                  <span className="text-[10px] opacity-60">{aiGeneratedCount}</span>
+                </button>
+              </div>
+            )}
+
             {/* Tag filter pills */}
             <AnimatePresence>
-              {allUniqueTags.length > 0 && (
+              {allUniqueTags.filter((t) => t !== "ai-generated").length > 0 && (
                 <motion.div
                   key="tag-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -1953,9 +1973,9 @@ export default function Home() {
                     {[
                       { key: "all", label: "All", count: palettes.length },
                       ...(untaggedCount > 0 ? [{ key: "__mine__", label: "Mine", count: untaggedCount }] : []),
-                      ...allUniqueTags.map((tag) => ({
+                      ...allUniqueTags.filter((tag) => tag !== "ai-generated").map((tag) => ({
                         key: tag,
-                        label: tag === "ai-generated" ? "AI-Generated" : tag.charAt(0).toUpperCase() + tag.slice(1),
+                        label: tag.charAt(0).toUpperCase() + tag.slice(1),
                         count: palettes.filter((p) => p.tags?.includes(tag)).length,
                       })),
                     ].map(({ key, label, count }) => {
