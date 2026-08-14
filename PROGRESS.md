@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-14 — Session 195: Persist activeCollection + activeMood Across Reloads
+
+### What was done
+- **Persist `activeCollection` across page reloads** — on mount, loads collection filter from `localStorage("palette-active-collection")`; saves on every change. Selected collection survives refresh. If a stale/deleted collection ID loads, `activeCollectionCount` is 0 and the "collection is empty" empty state shows — the user can click their way back to "All" with one click.
+- **Persist `activeMood` across page reloads** — on mount, loads mood filter from `localStorage("palette-active-mood")`; saves on every change. Mood filters (vivid, muted, warm, earthy, cool, dreamy) now survive page reloads.
+- **Complete filter persistence** — the full library filter state now survives refresh: `activeTags` (session 194), `sortBy` (session 194), `activeCollection` (this session), `activeMood` (this session). All four filters restore on mount using the same two-effect (load + save) pattern.
+- Build: zero TypeScript errors, 9 routes, clean Turbopack compile.
+
+### Key decisions
+- **No validation on loaded collection ID** — matches the activeTags precedent ("invalid/stale tags produce empty results which the user can clear with one click"). The Zustand store is hydrated from persist middleware before the effects run, so a valid ID works immediately; an invalid one shows an empty state.
+- **Same two-effect pattern** — a no-dep mount effect for reading, a dep-tracked effect for writing. Consistent with all other persistence in the file.
+- **`palette-active-collection` / `palette-active-mood` keys** — follow the `palette-*` namespace convention used throughout.
+
+### What's next (Session 196)
+- **`Shift+V` / `Alt+V` for other CVD types** — Shift+V exports Protanopia, Alt+V exports Tritanopia (default V stays Deuteranopia)
+- **Palette sort by "Random" shuffle** — a fun discovery mode that randomizes the grid order, regenerates on each click
+- **Color Browser: palette strip in hover tooltip** — show a mini horizontal strip of the full palette's colors in the hover card for better palette-level context
+
+---
+
 ## 2026-08-14 — Session 194: Persist activeTags + sortBy; ExportModal Count Badges
 
 ### What was done
