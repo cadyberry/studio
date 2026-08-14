@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-14 — Session 194: Persist activeTags + sortBy; ExportModal Count Badges
+
+### What was done
+- **Persist `activeTags` across page reloads** — on mount, loads tag filter state from `localStorage("palette-active-tags")`; saves on every change. Tag filters (including `ai-generated`, multi-tag combos, `__mine__`) now survive refresh.
+- **Persist `sortBy` across page reloads** — on mount, loads sort preference from `localStorage("palette-sort-by")`; saves on every change. `ai-first`, `newest`, `light-first` etc. all carry over between sessions.
+- **ExportModal section count badges** — the Download and Copy section headers now show a small count pill (e.g. `8`, `6`) immediately after the section label, before the divider line. Counts reflect the actual length of the filtered action list (enabled + disabled).
+- Build: zero TypeScript errors.
+
+### Key decisions
+- **Same empty-dep useEffect pattern** as existing `filterPresets` and `color-search-history` persistence — consistent and idiomatic for this codebase.
+- **No validation on loaded tags** — invalid/stale tags simply produce empty results which the user can clear with one click. No need for cleanup logic.
+- **Count pill style** — uses `bg-[var(--surface-2)]` rounded-full to match the app's existing badge style, kept small (`text-[9px]`) so it doesn't compete with the section label.
+
+### What's next (Session 195)
+- **`Shift+V` / `Alt+V` for other CVD types** — Shift+V exports Protanopia, Alt+V exports Tritanopia (default V stays Deuteranopia)
+- **Persist `activeCollection` and `activeMood` across reloads** — natural extension of the filter persistence work done this session
+- **Palette sort by "Random" shuffle** — a fun sort mode for discovery, regenerates on each click
+
+---
+
 ## 2026-08-13 — Session 193: Persistent AI-Generated Filter Chip
 
 ### What was done
