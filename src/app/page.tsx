@@ -388,6 +388,32 @@ export default function Home() {
     } catch {}
   }, [sortBy]);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-active-collection");
+      if (saved) setActiveCollection(saved);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("palette-active-collection", activeCollection);
+    } catch {}
+  }, [activeCollection]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-active-mood");
+      if (saved) setActiveMood(saved as PaletteMood | "all");
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("palette-active-mood", activeMood);
+    } catch {}
+  }, [activeMood]);
+
   // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay; `Shift+D` opens Find Duplicates
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
