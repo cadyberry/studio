@@ -339,6 +339,9 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                     <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
                       {section}
                     </span>
+                    <span className="text-[9px] font-bold tabular-nums text-[var(--muted)] bg-[var(--surface-2)] rounded-full px-1.5 py-0.5 select-none leading-none">
+                      {list.length}
+                    </span>
                     <div className="flex-1 h-px bg-[var(--border)]" />
                   </div>
                   <div className="space-y-1 mb-4">

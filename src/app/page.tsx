@@ -362,6 +362,32 @@ export default function Home() {
     } catch {}
   }, [filterPresets]);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-active-tags");
+      if (saved) setActiveTags(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("palette-active-tags", JSON.stringify(activeTags));
+    } catch {}
+  }, [activeTags]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-sort-by");
+      if (saved) setSortBy(saved as typeof sortBy);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("palette-sort-by", sortBy);
+    } catch {}
+  }, [sortBy]);
+
   // `/` focuses search bar from anywhere; Escape blurs it; `?` opens help overlay; `Shift+D` opens Find Duplicates
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
