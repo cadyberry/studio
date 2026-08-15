@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX, type ElementType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -27,6 +27,17 @@ import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
 
 const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
+
+function paletteRandomHash(id: string, seed: number): number {
+  let h = (seed ^ 0x9e3779b9) >>> 0;
+  for (let i = 0; i < id.length; i++) {
+    h = Math.imul(h ^ id.charCodeAt(i), 0x9e3779b9) >>> 0;
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xbf0163f9) >>> 0;
+    h ^= h >>> 16;
+  }
+  return h >>> 0;
+}
 
 const MOOD_PILL_STYLES: Record<PaletteMood, { dot: string; activeClass: string; inactiveClass: string }> = {
   warm:   { dot: "#f59e0b", activeClass: "bg-amber-100 text-amber-700 border-amber-300",    inactiveClass: "text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50" },
@@ -216,7 +227,8 @@ export default function Home() {
   const [showGeneratePalette, setShowGeneratePalette] = useState(false);
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first" | "random">("newest");
+  const [randomSortKey, setRandomSortKey] = useState<number>(() => Math.floor(Math.random() * 0x7fffffff));
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
@@ -802,6 +814,8 @@ export default function Home() {
             if (bAi !== aAi) return bAi - aAi;
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
           }
+          case "random":
+            return paletteRandomHash(a.id, randomSortKey) - paletteRandomHash(b.id, randomSortKey);
         }
       });
 
@@ -1668,7 +1682,11 @@ export default function Home() {
                         <ArrowUpDown size={11} className="shrink-0" />
                         <select
                           value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                          onChange={(e) => {
+                            const v = e.target.value as typeof sortBy;
+                            setSortBy(v);
+                            if (v === "random") setRandomSortKey(Math.floor(Math.random() * 0x7fffffff));
+                          }}
                           className="bg-transparent outline-none text-xs text-[var(--foreground)] cursor-pointer appearance-none"
                           aria-label="Sort palettes"
                         >
@@ -1685,8 +1703,18 @@ export default function Home() {
                           <option value="most-varied">Most varied</option>
                           <option value="print-safe-first">Print safe first</option>
                           <option value="ai-first">AI-generated first</option>
+                          <option value="random">Random</option>
                         </select>
                       </div>
+                      {sortBy === "random" && (
+                        <button
+                          onClick={() => setRandomSortKey(Math.floor(Math.random() * 0x7fffffff))}
+                          title="Reshuffle"
+                          className="shrink-0 flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                        >
+                          <Shuffle size={12} />
+                        </button>
+                      )}
                     </>
                   )}
                   {colorSearchActive && (
