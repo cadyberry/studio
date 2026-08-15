@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-08-15 — Session 197: Color Browser Lightness-Sort Toggle + CVD Tooltip Fix
+
+### What was done
+- **Color Browser: lightness-sort toggle** — Added a two-option "hue / L" toggle in the Color Browser header controls row. When set to "L", all colors within each hue band are sorted dark→light by their HSL lightness value — so Reds shows the darkest reds first and works toward pale pinks, making it easy to scan a value scale within a family. Preference persists to `localStorage("palette-color-browser-band-sort")`. Default remains hue order (the natural spread across the band). Neutrals section already sorted by lightness and is unaffected.
+- **CVD button tooltip complete** — The quick-export Glasses button in the card footer previously only said "Deuteranopia — V" in its tooltip. Now reads "V Deuteranopia · ⇧V Protanopia · ⌥V Tritanopia" so all three keyboard shortcuts are discoverable without opening the ? help overlay.
+- Build: zero TypeScript errors, 9 routes, clean Turbopack compile.
+
+### Key decisions
+- **Dark→light sort direction** — most design tools show value scales from dark to light (shadows first). This matches how Cady would scan: "what's the darkest red in my library → brightest red?" The neutrals section was already sorted light→dark by lightness ascending, matching the existing sort direction convention.
+- **Persist the preference** — lightness sort is a workflow choice, not a one-off view. Carrying it across sessions saves the click for users who prefer it as their default browsing mode.
+- **Toggle in header, not per-band** — per-band toggles would be noisy and hard to discover. A single global toggle in the controls row is clean, consistent with the density toggle, and scannable at a glance.
+
+### What's next (Session 198)
+- **Palette name double-click to rename** — already in code (`onDoubleClick={startInlineEdit}` at line 1434) but the `title` attribute still says "Double-click to rename" when in the non-editing state; verify it works end-to-end and add a gentle underline/cursor affordance on hover
+- **Color Browser: count badge in toggle** — show how many colors are in each band next to the band label (currently only in the band header label row, but not in the jump-index sidebar pills)
+- **Keyboard help modal: V variants inline** — the card-level `?` overlay at `showKeyShortcuts` already lists V/⇧V/⌥V; verify the `KeyboardHelpModal.tsx` global help sheet also has all three (confirmed in session 196 review, already correct)
+
+---
+
 ## 2026-08-15 — Session 196: Random Shuffle Sort Mode
 
 ### What was done
