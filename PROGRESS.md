@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-15 — Session 196: Random Shuffle Sort Mode
+
+### What was done
+- **Random sort mode** — Added `"Random"` as a sort option in the palette library sort dropdown. Uses a deterministic hash (`paletteRandomHash`) seeded by a `randomSortKey` state value so the order is stable within a session but unique across runs.
+- **Reshuffle button** — When `sortBy === "random"`, a small `Shuffle` icon button appears next to the sort dropdown. Clicking it generates a new random seed, instantly reordering the grid. A fun discovery mode for browsing a large palette library.
+- **Fresh seed on selection** — Selecting "Random" from the dropdown always generates a new seed (not the same order as last time). Page reload also generates a new seed (initialized via `Math.random()` in state initializer).
+- **`Shift+V` / `Alt+V` confirmed already shipped** — Reviewed PaletteCard.tsx; Shift+V (Protanopia) and Alt+V (Tritanopia) were already implemented in a prior session. The Color Browser palette strips in hover tooltips were also already in place (72×10px per-palette strips).
+- Build: zero TypeScript errors, 11 routes, clean Turbopack compile.
+
+### Key decisions
+- **Deterministic hash not JS sort with random comparison** — `Math.random()` in a comparator is unstable and can cause infinite loops or inconsistent sorts in some engines. `paletteRandomHash(id, seed)` gives a stable order for any seed, which stays consistent as React re-renders.
+- **Seed in state, not in localStorage** — "Random" is persisted to localStorage as the active sort (user sees it on reload) but the seed is regenerated fresh each mount, so the order changes on reload. This is intentional: predictable in-session, always fresh on return.
+- **Reshuffle button separate from dropdown** — A `<select>` doesn't fire `onChange` when the same option is re-selected, so re-shuffling needs a dedicated button. The Shuffle icon button is adjacent to the dropdown and only visible when Random is active.
+
+### What's next (Session 197)
+- **`Shift+V` / `Alt+V` keyboard hint in tooltip** — the card `?` overlay shows V/⇧V/⌥V but the quick-export button in the card footer only shows "V" in its tooltip; update to mention ⇧V and ⌥V variants
+- **Color Browser: lightness-sort toggle** — within each hue band, allow toggling between hue-sorted (current) and lightness-sorted (light→dark) to see value scales within a color family
+- **Palette name click-to-rename in card** — double-clicking the palette name in the card body triggers inline rename (currently only F2 or the rename modal do this)
+
+---
+
 ## 2026-08-14 — Session 195: Persist activeCollection + activeMood Across Reloads
 
 ### What was done
