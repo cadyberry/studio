@@ -1990,7 +1990,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               setCvdExported(true);
               setTimeout(() => setCvdExported(false), 1800);
             }}
-            title="Quick-export CVD preview PNG (Deuteranopia — V)"
+            title="Quick-export CVD preview: V Deuteranopia · ⇧V Protanopia · ⌥V Tritanopia"
             className={cvdExported ? "text-sky-600 border-sky-300 dark:text-sky-400 dark:border-sky-700" : ""}
           >
             {cvdExported ? <Check size={13} className="text-sky-500" /> : <Glasses size={13} />}

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check, Layers, Search, X } from "lucide-react";
+import { Copy, Check, Layers, Search, X, ArrowUpDown } from "lucide-react";
 import { getContrastColor, hexToRgb, rgbToHsl, hslToHex } from "@/lib/utils";
 
 type SwatchDensity = "sm" | "md" | "lg";
@@ -131,6 +131,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   const [activeBand, setActiveBand] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [density, setDensity] = useState<SwatchDensity>("sm");
+  const [bandSort, setBandSort] = useState<"hue" | "lightness">("hue");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -142,9 +143,22 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     } catch {}
   }, []);
 
+  // Persist band-sort preference
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("palette-color-browser-band-sort");
+      if (stored === "hue" || stored === "lightness") setBandSort(stored);
+    } catch {}
+  }, []);
+
   const handleDensityChange = (d: SwatchDensity) => {
     setDensity(d);
     try { localStorage.setItem("palette-color-browser-density", d); } catch {}
+  };
+
+  const handleBandSortChange = (s: "hue" | "lightness") => {
+    setBandSort(s);
+    try { localStorage.setItem("palette-color-browser-band-sort", s); } catch {}
   };
 
   // Apply collection filter: keep only colors where at least one source palette is in the selected collection
@@ -220,6 +234,15 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     }
     return HUE_BANDS.map((b) => ({ label: b.label, colors: bandMap.get(b.label) ?? [] })).filter((b) => b.colors.length > 0);
   }, [chromatics]);
+
+  // Within-band sort: default hue order vs. lightness order (dark→light)
+  const sortedBands = useMemo(() => {
+    if (bandSort === "hue") return bands;
+    return bands.map((b) => ({
+      ...b,
+      colors: [...b.colors].sort((a, c) => a.lightness - c.lightness),
+    }));
+  }, [bands, bandSort]);
 
   // All sections in order (chromatic bands + neutrals)
   const allSections = useMemo(() => {
@@ -516,6 +539,33 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
             }{!searchQuery.trim() && <span className="hidden sm:inline"> — click any swatch to find palettes that contain it</span>}
           </p>
           <div className="flex items-center gap-2 ml-auto flex-wrap">
+            {/* Band sort toggle — hue order vs. lightness order within each band */}
+            <div
+              className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-[var(--border)] p-0.5 bg-[var(--surface-2)]"
+              title="Sort order within each hue band"
+            >
+              {(["hue", "lightness"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleBandSortChange(s)}
+                  title={s === "hue" ? "Hue order (default)" : "Lightness order — dark to light within each band"}
+                  className={`flex items-center gap-0.5 h-5 px-1.5 rounded text-[10px] font-medium transition-all ${
+                    bandSort === s
+                      ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {s === "hue" ? (
+                    <span className="leading-none">hue</span>
+                  ) : (
+                    <>
+                      <ArrowUpDown size={9} />
+                      <span className="leading-none">L</span>
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
             {/* Density toggle */}
             <div className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-[var(--border)] p-0.5 bg-[var(--surface-2)]">
               {(["sm", "md", "lg"] as SwatchDensity[]).map((d) => (
@@ -615,7 +665,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
           </div>
         ) : (
           <>
-            {bands.map((band) => (
+            {sortedBands.map((band) => (
               <div key={band.label}>
                 <div id={bandId(band.label)} className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
