@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check, Layers, Search, X, ArrowUpDown } from "lucide-react";
+import { Copy, Check, Layers, Search, X, ArrowUpDown, ArrowUp } from "lucide-react";
 import { getContrastColor, hexToRgb, rgbToHsl, hslToHex } from "@/lib/utils";
 
 type SwatchDensity = "sm" | "md" | "lg";
@@ -309,6 +309,16 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     setActiveBand(label);
   };
 
+  const scrollToTop = () => {
+    const el = document.getElementById("color-browser-top");
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   const handleCopy = (e: React.MouseEvent, hex: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(hex);
@@ -530,7 +540,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   return (
     <div className="flex gap-1">
       {/* Main content */}
-      <div className="flex-1 min-w-0 space-y-6">
+      <div id="color-browser-top" className="flex-1 min-w-0 space-y-6">
         <div className="flex items-center gap-3 flex-wrap">
           <p className="text-xs text-[var(--muted)]">
             {searchQuery.trim()
@@ -667,12 +677,21 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
           <>
             {sortedBands.map((band) => (
               <div key={band.label}>
-                <div id={bandId(band.label)} className="flex items-center gap-2 mb-2">
+                <div id={bandId(band.label)} className="group/bandheader flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
                     {band.label}
                   </span>
                   <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{band.colors.length}</span>
                   <div className="flex-1 h-px bg-[var(--border)]" />
+                  <button
+                    onClick={scrollToTop}
+                    title="Back to top"
+                    className="opacity-0 group-hover/bandheader:opacity-100 transition-opacity text-[var(--muted)] hover:text-[var(--foreground)] flex-shrink-0 p-0.5 rounded hover:bg-[var(--surface-2)]"
+                    tabIndex={-1}
+                    aria-label="Scroll to top of color browser"
+                  >
+                    <ArrowUp size={10} />
+                  </button>
                 </div>
                 <div
                   className="grid gap-1.5"
@@ -685,12 +704,21 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
 
             {neutrals.length > 0 && (
               <div>
-                <div id={bandId("Neutrals")} className="flex items-center gap-2 mb-2">
+                <div id={bandId("Neutrals")} className="group/bandheader flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">
                     Neutrals
                   </span>
                   <span className="text-[10px] text-[var(--muted)]/60 tabular-nums">{neutrals.length}</span>
                   <div className="flex-1 h-px bg-[var(--border)]" />
+                  <button
+                    onClick={scrollToTop}
+                    title="Back to top"
+                    className="opacity-0 group-hover/bandheader:opacity-100 transition-opacity text-[var(--muted)] hover:text-[var(--foreground)] flex-shrink-0 p-0.5 rounded hover:bg-[var(--surface-2)]"
+                    tabIndex={-1}
+                    aria-label="Scroll to top of color browser"
+                  >
+                    <ArrowUp size={10} />
+                  </button>
                 </div>
                 <div
                   className="grid gap-1.5"
