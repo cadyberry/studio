@@ -5546,3 +5546,26 @@
 - **Color Browser: per-band header "jump to top" button** — a tiny ↑ button at the right edge of each band header row that scrolls the browser back to the top (useful after navigating deep into a large library)
 - **Palette card "recently viewed" ring** — a faint highlight ring on palettes opened in the current session (reset on reload), so Cady can see which cards she's already inspected during a work session
 - **PaletteCard: single-click focus → keyboard shortcuts active** — currently card shortcuts require hover+focus; a single click anywhere on the card should also make it keyboard-focusable
+
+---
+
+## 2026-08-16 — Session 199: Per-Band "Jump to Top" Button in Color Browser
+
+### What was done
+- **Per-band "↑ back to top" button in Color Browser** — each hue-band header row now shows a small ↑ arrow button that appears on hover (CSS `group-hover/bandheader` opacity transition). Clicking it scrolls smoothly back to the top of the Color Browser content area. Applied to both chromatic hue bands (the `sortedBands` loop) and the Neutrals section.
+  - Button uses `opacity-0 group-hover/bandheader:opacity-100 transition-opacity` so it appears only when the user hovers the band header row — unobtrusive by default, discoverable on hover.
+  - `scrollToTop()` anchors to the `#color-browser-top` div (added as the `id` on the main content wrapper), with a `window.scrollY - 80` offset so the controls row stays visible after scrolling. Falls back to `window.scrollTo({ top: 0 })` if the anchor isn't found.
+  - Button is `tabIndex={-1}` — it's a scroll shortcut, not a primary action, so it stays out of the keyboard tab order.
+  - Added `ArrowUp` to the Lucide import line.
+- Build: clean Next.js production build, TypeScript zero errors, 9 routes passing.
+
+### Key decisions
+- **`group-hover/bandheader` named group** — Tailwind's named group syntax (`group/bandheader`) lets each band header have its own independent hover group without interfering with any parent or sibling group classes elsewhere in the component tree.
+- **Opacity fade, not display toggle** — `opacity-0 → opacity-100` with transition is GPU-composited and avoids layout reflow; `hidden/block` toggling would cause jank.
+- **Anchor id on the content wrapper, not `window.scrollTo(0)`** — the Color Browser is embedded inside a larger page layout with a sticky nav. Scrolling to the container's position minus the nav offset (`- 80px`) lands the user at the controls row (density toggle, search bar), not at the browser tab chrome.
+- **Same button on Neutrals** — Neutrals renders as a separate block after the chromatic bands. It gets the same treatment so the behavior is consistent regardless of which section the user has scrolled to.
+
+### What's next (Session 200)
+- **Palette card "recently viewed" ring** — a faint highlight ring on palettes opened (detail/export/harmony modal triggered) in the current session, reset on reload
+- **PaletteCard: single-click focus → keyboard shortcuts active** — currently card shortcuts require hover; a single click anywhere on the card should also activate keyboard focus
+- **Color Browser: selected-swatch sticky summary bar** — when a swatch is clicked and the palette popover shows, pin a compact bar at the bottom of the viewport showing the hex, a copy button, and how many palettes contain it
