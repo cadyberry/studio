@@ -5525,3 +5525,24 @@
 - **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
 - **Keyboard shortcut `P`** to open a palette's Export modal from the library view
 - **Palette aging indicators** — subtle visual cues on cards for palettes untouched for >30 days
+
+---
+
+## 2026-08-16 — Session 198: Jump-Index Count Badges + Rename Hover Affordance
+
+### What was done
+- **Color Browser jump-index count badges** — the sticky hue-band letter pills on the right side of the Color Browser now show the color count directly in the pill, below the band abbreviation (e.g. "R" with "24" below it). The count was previously only in the tooltip; now it's visible at a glance. Pills widened from `w-5` to `w-7` to accommodate the two-line layout. Counts cap at "99+" for very large bands. The parent nav column width updated to match (`w-5` → `w-7`).
+- **Palette name rename hover affordance** — when hovering over a non-frozen palette name in the card header, a dashed underline now appears (Tailwind `hover:underline decoration-dashed underline-offset-2`). This signals that double-click-to-rename is available without requiring discovery of the tooltip. Frozen palettes are unchanged — no affordance, `cursor:default` stays.
+- **Keyboard help modal V variants** — confirmed already complete in prior session: `V` (Deuteranopia), `⇧V` (Protanopia), `⌥V` (Tritanopia) all documented.
+- Build: clean Next.js build, 9 routes, zero errors.
+
+### Key decisions
+- **Two-line pill layout, not a badge bubble** — an absolute-positioned notification bubble would be noisy at this scale. Stacking the count below the abbreviation keeps it tidy, within the pill's own footprint, and reads naturally as "band abbreviation / count".
+- **Count cap at 99+** — three digits in a 7px font would be unreadable at 28px pill width. "99+" signals "large" without squishing.
+- **Dashed underline, not solid** — solid underline reads as a hyperlink. Dashed/dotted underline is the convention for "editable in place" (used in many design systems). Subtle but clear.
+- **No affordance for frozen** — showing an edit affordance on locked palettes would be misleading. The `cursor:default` and existing tooltip already communicate the frozen state.
+
+### What's next (Session 199)
+- **Color Browser: per-band header "jump to top" button** — a tiny ↑ button at the right edge of each band header row that scrolls the browser back to the top (useful after navigating deep into a large library)
+- **Palette card "recently viewed" ring** — a faint highlight ring on palettes opened in the current session (reset on reload), so Cady can see which cards she's already inspected during a work session
+- **PaletteCard: single-click focus → keyboard shortcuts active** — currently card shortcuts require hover+focus; a single click anywhere on the card should also make it keyboard-focusable
