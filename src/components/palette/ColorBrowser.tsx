@@ -706,7 +706,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
 
       {/* Sticky hue-band jump index — iOS-style right edge letter list */}
       {allSections.length > 1 && (
-        <div className="w-5 flex-shrink-0 relative">
+        <div className="w-7 flex-shrink-0 relative">
           <nav
             className="sticky flex flex-col items-center gap-px"
             style={{ top: 72 }}
@@ -726,7 +726,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                   <button
                     onClick={() => scrollToBand(label)}
                     title={`${label} · ${count} color${count !== 1 ? "s" : ""}`}
-                    className="w-5 h-5 flex items-center justify-center rounded text-[9px] font-bold leading-none transition-all select-none hover:opacity-90 hover:scale-110"
+                    className="w-7 flex flex-col items-center justify-center gap-px py-1 rounded text-[9px] font-bold leading-none transition-all select-none hover:opacity-90 hover:scale-110"
                     style={
                       isActive
                         ? {
@@ -741,6 +741,9 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                     }
                   >
                     {BAND_ABBREV[label] ?? label.slice(0, 2)}
+                    <span className="text-[7px] font-normal tabular-nums leading-none" style={{ opacity: 0.75 }}>
+                      {count > 99 ? "99+" : count}
+                    </span>
                   </button>
                 </motion.div>
               );

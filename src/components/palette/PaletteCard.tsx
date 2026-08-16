@@ -1429,7 +1429,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               {isPinned && <Pin size={9} className="text-orange-400 dark:text-orange-500 flex-shrink-0 fill-orange-100 dark:fill-orange-900/40" />}
               {palette.frozen && <Lock size={10} className="text-indigo-400 dark:text-indigo-500 flex-shrink-0" />}
               <div
-                className="text-sm font-medium truncate select-none"
+                className={`text-sm font-medium truncate select-none${!palette.frozen ? " hover:underline decoration-dashed underline-offset-2" : ""}`}
                 style={{ cursor: palette.frozen ? "default" : "text" }}
                 onDoubleClick={palette.frozen ? undefined : startInlineEdit}
                 title={palette.frozen ? "Unlock to rename" : "Double-click to rename"}
