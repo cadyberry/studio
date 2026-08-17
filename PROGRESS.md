@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-17 — Session 200: CVD Banner Below Toolbar
+
+### What was done
+- **CVD preview banner** — when any CVD mode (Deuteranopia/Protanopia/Tritanopia) is active and the palette grid is showing, a slim animated banner appears between the filter pills row and the palette grid. The banner reads "CVD preview: Deuteranopia — green-blind simulation" (abbreviated on mobile). It includes a dismiss (X) button that turns off the CVD mode entirely. Animates in/out with height transition so the UI doesn't jump.
+- **Placement logic** — banner renders only when `cvdMode !== "off"`, `viewMode === "palettes"`, and `sorted.length > 0` (not over empty states). Lives outside the CVD filter wrapper so the text reads at full fidelity rather than through the colorblind filter — which would make the mode label unreadable for sighted users.
+- **Themed** — sky-blue styling matching the active CVD button in the toolbar. Supports light and dark modes.
+- Build: zero TypeScript errors, 11 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Outside the filter div** — inserting the banner as a sibling before the palette grid (not inside the grid's filtered `<motion.div>`) ensures the banner's text colors are unaffected by the SVG color matrix filter. A banner inside the filtered view would show the "wrong" colors, defeating its informational purpose.
+- **`sorted.length > 0` guard** — banner only appears when there are visible palettes. If filters produce no results, the "no results" empty state shows instead — no need to also show the CVD banner for 0 results.
+- **Dismiss button turns off mode** — clicking X calls `setCvdMode("off")` which also removes the localStorage key. Clean state, no partial-off states.
+
+### What's next (Session 201)
+- **Palette "Similar Palettes" row** — when hovering a palette card, show 2–3 library palettes with the closest average ΔE to suggest related designs
+- **Color Browser: click-to-filter by palette** — clicking a palette name in the color hover panel jumps to palette view AND applies that palette as a name filter
+- **Per-band jump counts in Color Browser** — count badges on the jump-index sidebar pills showing how many colors are in each hue band
+
+---
+
 ## 2026-08-17 — Session 198: CVD Grid Preview Mode
 
 ### What was done
