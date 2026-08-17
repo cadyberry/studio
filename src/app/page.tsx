@@ -2501,6 +2501,39 @@ export default function Home() {
               )}
             </AnimatePresence>
 
+            {/* CVD preview banner — shown above the palette grid when a colorblind simulation is active */}
+            <AnimatePresence>
+              {cvdMode !== "off" && viewMode === "palettes" && sorted.length > 0 && (
+                <motion.div
+                  key="cvd-banner"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-[var(--radius-sm)] bg-sky-50 border border-sky-200 text-sky-700 dark:bg-sky-950/40 dark:border-sky-800 dark:text-sky-300 text-xs">
+                    <Glasses size={12} className="shrink-0" />
+                    <span className="font-semibold">
+                      CVD preview:&nbsp;
+                      {cvdMode === "deuteranopia" ? "Deuteranopia" : cvdMode === "protanopia" ? "Protanopia" : "Tritanopia"}
+                    </span>
+                    <span className="text-sky-500/70 dark:text-sky-400/60 hidden sm:inline">
+                      &mdash;{" "}
+                      {cvdMode === "deuteranopia" ? "green-blind" : cvdMode === "protanopia" ? "red-blind" : "blue-blind"} simulation
+                    </span>
+                    <button
+                      onClick={() => setCvdMode("off")}
+                      title="Turn off CVD preview"
+                      className="ml-auto shrink-0 p-0.5 rounded hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors text-sky-600 dark:text-sky-400"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {palettes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="flex gap-1.5 mb-4">
