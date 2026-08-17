@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX, type ElementType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle, Glasses } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -229,6 +229,7 @@ export default function Home() {
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first" | "random">("newest");
   const [randomSortKey, setRandomSortKey] = useState<number>(() => Math.floor(Math.random() * 0x7fffffff));
+  const [cvdMode, setCvdMode] = useState<"off" | "deuteranopia" | "protanopia" | "tritanopia">("off");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
 
   const paletteMeanLightness = useCallback((p: Palette): number => {
@@ -399,6 +400,22 @@ export default function Home() {
       localStorage.setItem("palette-sort-by", sortBy);
     } catch {}
   }, [sortBy]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("palette-cvd-mode");
+      if (saved && ["deuteranopia", "protanopia", "tritanopia"].includes(saved)) {
+        setCvdMode(saved as "deuteranopia" | "protanopia" | "tritanopia");
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (cvdMode === "off") localStorage.removeItem("palette-cvd-mode");
+      else localStorage.setItem("palette-cvd-mode", cvdMode);
+    } catch {}
+  }, [cvdMode]);
 
   useEffect(() => {
     try {
@@ -992,6 +1009,24 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* SVG filter defs for CVD simulation — referenced via filter:url(#id) on the palette grid */}
+      <svg aria-hidden focusable="false" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
+        <defs>
+          {/* Deuteranopia: green cone deficiency — most common (~5% of men). Vienot & Brettel simulation. */}
+          <filter id="cvd-deuteranopia" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0" />
+          </filter>
+          {/* Protanopia: red cone deficiency (~2% of men). */}
+          <filter id="cvd-protanopia" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0" />
+          </filter>
+          {/* Tritanopia: blue cone deficiency (~0.01%). */}
+          <filter id="cvd-tritanopia" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0" />
+          </filter>
+        </defs>
+      </svg>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8">
@@ -1713,6 +1748,37 @@ export default function Home() {
                           className="shrink-0 flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
                         >
                           <Shuffle size={12} />
+                        </button>
+                      )}
+                      {/* CVD preview toggle — cycles off → deuteranopia → protanopia → tritanopia → off */}
+                      {viewMode === "palettes" && (
+                        <button
+                          onClick={() => {
+                            const order = ["off", "deuteranopia", "protanopia", "tritanopia"] as const;
+                            const i = order.indexOf(cvdMode);
+                            setCvdMode(order[(i + 1) % order.length]);
+                          }}
+                          title={
+                            cvdMode === "off"
+                              ? "Preview grid with color-blind filter (CVD)"
+                              : cvdMode === "deuteranopia"
+                              ? "CVD: Deuteranopia (green-blind) — click for Protanopia"
+                              : cvdMode === "protanopia"
+                              ? "CVD: Protanopia (red-blind) — click for Tritanopia"
+                              : "CVD: Tritanopia (blue-blind) — click to turn off"
+                          }
+                          className={`shrink-0 flex items-center gap-1 h-7 px-2 rounded-[var(--radius-sm)] border transition-colors ${
+                            cvdMode !== "off"
+                              ? "border-sky-400 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-700"
+                              : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)]"
+                          }`}
+                        >
+                          <Glasses size={12} />
+                          {cvdMode !== "off" && (
+                            <span className="text-[10px] font-bold leading-none tabular-nums">
+                              {cvdMode === "deuteranopia" ? "D" : cvdMode === "protanopia" ? "P" : "T"}
+                            </span>
+                          )}
                         </button>
                       )}
                     </>
@@ -2638,7 +2704,11 @@ export default function Home() {
                 onCollectionFilterChange={setColorBrowserCollection}
               />
             ) : (
-              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <motion.div
+                layout
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                style={{ filter: cvdMode !== "off" ? `url(#cvd-${cvdMode})` : undefined }}
+              >
                 <AnimatePresence mode="popLayout">
                   {pinnedDisplay.length > 0 && (
                     <motion.div
