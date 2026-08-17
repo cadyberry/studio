@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-08-17 — Session 198: CVD Grid Preview Mode
+
+### What was done
+- **CVD preview toggle in palette toolbar** — a compact Glasses icon button cycles through four states: off → Deuteranopia (D) → Protanopia (P) → Tritanopia (T) → off. Active state is highlighted in sky-blue with a bold letter label so the current mode is always visible.
+- **SVG feColorMatrix filters** — three hidden SVG `<filter>` elements define the CVD simulation matrices (Vienot & Brettel simulation). Applied via `filter: url(#cvd-{mode})` CSS on the palette grid `motion.div`, so the simulation covers the complete card: swatch strips, palette names, mood badges, action buttons — everything a user would see.
+- **`colorInterpolationFilters="sRGB"`** — set on each filter to ensure the matrix operates in sRGB space (matching the display profile), not the default linear-light space which would produce incorrect color shifts.
+- **localStorage persistence** — active CVD mode survives page reload via `palette-cvd-mode` key (removed on "off" to avoid stale entries).
+- Build: zero TypeScript errors, 9 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Whole-grid filter, not per-card** — applying the filter to the grid wrapper simulates exactly what a colorblind user sees: everything at once, with the same apparent contrast and visual relationships. Per-swatch would only show isolated colors, missing the gestalt.
+- **`url(#id)` reference from page SVG defs** — SVG `filter: url()` CSS works in all modern browsers when the `<defs>` are in the same document. Zero JS, zero canvas, zero server round-trips.
+- **D / P / T labels not full names** — the button is compact (sits in a dense toolbar). Single-letter abbreviations match the convention established by the CVD export keyboard shortcuts (V/⇧V/⌥V). Tooltip always shows the full name.
+- **Only shown in palettes view, not colors view** — Color Browser has its own independent display; applying a grid filter there would be confusing and wouldn't help scan the hue bands.
+
+### What's next (Session 199)
+- **CVD banner below toolbar when active** — a slim persistent banner reading "CVD preview: Deuteranopia" so users who return to the tab after a break aren't confused by the filtered view
+- **Palette "Similar Palettes" row** — when viewing a palette in its card, show 2–3 library palettes with the closest average ΔE to suggest related designs
+- **Color Browser: click-to-filter by palette** — clicking a palette name in the color hover panel jumps to palette view AND applies that palette as a name filter, rather than just scrolling into view
+
+---
+
 ## 2026-08-15 — Session 197: Color Browser Lightness-Sort Toggle + CVD Tooltip Fix
 
 ### What was done
