@@ -68,7 +68,7 @@ interface ColorBrowserProps {
   colorIndex: ColorEntry[];
   onSelectColor: (hex: string) => void;
   paletteLookup: Map<string, PaletteStrip>;
-  onJumpToPalette?: (paletteId: string) => void;
+  onJumpToPalette?: (paletteId: string, paletteName?: string) => void;
   collections?: CollectionOption[];
   collectionFilter?: string;
   onCollectionFilterChange?: (id: string) => void;
@@ -474,7 +474,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onJumpToPalette?.(id);
+                    onJumpToPalette?.(id, p.name);
                   }}
                 >
                   {/* In-collection indicator dot */}

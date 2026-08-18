@@ -324,9 +324,13 @@ export default function Home() {
     setTimeout(() => setFlashedCollectionId(null), 820);
   }, []);
 
-  const handleJumpToPalette = useCallback((paletteId: string) => {
+  const handleJumpToPalette = useCallback((paletteId: string, paletteName?: string) => {
     setViewMode("palettes");
     setHighlightedPaletteId(paletteId);
+    if (paletteName) {
+      setSearch(paletteName);
+      setActiveCollection("all");
+    }
   }, []);
 
   const commitCollectionRename = useCallback(() => {
