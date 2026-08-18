@@ -89,6 +89,16 @@ function getAging(createdAt: string, updatedAt: string): {
   return              { label: "1yr+",   ageClass: "old",    days, formattedDate };
 }
 
+// Directed Hausdorff ΔE: average of each source color's nearest-neighbor ΔE in target
+function paletteDe(a: Palette, b: Palette): number {
+  if (a.colors.length === 0 || b.colors.length === 0) return Infinity;
+  const sum = a.colors.reduce((acc, ca) => {
+    const minDe = b.colors.reduce((m, cb) => Math.min(m, deltaE(ca.hex, cb.hex)), Infinity);
+    return acc + minDe;
+  }, 0);
+  return sum / a.colors.length;
+}
+
 const AGING_STYLES: Record<"subtle" | "mild" | "notable" | "old", { badge: string; border: string }> = {
   subtle:  { badge: "bg-[var(--surface-2)] text-[var(--muted)]",                                              border: "" },
   mild:    { badge: "bg-stone-100 text-stone-500 dark:bg-stone-800/40 dark:text-stone-400",                   border: "" },
@@ -220,6 +230,16 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [colorStoryError, setColorStoryError] = useState(false);
   const [colorStoryPromptCopied, setColorStoryPromptCopied] = useState(false);
   const [cvdExported, setCvdExported] = useState(false);
+  const [similarPalettes, setSimilarPalettes] = useState<{ palette: Palette; avgDe: number }[]>([]);
+  const similarComputedRef = useRef(false);
+
+  // Reset similar palettes cache when this palette's colors change
+  const colorsKey = palette.colors.map((c) => c.hex).join(",");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    similarComputedRef.current = false;
+    setSimilarPalettes([]);
+  }, [colorsKey]);
 
   // Refs so keyboard handler always sees latest values without re-registering
   const isHoveredRef = useRef(false);
@@ -860,7 +880,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      onMouseEnter={() => { isHoveredRef.current = true; }}
+      onMouseEnter={() => {
+        isHoveredRef.current = true;
+        if (!similarComputedRef.current) {
+          similarComputedRef.current = true;
+          const allPalettes = usePaletteStore.getState().palettes;
+          const others = allPalettes.filter((p) => p.id !== palette.id && p.colors.length > 0);
+          const scored = others
+            .map((p) => ({ palette: p, avgDe: paletteDe(palette, p) }))
+            .sort((a, b) => a.avgDe - b.avgDe)
+            .slice(0, 3);
+          setSimilarPalettes(scored);
+        }
+      }}
       onMouseLeave={() => { isHoveredRef.current = false; }}
       id={cardId}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
@@ -1402,6 +1434,40 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 : <Plus size={11} className="text-[var(--muted)]" />
               }
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Similar palettes — slides in on hover, computed lazily on first hover */}
+      {similarPalettes.length > 0 && (
+        <div className="overflow-hidden max-h-0 group-hover:max-h-10 transition-[max-height] duration-200 ease-out">
+          <div className="flex h-10 border-t border-[var(--border)]">
+            <div className="flex-shrink-0 flex items-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
+              <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 uppercase select-none whitespace-nowrap">
+                similar
+              </span>
+            </div>
+            {similarPalettes.map(({ palette: sim }) => (
+              <button
+                key={sim.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const el = document.getElementById(sim.id);
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                title={`${sim.name} — click to jump`}
+                className="group/sim flex-1 flex overflow-hidden border-r border-[var(--border)] last:border-r-0 relative hover:opacity-80 transition-opacity"
+              >
+                {sim.colors.map((c, ci) => (
+                  <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
+                ))}
+                <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity pointer-events-none">
+                  <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
+                    {sim.name}
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       )}
