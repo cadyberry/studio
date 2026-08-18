@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-08-18 — Session 201: Color Browser Palette Jump with Name Filter
+
+### What was done
+- **Color Browser: click palette → jump with name filter** — clicking any palette row in the Color Browser hover panel now does three things in one action: switches to palette view, sets the search query to that palette's exact name (so only that palette is visible), and clears the active collection filter (so the palette isn't hidden behind it). The existing scroll-and-highlight behavior still fires. Previously, jumping only changed view mode and highlighted the card — the palette could be buried among hundreds or filtered out entirely.
+- **Callback signature updated** — `onJumpToPalette` now accepts an optional second `paletteName` string param. ColorBrowser passes `p.name` from the `paletteEntries` lookup already in scope; page.tsx calls `setSearch(paletteName)` and `setActiveCollection("all")` when the name is present.
+- Build: zero TypeScript errors, 9 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Pass name through callback, not re-find in page.tsx** — the palette name is already in `PaletteStrip` within `paletteLookup` which ColorBrowser has access to. Passing it through the callback keeps the handler dep-free (no `palettes` array in `useCallback` deps) and avoids a second lookup.
+- **Clear collection filter on jump** — if the target palette belongs to Collection A but the palette view has Collection B filtered, the palette would be invisible even with the search set. Resetting to "all" guarantees the jumped-to palette is always found.
+- **Exact name match design** — setting search to the palette's exact name guarantees it appears first. If other palettes share similar names they'll appear too, which is a feature not a bug (context around the palette is helpful).
+
+### What's next (Session 202)
+- **Palette "Similar Palettes" row** — when hovering a palette card, show 2–3 library palettes with the closest average ΔE (color distance) to suggest related designs. Requires computing per-palette average Lab color and pairwise distance.
+- **Hue sector filter chip in palette toolbar** — show a compact pill row for the active hue sector (Warm/Cool/Neutral) so users can quickly browse the library by dominant hue family without entering the Color Browser.
+- **Export: copy as Figma-ready JSON** — export a palette as a Figma style dictionary (color variables format) so designers can paste directly into Figma tokens.
+
+---
+
 ## 2026-08-17 — Session 200: CVD Banner Below Toolbar
 
 ### What was done
