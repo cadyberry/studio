@@ -5611,3 +5611,25 @@
 - **Palette card "recently viewed" ring** — a faint highlight ring on palettes opened (detail/export/harmony modal triggered) in the current session, reset on reload
 - **PaletteCard: single-click focus → keyboard shortcuts active** — currently card shortcuts require hover; a single click anywhere on the card should also activate keyboard focus
 - **Color Browser: selected-swatch sticky summary bar** — when a swatch is clicked and the palette popover shows, pin a compact bar at the bottom of the viewport showing the hex, a copy button, and how many palettes contain it
+
+---
+
+## 2026-08-18 — Session 201: Similar Palettes Row
+
+### What was done
+- **"Similar" hover row on PaletteCard** — when hovering any palette card, a slim "similar" row slides in below the harmony strip, showing 2–3 mini swatch thumbnails of the closest palettes in the library. Clicking a thumbnail smooth-scrolls to that card. The row uses the same `overflow-hidden max-h-0 group-hover:max-h-10` CSS pattern as the harmony row for a consistent reveal animation.
+- **Directed-Hausdorff ΔE distance** — similarity is computed as the average of each source color's nearest-neighbor ΔE in the target palette. This is perceptually meaningful: a dark muted nature palette ranks closest to other dark muted palettes, not to a palette that happens to share one similar color.
+- **Lazy, cached computation** — similar palettes are computed only on first hover (`similarComputedRef`), using `usePaletteStore.getState()` (no subscription overhead). The result is cached in local state and invalidated only when the palette's own colors change (`colorsKey` effect).
+- **Name tooltip on hover** — each mini thumbnail shows the palette name in a dark frosted chip on hover, giving quick identification without permanent clutter.
+- Build: clean Next.js build, 11 routes, zero TypeScript errors.
+
+### Key decisions
+- **Directed Hausdorff, not mean-to-mean** — averaging the hex values of a palette into one "representative color" loses too much information (a palette of dark blues + bright yellows averages to a muddy mid-green). The Hausdorff approach compares color neighborhoods, giving a much more intuitive "these palettes feel similar" result.
+- **`usePaletteStore.getState()` in event handler** — avoids adding an `allPalettes` subscription to every PaletteCard. The allLibraryTags selector already causes a re-render on library changes; getting state on demand in onMouseEnter keeps reads lazy.
+- **3 neighbors, not more** — row height is fixed at 40px; 3 strips of equal flex width fill it naturally. 4+ would make each strip too narrow to read.
+- **Scroll to card, not modal open** — similar palettes link to the live card so Cady can inspect the full card context (tags, notes, collection) rather than just the colors.
+
+### What's next (Session 202)
+- **PaletteCard: single-click focus → keyboard shortcuts active** — currently card shortcuts require hover; a click anywhere on the card should make it keyboard-focusable (the `isFocused` ring pattern already exists)
+- **Color Browser: selected-swatch sticky summary bar** — when a swatch is clicked in the Color Browser, pin a compact bar at the bottom of the viewport showing the hex, a copy button, and how many palettes contain it
+- **ExportModal section count badges** — small count pills on Download / Copy section headers
