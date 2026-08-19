@@ -277,6 +277,23 @@ export default function Home() {
     });
     return ls.every((l) => l > 20 && l < 80);
   }, []);
+  // Classifies a palette by dominant hue temperature: warm (reds/oranges/yellows), cool (blues/purples/teals), or neutral.
+  const getPaletteHueFamily = useCallback((p: Palette): "warm" | "cool" | "neutral" => {
+    let warm = 0, cool = 0, total = 0;
+    for (const c of p.colors) {
+      const rgb = hexToRgb(c.hex);
+      if (!rgb) continue;
+      const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+      if (s < 15 || l < 5 || l > 95) continue; // skip near-achromatic
+      total++;
+      if (h <= 60 || h >= 330) warm++;       // reds, oranges, yellows, warm pinks
+      else if (h >= 150 && h <= 300) cool++; // teals, blues, purples
+    }
+    if (total === 0) return "neutral";
+    if (warm / total >= 0.5) return "warm";
+    if (cool / total >= 0.5) return "cool";
+    return "neutral";
+  }, []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -292,6 +309,7 @@ export default function Home() {
   const [a11yFilter, setA11yFilter] = useState<"all" | "AA" | "AA Large">("all");
   const [flatToneFilter, setFlatToneFilter] = useState(false);
   const [activeHueSector, setActiveHueSector] = useState<number | null>(null);
+  const [activeHueFamily, setActiveHueFamily] = useState<"warm" | "cool" | "neutral" | null>(null);
   const [highlightedPaletteId, setHighlightedPaletteId] = useState<string | null>(null);
   const [exportToast, setExportToast] = useState<{ count: number; source?: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -676,6 +694,7 @@ export default function Home() {
     a11yFilter !== "all" ||
     flatToneFilter ||
     activeHueSector !== null ||
+    activeHueFamily !== null ||
     activeColorCount !== "all" ||
     sortBy !== "newest";
 
@@ -794,9 +813,18 @@ export default function Home() {
   const anyFlatTone = a11yFiltered.some((p) => isPaletteFlatTone(p));
   const flatToneCount = a11yFiltered.filter((p) => isPaletteFlatTone(p)).length;
   const flatToneFiltered = flatToneFilter ? a11yFiltered.filter((p) => isPaletteFlatTone(p)) : a11yFiltered;
-  const hueFiltered = activeHueSector === null
+  // Hue family counts (for pill display) + filter
+  const hueFamilyCounts = new Map<"warm" | "cool" | "neutral", number>();
+  for (const p of flatToneFiltered) {
+    const fam = getPaletteHueFamily(p);
+    hueFamilyCounts.set(fam, (hueFamilyCounts.get(fam) ?? 0) + 1);
+  }
+  const hueFamilyFiltered = activeHueFamily === null
     ? flatToneFiltered
-    : flatToneFiltered.filter((p) =>
+    : flatToneFiltered.filter((p) => getPaletteHueFamily(p) === activeHueFamily);
+  const hueFiltered = activeHueSector === null
+    ? hueFamilyFiltered
+    : hueFamilyFiltered.filter((p) =>
         p.colors.some((c) => {
           const rgb = hexToRgb(c.hex);
           if (!rgb) return false;
@@ -2194,7 +2222,7 @@ export default function Home() {
 
             {/* Mood + Locked filter pills — hidden when color search is active (inline strip handles it) */}
             <AnimatePresence>
-              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone || activeHueSector !== null) && (
+              {!colorSearchActive && (moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone || hueFamilyCounts.size >= 2 || activeHueFamily !== null || activeHueSector !== null) && (
                 <motion.div
                   key="mood-pills"
                   initial={{ opacity: 0, height: 0 }}
@@ -2342,9 +2370,55 @@ export default function Home() {
                         </button>
                       </>
                     )}
-                    {activeHueSector !== null && (
+                    {/* Hue family pills — Warm / Cool / Neutral */}
+                    {(hueFamilyCounts.size >= 2 || activeHueFamily !== null) && (
                       <>
                         {(moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone) && (
+                          <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
+                        )}
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] shrink-0 mr-0.5">
+                          Hue
+                        </span>
+                        {(["warm", "cool", "neutral"] as const).map((fam) => {
+                          const count = hueFamilyCounts.get(fam) ?? 0;
+                          if (count === 0 && activeHueFamily !== fam) return null;
+                          const isActive = activeHueFamily === fam;
+                          const FAM_STYLES = {
+                            warm: {
+                              active: "bg-amber-100 text-amber-700 border-amber-300 shadow-sm dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700",
+                              inactive: "bg-[var(--surface)] text-amber-600 border-amber-200 hover:border-amber-400 hover:bg-amber-50/50 dark:text-amber-400 dark:border-amber-800/60 dark:hover:bg-amber-950/20",
+                              dot: "#f59e0b",
+                            },
+                            cool: {
+                              active: "bg-sky-100 text-sky-700 border-sky-300 shadow-sm dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700",
+                              inactive: "bg-[var(--surface)] text-sky-600 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 dark:text-sky-500 dark:border-sky-800/60 dark:hover:bg-sky-950/20",
+                              dot: "#0ea5e9",
+                            },
+                            neutral: {
+                              active: "bg-zinc-100 text-zinc-700 border-zinc-300 shadow-sm dark:bg-zinc-800/50 dark:text-zinc-300 dark:border-zinc-600",
+                              inactive: "bg-[var(--surface)] text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50/50 dark:text-zinc-400 dark:border-zinc-700/60 dark:hover:bg-zinc-900/20",
+                              dot: "#71717a",
+                            },
+                          };
+                          const s = FAM_STYLES[fam];
+                          return (
+                            <button
+                              key={fam}
+                              onClick={() => setActiveHueFamily(isActive ? null : fam)}
+                              title={isActive ? `Clear hue family filter` : `Show ${fam} palettes`}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${isActive ? s.active : s.inactive}`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.dot }} />
+                              {fam.charAt(0).toUpperCase() + fam.slice(1)}
+                              <span className="text-[10px] opacity-60">{count}</span>
+                            </button>
+                          );
+                        })}
+                      </>
+                    )}
+                    {activeHueSector !== null && (
+                      <>
+                        {(moodCounts.size >= 2 || anyFrozen || anyPrintRisk || anyA11y || anyFlatTone || hueFamilyCounts.size >= 2 || activeHueFamily !== null) && (
                           <span className="text-[var(--border)] text-xs select-none px-0.5" aria-hidden>·</span>
                         )}
                         <button
@@ -2704,6 +2778,19 @@ export default function Home() {
                       <X size={10} className="shrink-0" />
                     </button>
                   )}
+                  {activeHueFamily !== null && (
+                    <button
+                      onClick={() => setActiveHueFamily(null)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: activeHueFamily === "warm" ? "#f59e0b" : activeHueFamily === "cool" ? "#0ea5e9" : "#71717a" }}
+                      />
+                      {activeHueFamily.charAt(0).toUpperCase() + activeHueFamily.slice(1)} tones
+                      <X size={10} className="shrink-0" />
+                    </button>
+                  )}
                 </div>
 
                 <Button
@@ -2719,6 +2806,7 @@ export default function Home() {
                     setColorSearchActive(false);
                     setColorSearchHex("");
                     setActiveHueSector(null);
+                    setActiveHueFamily(null);
                   }}
                   className="gap-1.5"
                 >
