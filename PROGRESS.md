@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-08-19 — Session 202: Warm / Cool / Neutral Hue Family Filter Chips
+
+### What was done
+- **Hue family filter chips (Warm / Cool / Neutral)** — added a new compact filter group to the palette toolbar pill row. Clicking Warm, Cool, or Neutral instantly narrows the palette grid to palettes whose chromatic colors are predominantly warm (reds/oranges/yellows, 0–60° + 330–360°), cool (teals/blues/purples, 150–300°), or balanced/neutral (everything else, including mostly-achromatic palettes). Palettes with fewer than 15% saturation across all colors also classify as Neutral.
+- **`getPaletteHueFamily` classifier** — pure hue-angle function (no saturation or lightness weight), distinct from the existing mood filter (which uses getPaletteMood and factors in saturation). A vivid cobalt blue is "cool" under hue family even if it's "vivid" by mood. A muted terracotta is "warm" under hue family even if it's "muted" by mood.
+- **Integrated into filter pipeline** — `hueFamilyFiltered` sits between `flatToneFiltered` and the existing `hueFiltered` (30° sector) so both family and sector filters can stack.
+- **Counts shown on pills** — each pill shows the count of palettes with that hue family in the current filtered set. Pills only appear when the library spans ≥2 families (no pill clutter for all-warm or all-cool libraries).
+- **Clear behavior** — pills toggle on/off, active family chip appears in the "active filters" area below the toolbar, and "Clear all filters" resets it. Separator dots (·) auto-adjust between groups.
+- Build: zero TypeScript errors, 9 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Hue-angle only, no saturation weight** — mood already factors in saturation and lightness. Hue family is purely about the color wheel angle so the two filters are complementary and orthogonal: mood = "what does this palette feel like?" vs. hue family = "what part of the color wheel does it live in?"
+- **50% threshold for classification** — a palette needs ≥50% of its chromatic colors in one zone to be classified there. Mixed palettes (e.g. a teal-and-orange complement) fall to Neutral, which is correct — neither hue family dominates.
+- **Skip near-achromatic colors (s < 15%, l < 5%, l > 95%)** — grays, near-blacks, and near-whites don't contribute to the hue family vote, just like the existing 30° sector filter does (s < 10%, l < 5%, l > 95%). Same philosophy: achromatics are chameleons.
+- **Pills only if ≥2 families present** — avoids showing a useless single-option filter row for libraries that are all one hue family.
+
+### What's next (Session 203)
+- **"Similar Palettes" ΔE label on hover** — the similar palette strip already shows swatch strips and name tooltips; add a small ΔE value badge on hover so the color distance is quantified at a glance
+- **Export: copy as Figma-ready JSON (clipboard)** — `exportAsFigmaTokensJson` downloads a file; add a quick-copy clipboard variant so designers can paste directly without a file download round-trip
+- **Hue family indicator on palette cards** — a tiny colored dot (amber/sky/zinc) in the card's info row showing the palette's hue family classification, so the filter result is always legible even when filters are off
+
+---
+
 ## 2026-08-18 — Session 201: Color Browser Palette Jump with Name Filter
 
 ### What was done
