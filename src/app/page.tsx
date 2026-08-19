@@ -2902,6 +2902,7 @@ export default function Home() {
                         isHighlighted={palette.id === highlightedPaletteId}
                         isFocused={focusedCardId === palette.id}
                         keyboardFocusActive={focusedCardId !== null}
+                        onFocusCard={setFocusedCardId}
                       />
                     );
                   })}
@@ -2971,6 +2972,7 @@ export default function Home() {
                         isHighlighted={palette.id === highlightedPaletteId}
                         isFocused={focusedCardId === palette.id}
                         keyboardFocusActive={focusedCardId !== null}
+                        onFocusCard={setFocusedCardId}
                       />
                     );
                   })}

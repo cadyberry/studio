@@ -167,6 +167,7 @@ interface PaletteCardProps {
   onContrast?: (palette: Palette) => void;
   isFocused?: boolean;
   keyboardFocusActive?: boolean;
+  onFocusCard?: (id: string) => void;
 }
 
 type NamingState =
@@ -175,7 +176,7 @@ type NamingState =
   | { type: "names"; names: string[] }
   | { type: "error" };
 
-export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast, isFocused = false, keyboardFocusActive = false }: PaletteCardProps) {
+export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast, isFocused = false, keyboardFocusActive = false, onFocusCard }: PaletteCardProps) {
   const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
@@ -894,6 +895,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         }
       }}
       onMouseLeave={() => { isHoveredRef.current = false; }}
+      onClick={() => { if (onFocusCard) onFocusCard(palette.id); }}
       id={cardId}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
         isHighlighted ? "border-sky-400 dark:border-sky-500 ring-2 ring-sky-300/70 dark:ring-sky-600/60 shadow-md" :
