@@ -5675,3 +5675,25 @@
 - **PaletteCard: single-click focus → keyboard shortcuts active** — currently card shortcuts require hover; a click anywhere on the card should make it keyboard-focusable (the `isFocused` ring pattern already exists)
 - **Color Browser: selected-swatch sticky summary bar** — when a swatch is clicked in the Color Browser, pin a compact bar at the bottom of the viewport showing the hex, a copy button, and how many palettes contain it
 - **ExportModal section count badges** — small count pills on Download / Copy section headers
+
+---
+
+## 2026-08-19 — Session 202: PaletteCard Single-Click Focus
+
+### What was done
+- **Single-click focuses PaletteCard for keyboard shortcuts** — clicking anywhere on a palette card (card body, swatch strip, metadata row, notes area) now sets it as the keyboard-focused card, immediately activating all keyboard shortcuts (D to duplicate, E to export, H for harmony, etc.). Previously shortcuts required hovering the card with the mouse first.
+  - Added `onFocusCard?: (id: string) => void` prop to `PaletteCardProps`
+  - Card's outer `motion.div` wrapper gains an `onClick` that calls `onFocusCard(palette.id)` — buttons with `e.stopPropagation()` are unaffected; swatch strip clicks bubble through and simultaneously copy hex + activate card focus (a bonus: copy a swatch and keyboard shortcuts are immediately ready)
+  - Both pinned and unpinned `PaletteCard` renders in `page.tsx` now pass `onFocusCard={setFocusedCardId}`
+- Escape still clears focus; J/K navigation still works as before; the visual focus ring (violet outline) appears on click just as it did on keyboard navigation.
+- Build: clean Next.js production build, TypeScript zero errors, 11 routes passing.
+
+### Key decisions
+- **Card-level onClick, not per-element** — individual interactive elements (buttons, inputs) already stop propagation, so they won't trigger `onFocusCard`. Passive content areas (swatch strip, mood badge, tag row, notes preview, similar-palettes row) don't stop propagation, so clicks there bubble up cleanly. No per-element changes needed.
+- **No "click outside to blur"** — Escape already clears focus and is discoverable via the KeyboardHelpModal. Adding a document-level click listener to blur would require careful exclusion of card clicks (race condition with the card-level onClick), adding complexity for marginal UX gain.
+- **Swatch click = copy + focus** — this is a bonus, not a conflict. Clicking a swatch gives you the hex (primary intent) and also readies keyboard shortcuts on that card (free bonus). There's no scenario where the two actions conflict.
+
+### What's next (Session 203)
+- **Color Browser: selected-swatch sticky summary bar** — when a swatch is clicked in the Color Browser, pin a compact bar at the bottom of the viewport showing the hex, a copy button, and how many palettes contain it
+- **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
+- **Keyboard shortcut `P`** to open a palette's Export modal from the library view
