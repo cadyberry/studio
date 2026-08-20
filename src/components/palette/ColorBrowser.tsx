@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Copy, Check, Layers, Search, X, ArrowUpDown, ArrowUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Copy, Check, Layers, Search, X, ArrowUpDown, ArrowUp, ArrowRight } from "lucide-react";
 import { getContrastColor, hexToRgb, rgbToHsl, hslToHex } from "@/lib/utils";
 
 type SwatchDensity = "sm" | "md" | "lg";
@@ -132,8 +132,24 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   const [searchQuery, setSearchQuery] = useState("");
   const [density, setDensity] = useState<SwatchDensity>("sm");
   const [bandSort, setBandSort] = useState<"hue" | "lightness">("hue");
+  const [selectedSwatchHex, setSelectedSwatchHex] = useState<string | null>(null);
+  const [copiedBarHex, setCopiedBarHex] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const selectedEntry = useMemo(
+    () => (selectedSwatchHex ? colorIndex.find((c) => c.hex === selectedSwatchHex) ?? null : null),
+    [selectedSwatchHex, colorIndex]
+  );
+
+  // Dismiss sticky bar on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedSwatchHex) setSelectedSwatchHex(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedSwatchHex]);
 
   // Persist density preference
   useEffect(() => {
@@ -329,6 +345,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   const renderSwatch = (c: ColorEntry) => {
     const isHovered = hoveredHex === c.hex;
     const isCopied = copiedHex === c.hex;
+    const isSelected = selectedSwatchHex === c.hex;
     const fg = getContrastColor(c.hex);
     const count = c.paletteIds.length;
     const hexFontSize = density === "lg" ? "11px" : density === "md" ? "9px" : "8px";
@@ -336,6 +353,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
     const badgeFontSize = density === "lg" ? "10px" : density === "md" ? "9px" : "8px";
     const matchingPaletteNames = paletteMatchMap.get(c.hex);
     const matchRingColor = matchingPaletteNames ? getPaletteMatchRingColor(c.hex) : null;
+    const selRingColor = fg === "#fafaf8" ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.75)";
 
     // Build properly aligned (id, palette) pairs; tag each with collection membership
     const paletteEntries = c.paletteIds
@@ -371,7 +389,9 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
         title={`${c.hex.toUpperCase()} — in ${count} palette${count !== 1 ? "s" : ""}: ${c.paletteNames.slice(0, 3).join(", ")}${count > 3 ? ` +${count - 3} more` : ""}`}
         style={{
           backgroundColor: c.hex,
-          ...(matchRingColor
+          ...(isSelected
+            ? { boxShadow: `0 0 0 2.5px ${selRingColor}, 0 0 0 5px ${selRingColor.replace("0.9", "0.22").replace("0.75", "0.18")}`, zIndex: 20 }
+            : matchRingColor
             ? {
                 boxShadow: isHovered
                   ? `0 0 0 2px ${matchRingColor}, 0 4px 10px rgba(0,0,0,0.18)`
@@ -382,7 +402,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
         className="relative rounded-[var(--radius-sm)] cursor-pointer transition-transform hover:scale-105 hover:z-10 hover:shadow-md"
         onMouseEnter={() => setHoveredHex(c.hex)}
         onMouseLeave={() => setHoveredHex(null)}
-        onClick={() => onSelectColor(c.hex)}
+        onClick={() => setSelectedSwatchHex((prev) => (prev === c.hex ? null : c.hex))}
       >
         {/* square aspect ratio */}
         <div className="w-full" style={{ paddingBottom: "100%" }} />
@@ -538,6 +558,7 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
   }
 
   return (
+    <>
     <div className="flex gap-1">
       {/* Main content */}
       <div id="color-browser-top" className="flex-1 min-w-0 space-y-6">
@@ -780,5 +801,87 @@ export default function ColorBrowser({ colorIndex, onSelectColor, paletteLookup,
         </div>
       )}
     </div>
+
+    {/* Sticky swatch summary bar — appears at the bottom of the viewport when a swatch is clicked */}
+    <AnimatePresence>
+      {selectedEntry && (() => {
+        const paletteCount = selectedEntry.paletteIds.length;
+        return (
+          <motion.div
+            key="swatch-sticky-bar"
+            initial={{ y: 72, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 72, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 440, damping: 34 }}
+            className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          >
+            <div
+              className="mb-4 mx-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-[var(--radius)] shadow-2xl border border-[var(--border)] bg-[var(--surface)] pointer-events-auto"
+              style={{ maxWidth: 520, width: "100%" }}
+            >
+              {/* Color preview square */}
+              <div
+                className="w-8 h-8 rounded-[var(--radius-sm)] flex-shrink-0 shadow-sm ring-1 ring-[var(--border)]"
+                style={{ backgroundColor: selectedEntry.hex }}
+              />
+
+              {/* Hex */}
+              <span className="font-mono text-[13px] font-bold text-[var(--foreground)] tracking-widest select-all flex-shrink-0">
+                {selectedEntry.hex.toUpperCase()}
+              </span>
+
+              {/* Copy hex */}
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedEntry.hex);
+                  setCopiedBarHex(true);
+                  setTimeout(() => setCopiedBarHex(false), 800);
+                }}
+                title="Copy hex to clipboard"
+                className="flex items-center gap-1 text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
+              >
+                {copiedBarHex
+                  ? <><Check size={13} className="text-emerald-500" /><span className="text-emerald-500 font-medium">Copied</span></>
+                  : <Copy size={13} />
+                }
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-[var(--border)] flex-shrink-0" />
+
+              {/* Palette count */}
+              <span className="flex items-center gap-1 text-[11px] text-[var(--muted)] flex-shrink-0">
+                <Layers size={11} />
+                {paletteCount} palette{paletteCount !== 1 ? "s" : ""}
+              </span>
+
+              {/* Find palettes button */}
+              <button
+                onClick={() => {
+                  onSelectColor(selectedEntry.hex);
+                  setSelectedSwatchHex(null);
+                }}
+                title="Switch to palettes view filtered to this color"
+                className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-[var(--accent)] hover:opacity-75 transition-opacity flex-shrink-0"
+              >
+                Find palettes
+                <ArrowRight size={11} />
+              </button>
+
+              {/* Dismiss */}
+              <button
+                onClick={() => setSelectedSwatchHex(null)}
+                title="Dismiss (Esc)"
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors flex-shrink-0 ml-1"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </motion.div>
+        );
+      })()}
+    </AnimatePresence>
+    </>
   );
 }
