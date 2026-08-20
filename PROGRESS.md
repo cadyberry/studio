@@ -5697,3 +5697,33 @@
 - **Color Browser: selected-swatch sticky summary bar** — when a swatch is clicked in the Color Browser, pin a compact bar at the bottom of the viewport showing the hex, a copy button, and how many palettes contain it
 - **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
 - **Keyboard shortcut `P`** to open a palette's Export modal from the library view
+
+---
+
+## 2026-08-20 — Session 203: Color Browser Sticky Swatch Summary Bar
+
+### What was done
+- **Color Browser sticky swatch summary bar** — clicking any swatch in the Color Browser now springs a compact fixed bar up from the bottom of the viewport, showing:
+  - A color preview square (with a subtle ring border)
+  - The hex code in bold monospace, `select-all` so Cmd+A selects it
+  - One-click copy button with an emerald "Copied" confirmation flash
+  - Palette count (e.g. "7 palettes") with a Layers icon
+  - "Find palettes →" button that calls `onSelectColor()` — switches to the palettes view filtered to that color (the pre-existing behavior, now surfaced more deliberately as a labeled action)
+  - Dismiss button (X) plus Escape key support
+- **Selected swatch visual ring** — the clicked swatch gains a double-ring highlight (white or dark, contrasted against the swatch color) so it stays identifiable while the bar is open.
+- **Toggle behavior** — clicking the same swatch again dismisses the bar. Clicking a different swatch updates the bar to that color without dismissing.
+- **Spring animation** — the bar uses `AnimatePresence` + a Framer Motion spring (stiffness 440, damping 34) for a satisfying slide-in/slide-out. Rendered as a `fixed` overlay so it floats above all page content without affecting layout.
+- **Escape key** — a `useEffect` listens for Escape when the bar is visible and clears `selectedSwatchHex`.
+- Build: clean Next.js build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Click to select (not immediately navigate)** — the prior behavior was click → immediately jump to palettes view. The new behavior is click → bar appears → user chooses "Find palettes" if they want to navigate. This makes the Color Browser more browsable: you can inspect a color's metadata without losing your place in the browser.
+- **Fixed overlay, not scroll-anchored** — the bar needs to be reachable regardless of scroll position. `position: fixed` with `pointer-events: none` on the wrapper (and `pointer-events: auto` on the inner pill) means it never blocks swatch clicks.
+- **`select-all` on hex span** — users often want to paste the hex elsewhere. Making the span `select-all` on click lets them grab it without knowing to type Cmd+A.
+- **Emerald "Copied" flash** — consistent with the rest of the app's copy confirmation pattern; emerald reads as "success" without requiring an explicit color variable.
+- **No barFg usage** — removed a `barFg` variable that was declared but unneeded; bar uses the app's CSS variable token system for its own text colors.
+
+### What's next (Session 204)
+- **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
+- **Keyboard shortcut `P`** to open a palette's Export modal from the library view
+- **Palette card "recently viewed" ring** — faint highlight ring on palettes opened in the current session, reset on reload
