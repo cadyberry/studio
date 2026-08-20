@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock, Glasses } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, getPaletteHueFamily, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteHueFamily, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { exportAsCvdStrip } from "@/lib/exportPalette";
 import { usePaletteStore } from "@/store/paletteStore";
 import type { ColorSwatch, Palette } from "@/types";
@@ -124,6 +124,12 @@ function getRecommendedVariant(colors: { hex: string }[]): { variant: PaletteVar
   if (avgL > 52)  return { variant: "darker",    reason: "Mid-light tones — try the darker contrast" };
   return { variant: "lighter", reason: "Mid-dark tones — try the lighter contrast" };
 }
+
+const HUE_FAMILY_STYLES: Record<PaletteHueFamily, { dot: string; bg: string; text: string; label: string }> = {
+  warm:    { dot: "bg-amber-400",                                        bg: "bg-amber-50 dark:bg-amber-900/20",  text: "text-amber-600 dark:text-amber-400", label: "warm"    },
+  cool:    { dot: "bg-sky-400",                                          bg: "bg-sky-50 dark:bg-sky-900/20",      text: "text-sky-600 dark:text-sky-400",     label: "cool"    },
+  neutral: { dot: "bg-zinc-300 dark:bg-zinc-600",                       bg: "bg-zinc-50 dark:bg-zinc-800/40",    text: "text-zinc-400 dark:text-zinc-500",   label: "neutral" },
+};
 
 const MOOD_STYLES: Record<PaletteMood, { bg: string; text: string; label: string }> = {
   vivid:  { bg: "bg-rose-100 dark:bg-rose-900/30",   text: "text-rose-600 dark:text-rose-400",   label: "vivid"  },
@@ -565,6 +571,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
 
   const mood = getPaletteMood(palette.colors);
   const moodStyle = MOOD_STYLES[mood];
+  const hueFamily = getPaletteHueFamily(palette.colors);
+  const hueFamilyStyle = HUE_FAMILY_STYLES[hueFamily];
   const freshness = getFreshness(palette.createdAt, palette.updatedAt);
   const aging = getAging(palette.createdAt, palette.updatedAt);
   const harmonyColors = getHarmonyColors(palette.colors);
@@ -1530,6 +1538,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               title={`Dominant mood: ${moodStyle.label}`}
             >
               {moodStyle.label}
+            </span>
+            {/* Hue family dot — warm (amber) / cool (sky) / neutral (zinc) */}
+            <span
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${hueFamilyStyle.bg} ${hueFamilyStyle.text}`}
+              title={`Hue family: ${hueFamilyStyle.label} · ${hueFamily === "warm" ? "reds/oranges/yellows dominate" : hueFamily === "cool" ? "teals/blues/purples dominate" : "mixed or achromatic"}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hueFamilyStyle.dot}`} />
+              {hueFamilyStyle.label}
             </span>
             {gamutClippedCount > 0 && (
               <span

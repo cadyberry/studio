@@ -329,6 +329,29 @@ export function getPaletteMood(colors: { hex: string }[]): PaletteMood {
   return "dreamy";
 }
 
+export type PaletteHueFamily = "warm" | "cool" | "neutral";
+
+// Classifies a palette by dominant hue angle on the color wheel.
+// Ignores near-achromatic colors (low saturation, near-black, near-white).
+// Warm = reds/oranges/yellows (0–60° + 330–360°), Cool = teals/blues/purples (150–300°).
+// A palette needs ≥50% of its chromatic colors in one zone to be classified there.
+export function getPaletteHueFamily(colors: { hex: string }[]): PaletteHueFamily {
+  let warm = 0, cool = 0, total = 0;
+  for (const c of colors) {
+    const rgb = hexToRgb(c.hex);
+    if (!rgb) continue;
+    const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    if (s < 15 || l < 5 || l > 95) continue; // skip near-achromatic
+    total++;
+    if (h <= 60 || h >= 330) warm++;
+    else if (h >= 150 && h <= 300) cool++;
+  }
+  if (total === 0) return "neutral";
+  if (warm / total >= 0.5) return "warm";
+  if (cool / total >= 0.5) return "cool";
+  return "neutral";
+}
+
 // ─── Harmony Color Derivation ────────────────────────────────────────────────
 
 export interface HarmonyColor {

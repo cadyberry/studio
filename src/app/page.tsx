@@ -22,7 +22,7 @@ import CompareModal from "@/components/palette/CompareModal";
 import ColorBrowser from "@/components/palette/ColorBrowser";
 import DuplicatesModal from "@/components/palette/DuplicatesModal";
 import GeneratePaletteModal from "@/components/palette/GeneratePaletteModal";
-import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
+import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, getPaletteHueFamily, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
 import { batchExportZip } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
 
@@ -276,23 +276,6 @@ export default function Home() {
       return rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
     });
     return ls.every((l) => l > 20 && l < 80);
-  }, []);
-  // Classifies a palette by dominant hue temperature: warm (reds/oranges/yellows), cool (blues/purples/teals), or neutral.
-  const getPaletteHueFamily = useCallback((p: Palette): "warm" | "cool" | "neutral" => {
-    let warm = 0, cool = 0, total = 0;
-    for (const c of p.colors) {
-      const rgb = hexToRgb(c.hex);
-      if (!rgb) continue;
-      const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      if (s < 15 || l < 5 || l > 95) continue; // skip near-achromatic
-      total++;
-      if (h <= 60 || h >= 330) warm++;       // reds, oranges, yellows, warm pinks
-      else if (h >= 150 && h <= 300) cool++; // teals, blues, purples
-    }
-    if (total === 0) return "neutral";
-    if (warm / total >= 0.5) return "warm";
-    if (cool / total >= 0.5) return "cool";
-    return "neutral";
   }, []);
   const [hoveredCollectionId, setHoveredCollectionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -816,12 +799,12 @@ export default function Home() {
   // Hue family counts (for pill display) + filter
   const hueFamilyCounts = new Map<"warm" | "cool" | "neutral", number>();
   for (const p of flatToneFiltered) {
-    const fam = getPaletteHueFamily(p);
+    const fam = getPaletteHueFamily(p.colors);
     hueFamilyCounts.set(fam, (hueFamilyCounts.get(fam) ?? 0) + 1);
   }
   const hueFamilyFiltered = activeHueFamily === null
     ? flatToneFiltered
-    : flatToneFiltered.filter((p) => getPaletteHueFamily(p) === activeHueFamily);
+    : flatToneFiltered.filter((p) => getPaletteHueFamily(p.colors) === activeHueFamily);
   const hueFiltered = activeHueSector === null
     ? hueFamilyFiltered
     : hueFamilyFiltered.filter((p) =>
