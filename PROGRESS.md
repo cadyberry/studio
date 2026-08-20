@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-20 — Session 203: Hue Family Indicator on Palette Cards
+
+### What was done
+- **Hue family indicator on every palette card** — a small colored dot + text label now appears in the badge row of each palette card (between the mood badge and the gamut/print-risk badges): amber `warm`, sky `cool`, or zinc `neutral`. The indicator reflects the same classification logic as the toolbar filter chips from Session 202, so the filter result is always legible even when the hue family filter is off — you can see at a glance why a palette was included or excluded.
+- **`getPaletteHueFamily` promoted to `utils.ts`** — the function was previously an inline `useCallback` in `page.tsx`. It now lives in `utils.ts` as a proper exported utility (`getPaletteHueFamily(colors: { hex: string }[]): PaletteHueFamily`) with `PaletteHueFamily` as a typed alias. Both `page.tsx` and `PaletteCard.tsx` import from the same source — no duplicate logic.
+- **`HUE_FAMILY_STYLES` constant in PaletteCard** — maps each hue family to a dot color, badge background, text color, and label string, following the same pattern as `MOOD_STYLES`.
+- **Tooltip** — distinguishes hue family from mood: "Hue family: warm · reds/oranges/yellows dominate", etc.
+- Build: zero TypeScript errors, 9 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Always show the indicator (not just warm/cool)** — showing neutral too means the badge row is visually consistent across all cards; a zinc dot signals "this is a mixed or achromatic palette" which is itself informative. Suppressing neutral would create absent-badge ambiguity ("no dot = unclassified or neutral?").
+- **Placed after mood badge** — mood and hue family are complementary axes (mood = what does this palette feel like? hue family = what color wheel zone does it live in?). Sitting adjacent makes the relationship legible; placing it after avoids splitting the existing L-range / locked / mood group.
+- **Shared function in `utils.ts`** — keeping filter logic in one place means the toolbar filter chips and the card badges always agree on classification; they can't drift.
+
+### What's next (Session 204)
+- **"Similar Palettes" ΔE label on hover** — the similar palette strip already shows swatch strips and name tooltips; add a small ΔE value badge on hover so the color distance is quantified at a glance
+- **Export: copy as Figma-ready JSON (clipboard)** — `exportAsFigmaTokensJson` downloads a file; add a quick-copy clipboard variant so designers can paste directly without a file download round-trip
+- **Similar palette ΔE badges directly on the card** — show the raw ΔE number on each similar-palette strip tile as a persistent small badge, not just on hover
+
+---
+
 ## 2026-08-19 — Session 202: Warm / Cool / Neutral Hue Family Filter Chips
 
 ### What was done
