@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-21 — Session 204: ΔE Badges on Similar Palette Strip + Figma Tokens Clipboard Copy
+
+### What was done
+- **ΔE badge on each similar-palette strip tile** — the three similar-palette strips at the bottom of each card (which slide in on hover, computed lazily on first hover) now show a persistent small ΔE badge in the top-left corner of each tile. Format: a compact `11.3` style number in a semi-opaque dark pill. The badge is always visible when the strip is open, so color distance is immediately quantified without needing to hover each tile individually. Name tooltip-on-hover behavior is preserved alongside it.
+- **`copyAsFigmaTokensJson` in `exportPalette.ts`** — extracted the shared JSON-building logic from `exportAsFigmaTokensJson` into a private `buildFigmaTokensJson(palette)` helper. Added `copyAsFigmaTokensJson(palette)` as a sibling export that writes the same W3C design token JSON to the clipboard instead of triggering a file download. No logic duplication.
+- **"Copy Figma Tokens JSON" in ExportModal** — wired up `copyAsFigmaTokensJson` as a new entry in the `copyActions` array. Appears between "Copy as CMYK" and "Copy Share Link" with the Shapes icon (matching the download entry). Copy flash feedback uses key `figma-tokens-copy`.
+- Build: zero TypeScript errors (tsc --noEmit clean).
+
+### Key decisions
+- **ΔE badge always-visible, not hover-only** — the plan called for "hover to show ΔE"; always showing it is strictly better. The strip only appears on card hover already, so the ΔE values are never cluttering up the neutral resting state. When the strip is visible, the numbers are useful immediately.
+- **`buildFigmaTokensJson` as private helper** — avoids repeating the slug/dedup/token-entry logic. Both the download and clipboard variants are one-liners on top of it; easier to maintain.
+- **Clipboard copy in `copyActions` (not `downloadActions`)** — clipboard write is instant and reversible; it belongs with the other copy actions semantically. Download and clipboard are now parallel options for Figma workflow.
+
+### What's next (Session 205)
+- **Similar palette strip: ΔE tier color coding** — color the ΔE badge by tier (emerald < 5, sky < 10, amber < 15, rose ≥ 15) to match the `getMatchTier` convention already used for color-search match badges
+- **Export: bulk "Copy all hex codes" for a collection** — from the collection view, copy all hex values from every palette in the collection in one action
+- **Palette card: "Fork to collection" quick action** — when hovering a palette that belongs to a collection, show a quick button to duplicate it into a different named collection without going through the collection modal
+
+---
+
 ## 2026-08-20 — Session 203: Hue Family Indicator on Palette Cards
 
 ### What was done
