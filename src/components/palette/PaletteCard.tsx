@@ -51,11 +51,11 @@ function getNoteExcerpt(
   };
 }
 
-function getMatchTier(dE: number): { bg: string; text: string; label: string } {
-  if (dE < 5)  return { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400", label: "excellent" };
-  if (dE < 10) return { bg: "bg-sky-100 dark:bg-sky-900/30",     text: "text-sky-700 dark:text-sky-400",     label: "good"      };
-  if (dE < 15) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400", label: "fair"      };
-  return               { bg: "bg-rose-100 dark:bg-rose-900/30",  text: "text-rose-700 dark:text-rose-400",  label: "loose"     };
+function getMatchTier(dE: number): { bg: string; text: string; label: string; overlay: string } {
+  if (dE < 5)  return { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400", label: "excellent", overlay: "bg-emerald-600/80 text-white" };
+  if (dE < 10) return { bg: "bg-sky-100 dark:bg-sky-900/30",     text: "text-sky-700 dark:text-sky-400",     label: "good",      overlay: "bg-sky-500/80 text-white"     };
+  if (dE < 15) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400", label: "fair",      overlay: "bg-amber-500/80 text-white"   };
+  return               { bg: "bg-rose-100 dark:bg-rose-900/30",  text: "text-rose-700 dark:text-rose-400",  label: "loose",     overlay: "bg-rose-600/80 text-white"    };
 }
 
 function getFreshness(createdAt: string, updatedAt: string): { label: string; bgClass: string; textClass: string; opacity: number; isEdited: boolean } | null {
@@ -1457,34 +1457,37 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 similar
               </span>
             </div>
-            {similarPalettes.map(({ palette: sim, avgDe }) => (
-              <button
-                key={sim.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const el = document.getElementById(sim.id);
-                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                }}
-                title={`${sim.name} · ΔE ${avgDe.toFixed(1)} — click to jump`}
-                className="group/sim flex-1 flex overflow-hidden border-r border-[var(--border)] last:border-r-0 relative hover:opacity-80 transition-opacity"
-              >
-                {sim.colors.map((c, ci) => (
-                  <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
-                ))}
-                {/* ΔE badge — always visible in top-left, compact */}
-                <div className="absolute top-1 left-1 pointer-events-none">
-                  <span className="text-[7px] font-bold leading-none px-[3px] py-[1px] rounded-[2px] bg-black/45 text-white/90 tabular-nums">
-                    {avgDe.toFixed(1)}
-                  </span>
-                </div>
-                {/* Name tooltip — slides in on hover at bottom */}
-                <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity pointer-events-none">
-                  <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
-                    {sim.name}
-                  </span>
-                </div>
-              </button>
-            ))}
+            {similarPalettes.map(({ palette: sim, avgDe }) => {
+              const simTier = getMatchTier(avgDe);
+              return (
+                <button
+                  key={sim.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const el = document.getElementById(sim.id);
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  title={`${sim.name} · ΔE ${avgDe.toFixed(1)} (${simTier.label}) — click to jump`}
+                  className="group/sim flex-1 flex overflow-hidden border-r border-[var(--border)] last:border-r-0 relative hover:opacity-80 transition-opacity"
+                >
+                  {sim.colors.map((c, ci) => (
+                    <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
+                  ))}
+                  {/* ΔE badge — tier-colored: emerald < 5, sky < 10, amber < 15, rose ≥ 15 */}
+                  <div className="absolute top-1 left-1 pointer-events-none">
+                    <span className={`text-[7px] font-bold leading-none px-[3px] py-[1px] rounded-[2px] tabular-nums ${simTier.overlay}`}>
+                      {avgDe.toFixed(1)}
+                    </span>
+                  </div>
+                  {/* Name tooltip — slides in on hover at bottom */}
+                  <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity pointer-events-none">
+                    <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
+                      {sim.name}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
