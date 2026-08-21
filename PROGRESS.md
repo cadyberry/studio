@@ -5768,3 +5768,27 @@
 - **ExportModal section count badges** — small count pills on Download / Copy section headers (e.g. "12 formats")
 - **Keyboard shortcut `P`** to open a palette's Export modal from the library view
 - **Palette card "recently viewed" ring** — faint highlight ring on palettes opened in the current session, reset on reload
+
+---
+
+## 2026-08-21 — Session 205: ΔE Tier Color Coding on Similar Palette Strip
+
+### What was done
+- **ΔE badge tier coloring on similar-palette strip** — the compact ΔE number badges on each tile in the similar-palette hover strip are now color-coded by proximity tier, matching the `getMatchTier` convention already used in color-search and compare badges:
+  - Emerald pill: ΔE < 5 (excellent — virtually identical palette)
+  - Sky pill: ΔE < 10 (good — clearly related palette)
+  - Amber pill: ΔE < 15 (fair — loosely related)
+  - Rose pill: ΔE ≥ 15 (loose — distant match)
+- **`overlay` property on `getMatchTier`** — added an `overlay` CSS class string to the return type for use on top of colored swatch backgrounds: semi-opaque colored pill + white text, which stays legible against any underlying swatch color regardless of its lightness. All existing callers (color-search badges, compare modal) use `.bg`/`.text` unchanged.
+- **Tooltip tier label** — the `title` attribute on each similar strip tile now reads e.g. `Coastal Fog · ΔE 7.2 (good) — click to jump`, surfacing the label for users who hover before clicking.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript clean.
+
+### Key decisions
+- **Semi-opaque colored pill, not dark-pill override** — the previous `bg-black/45 text-white/90` was legible but conveyed no information. The tier-colored overlay (`bg-emerald-600/80`, etc.) communicates the same legibility while adding semantic meaning at a glance.
+- **80% opacity for emerald/rose, 80% for sky/amber** — at 80% opacity, the underlying swatch color bleeds through just enough to stay anchored in context, while the tile's proximity tier is immediately scannable across the strip.
+- **`overlay` as a separate property, not a new overload** — `getMatchTier` was already used in 3 places with `.bg`/`.text`. Adding `overlay` as a fourth property keeps the interface flat and backward-compatible; no existing callers need changes.
+
+### What's next (Session 206)
+- **Export: bulk "Copy all hex codes" for a collection** — from the collection view, copy every hex value from every palette in the collection in one action (formatted as a newline-separated or comma-separated list, with palette name headers)
+- **Palette card: "Fork to collection" quick action** — when hovering a palette that belongs to a collection, show a quick button to duplicate it into a different named collection without going through the collection modal
+- **Keyboard shortcut `P`** — open a palette's Export modal directly from the library view with a single keypress
