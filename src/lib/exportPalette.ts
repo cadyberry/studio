@@ -1189,7 +1189,7 @@ export function exportAsLightStoryMoodBoard(palette: Palette, story: ColorStory)
 
 // W3C Design Token Community Group format — compatible with the Figma Tokens plugin (Token Studio).
 // Structure: { "<palette-slug>": { "$description"?: "...", "<swatch-key>": { "$type": "color", "$value": "#hex", "$description"?: "..." } } }
-export function exportAsFigmaTokensJson(palette: Palette): void {
+function buildFigmaTokensJson(palette: Palette): string {
   const paletteSlug =
     palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
 
@@ -1215,7 +1215,13 @@ export function exportAsFigmaTokensJson(palette: Palette): void {
     group[key] = entry;
   });
 
-  const json = JSON.stringify({ [paletteSlug]: group }, null, 2);
+  return JSON.stringify({ [paletteSlug]: group }, null, 2);
+}
+
+export function exportAsFigmaTokensJson(palette: Palette): void {
+  const paletteSlug =
+    palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
+  const json = buildFigmaTokensJson(palette);
   const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -1223,6 +1229,10 @@ export function exportAsFigmaTokensJson(palette: Palette): void {
   link.href = url;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+export function copyAsFigmaTokensJson(palette: Palette): void {
+  navigator.clipboard.writeText(buildFigmaTokensJson(palette));
 }
 
 // Procreate .swatches — ZIP archive containing Swatches.json with HSB values.

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2 } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, copyAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint, simulateColorBlind, type ColorBlindType } from "@/lib/utils";
@@ -219,6 +219,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "C/M/Y/K channel values — for print specs",
       icon: Printer,
       onClick: () => { copyCmykList(palette); flash("cmyk"); },
+    },
+    {
+      key: "figma-tokens-copy",
+      label: "Copy Figma Tokens JSON",
+      desc: "W3C token format — paste directly into Figma Tokens plugin without a file",
+      icon: Shapes,
+      onClick: () => { copyAsFigmaTokensJson(palette); flash("figma-tokens-copy"); },
     },
     {
       key: "share",

@@ -1457,7 +1457,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                 similar
               </span>
             </div>
-            {similarPalettes.map(({ palette: sim }) => (
+            {similarPalettes.map(({ palette: sim, avgDe }) => (
               <button
                 key={sim.id}
                 onClick={(e) => {
@@ -1465,12 +1465,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   const el = document.getElementById(sim.id);
                   if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
                 }}
-                title={`${sim.name} — click to jump`}
+                title={`${sim.name} · ΔE ${avgDe.toFixed(1)} — click to jump`}
                 className="group/sim flex-1 flex overflow-hidden border-r border-[var(--border)] last:border-r-0 relative hover:opacity-80 transition-opacity"
               >
                 {sim.colors.map((c, ci) => (
                   <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
                 ))}
+                {/* ΔE badge — always visible in top-left, compact */}
+                <div className="absolute top-1 left-1 pointer-events-none">
+                  <span className="text-[7px] font-bold leading-none px-[3px] py-[1px] rounded-[2px] bg-black/45 text-white/90 tabular-nums">
+                    {avgDe.toFixed(1)}
+                  </span>
+                </div>
+                {/* Name tooltip — slides in on hover at bottom */}
                 <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity pointer-events-none">
                   <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
                     {sim.name}
