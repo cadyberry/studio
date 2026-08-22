@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-22 — Session 205: Bulk "Copy All Hex" for Active Collection
+
+### What was done
+- **"Copy hex" button in Library header** — when a collection is active, a small "Copy hex" button (clipboard icon + label) appears inline next to the collection name and count in the Library header. Clicking it copies all swatch hex values from every palette in the collection to the clipboard, grouped by palette name as `# Name` comment headers. Clean, structured output: designers can paste directly into Figma, CSS files, or a notes doc and immediately see which palette each color belongs to.
+- **Flash feedback** — the button transitions to "Copied" with a check icon for 1.8s, then resets. No toast needed; the inline feedback is sufficient at that button size.
+- **Empty guard** — button is hidden when `activeCollectionCount === 0` (collection exists but has no palettes assigned), avoiding a confusing empty clipboard write.
+- **Imports** — added `Copy` and `Check` from lucide-react to page.tsx (both were absent; `CopyPlus` was already there).
+- Build: zero TypeScript errors, 9 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Library header placement, not toolbar active-filter chip** — the collection chip in the active-filter row is dismissible and designed for "remove this filter"; a copy action there would be semantically odd. The library header already shows the collection name and count as a "you are browsing X" indicator — the copy button sits naturally next to that identity row.
+- **Grouped by palette name** — outputting `# Palette Name` before each group's hex values means the clipboard contents are scannable and self-documenting. A flat list of hex codes with no structure would force the user to cross-reference mentally.
+- **All swatches, not unique** — duplicates across palettes are intentional (a color used in multiple palettes in a collection represents a brand anchor). Deduping would silently drop that signal. The designer can dedup themselves if needed.
+
+### What's next (Session 206)
+- **Palette card: "Fork to collection" quick action** — when hovering a palette that belongs to a collection, show a quick button to duplicate it into a different named collection without going through the collection modal
+- **Similar palette strip: name tooltip improvement** — show the name tooltip on a slight delay (200ms) so it doesn't flicker on fast hover-throughs
+- **Export modal: copy as flat hex list** — a single "Copy all" action in the export modal that puts all swatches in one copy, without grouping headers
+
+---
+
 ## 2026-08-21 — Session 204: ΔE Badges on Similar Palette Strip + Figma Tokens Clipboard Copy
 
 ### What was done
