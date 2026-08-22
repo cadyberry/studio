@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-08-22 — Session 206: Fork-to-Collection Quick Action
+
+### What was done
+- **"Fork to collection" quick action on palette cards** — when hovering a palette card that belongs to a collection, a new `GitFork` button appears in the action row (next to the folder/assign button). Clicking it opens a compact popover listing all other available collections. Selecting one duplicates the palette into that collection with the name `<Original> · <Target Collection>` and shows a 1.8s check-mark flash on the button as feedback.
+- **Conditions-guarded** — the button and popover only mount when: (1) the palette has a `collectionId`, and (2) at least one other collection exists. Zero visual noise for palettes with no collection or single-collection libraries.
+- **Click-outside dismiss** — a `pointerdown` document listener closes the popover when the user clicks anywhere outside the fork container.
+- **No modal required** — the duplicate is created immediately with sensible defaults (same colors, tags, notes; new name; new collectionId). The full collection modal is still accessible via the FolderOpen button for complex moves.
+- Build: zero TypeScript errors, 9 routes, clean Next.js 16.2.6 build.
+
+### Key decisions
+- **Duplicate, not move** — "fork" preserves the original in its collection. Moving would break the user's mental model of that collection's contents without confirmation. Duplicate is safe and reversible.
+- **Name as `<Original> · <Target>`** — makes the fork immediately identifiable in the target collection without burying it under a generic "(copy)" suffix. The `·` separator is consistent with existing fork patterns (Harmony forks use `· Harmony`, variant forks use `· Lighter`, etc.).
+- **Popover over modal** — the existing `onAssignCollection` handler already covers the full modal flow. The fork popover is intentionally minimal: just a list of names. If the user wants to rename or set tags after forking, they can do that on the newly created card.
+- **Collections from store inside PaletteCard** — the component already selects `deletePalette`, `updatePalette`, `addPalette` from the store; adding `collections` is a zero-cost selector addition and avoids threading a new prop through all call sites in page.tsx.
+
+### What's next (Session 207)
+- **Similar palette strip: name tooltip delay (200ms)** — prevent tooltip flicker on fast hover-throughs across the three similar-palette strip tiles
+- **Export modal: copy as flat hex list** — "Copy all" in the export modal puts all swatches in one flat clipboard write (no `# palette name` group headers)
+- **ΔE badge tier color-coding on similar strip** — color the ΔE badge by tier (emerald/sky/amber/rose) matching `getMatchTier` convention
+
+---
+
 ## 2026-08-22 — Session 205: Bulk "Copy All Hex" for Active Collection
 
 ### What was done
