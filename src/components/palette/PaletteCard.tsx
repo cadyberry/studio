@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock, Glasses } from "lucide-react";
+import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock, Glasses, GitFork } from "lucide-react";
 import { getContrastColor, deltaE, getPaletteMood, getPaletteHueFamily, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteHueFamily, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { exportAsCvdStrip } from "@/lib/exportPalette";
 import { usePaletteStore } from "@/store/paletteStore";
@@ -183,10 +183,11 @@ type NamingState =
   | { type: "error" };
 
 export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast, isFocused = false, keyboardFocusActive = false, onFocusCard }: PaletteCardProps) {
-  const { deletePalette, updatePalette, addPalette } = usePaletteStore((s) => ({
+  const { deletePalette, updatePalette, addPalette, collections } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
     addPalette: s.addPalette,
+    collections: s.collections,
   }));
   const cachedColorStory = usePaletteStore((s) => s.colorStoryCache[palette.id] ?? null);
   const setColorStoryCache = usePaletteStore((s) => s.setColorStoryCache);
@@ -237,6 +238,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [colorStoryError, setColorStoryError] = useState(false);
   const [colorStoryPromptCopied, setColorStoryPromptCopied] = useState(false);
   const [cvdExported, setCvdExported] = useState(false);
+  const [forkCollectionOpen, setForkCollectionOpen] = useState(false);
+  const [forkedToCollectionName, setForkedToCollectionName] = useState<string | null>(null);
+  const forkContainerRef = useRef<HTMLDivElement>(null);
   const [similarPalettes, setSimilarPalettes] = useState<{ palette: Palette; avgDe: number }[]>([]);
   const similarComputedRef = useRef(false);
 
@@ -274,6 +278,18 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   isFocusedRef.current = isFocused;
   const keyboardFocusActiveRef = useRef(keyboardFocusActive);
   keyboardFocusActiveRef.current = keyboardFocusActive;
+
+  // Close fork popover on outside click
+  useEffect(() => {
+    if (!forkCollectionOpen) return;
+    const handler = (e: PointerEvent) => {
+      if (forkContainerRef.current && !forkContainerRef.current.contains(e.target as Node)) {
+        setForkCollectionOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [forkCollectionOpen]);
 
   // Keyboard shortcuts — active when this card is hovered, no text field is focused
   useEffect(() => {
@@ -696,6 +712,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     });
     setForkedHarmony(true);
     setTimeout(() => setForkedHarmony(false), 1500);
+  };
+
+  const handleForkToCollection = (targetCollectionId: string, targetCollectionName: string) => {
+    addPalette({
+      name: `${palette.name} · ${targetCollectionName}`,
+      colors: [...palette.colors],
+      tags: [...(palette.tags ?? [])],
+      collectionId: targetCollectionId,
+      notes: palette.notes,
+    });
+    setForkedToCollectionName(targetCollectionName);
+    setForkCollectionOpen(false);
+    setTimeout(() => setForkedToCollectionName(null), 1800);
   };
 
   const openVariations = () => {
@@ -2010,6 +2039,53 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           <Button variant="ghost" size="sm" onClick={() => onAssignCollection(palette)} title="Add to collection">
             <FolderOpen size={13} />
           </Button>
+          {/* Fork to collection — only shown when palette is in a collection and other collections exist */}
+          {palette.collectionId && (() => {
+            const otherCollections = collections.filter((c) => c.id !== palette.collectionId);
+            if (otherCollections.length === 0) return null;
+            return (
+              <div className="relative" ref={forkContainerRef}>
+                <Button
+                  variant={forkCollectionOpen ? "outline" : "ghost"}
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); setForkCollectionOpen((v) => !v); }}
+                  title="Fork to another collection — duplicate this palette into a different collection"
+                  className={forkedToCollectionName ? "text-emerald-600 border-emerald-300 dark:text-emerald-400 dark:border-emerald-700" : ""}
+                >
+                  {forkedToCollectionName ? <Check size={13} /> : <GitFork size={13} />}
+                </Button>
+                <AnimatePresence>
+                  {forkCollectionOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-lg overflow-hidden min-w-[140px] max-w-[200px]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-2 py-1.5 border-b border-[var(--border)]">
+                        <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)]">Fork to collection</p>
+                      </div>
+                      <div className="py-0.5 max-h-40 overflow-y-auto">
+                        {otherCollections.map((col) => (
+                          <button
+                            key={col.id}
+                            onClick={() => handleForkToCollection(col.id, col.name)}
+                            className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--fg)] hover:bg-[var(--surface-2)] transition-colors flex items-center gap-1.5"
+                            title={`Duplicate into "${col.name}"`}
+                          >
+                            <FolderOpen size={9} className="text-[var(--muted)] shrink-0" />
+                            <span className="truncate">{col.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })()}
           <Button
             variant={tagging ? "outline" : "ghost"}
             size="sm"
