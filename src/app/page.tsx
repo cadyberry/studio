@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type JSX, type ElementType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle, Glasses } from "lucide-react";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle, Glasses, Copy, Check } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -281,6 +281,7 @@ export default function Home() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkExporting, setBulkExporting] = useState(false);
+  const [collectionHexCopied, setCollectionHexCopied] = useState(false);
   const [collectionExporting, setCollectionExporting] = useState<string | null>(null);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
@@ -852,6 +853,20 @@ export default function Home() {
       });
 
   const coverPaletteId = activeCollectionInfo?.coverPaletteId ?? null;
+
+  const handleCopyCollectionHex = useCallback(() => {
+    if (activeCollection === "all") return;
+    const collectionPalettes = palettes.filter((p) => p.collectionId === activeCollection);
+    if (collectionPalettes.length === 0) return;
+    const lines = collectionPalettes.flatMap((p) => [
+      `# ${p.name}`,
+      ...p.colors.map((c) => c.hex.toUpperCase()),
+    ]);
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCollectionHexCopied(true);
+      setTimeout(() => setCollectionHexCopied(false), 1800);
+    });
+  }, [activeCollection, palettes]);
 
   const frozenSelectedCount = selectedIds.size > 0
     ? [...selectedIds].filter(id => palettes.find(p => p.id === id)?.frozen).length
@@ -1659,9 +1674,25 @@ export default function Home() {
                 Library
               </h2>
               {activeCollectionInfo && (
-                <span className="text-[11px] text-[var(--muted)] font-normal normal-case tracking-normal shrink-0 truncate max-w-[140px]">
-                  — {activeCollectionInfo.name} · {activeCollectionCount}
-                </span>
+                <>
+                  <span className="text-[11px] text-[var(--muted)] font-normal normal-case tracking-normal shrink-0 truncate max-w-[140px]">
+                    — {activeCollectionInfo.name} · {activeCollectionCount}
+                  </span>
+                  {activeCollectionCount > 0 && (
+                    <button
+                      onClick={handleCopyCollectionHex}
+                      title={collectionHexCopied ? "Copied!" : "Copy all hex codes in this collection"}
+                      className={`shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                        collectionHexCopied
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      {collectionHexCopied ? <Check size={10} /> : <Copy size={10} />}
+                      <span>{collectionHexCopied ? "Copied" : "Copy hex"}</span>
+                    </button>
+                  )}
+                </>
               )}
               {/* View mode toggle */}
               {palettes.length > 0 && (
