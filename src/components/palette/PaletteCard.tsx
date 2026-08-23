@@ -1508,8 +1508,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                       {avgDe.toFixed(1)}
                     </span>
                   </div>
-                  {/* Name tooltip — slides in on hover at bottom */}
-                  <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity pointer-events-none">
+                  {/* Name tooltip — slides in on hover at bottom, delayed 200ms to prevent flicker on fast hover-throughs */}
+                  <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity delay-200 pointer-events-none">
                     <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
                       {sim.name}
                     </span>

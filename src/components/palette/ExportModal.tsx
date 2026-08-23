@@ -27,6 +27,7 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [gradOrder, setGradOrder] = useState<GradientOrder>("palette");
   const [gradCopied, setGradCopied] = useState(false);
   const [svgCopied, setSvgCopied] = useState(false);
+  const [activeMockup, setActiveMockup] = useState<"canvas" | "mug" | "tote">("canvas");
 
   const updatePalette = usePaletteStore((s) => s.updatePalette);
   const cachedStory = usePaletteStore((s) => s.colorStoryCache[palette?.id ?? ""] ?? null);
@@ -586,6 +587,162 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                       {svgCopied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </div>
                   </button>
+                </div>
+              );
+            })()}
+
+            {/* Product Preview */}
+            {(() => {
+              const colors = palette.colors;
+              if (colors.length === 0) return null;
+
+              // Evenly distribute palette colors across an index range
+              const band = (arr: typeof colors, count: number) =>
+                Array.from({ length: count }, (_, i) => arr[Math.round((i / (count - 1 || 1)) * (arr.length - 1))]);
+
+              // Canvas mockup: framed art print with vertical color bands
+              const CanvasMockup = () => {
+                const artColors = colors;
+                const n = artColors.length;
+                const AW = 140; const AH = 100;
+                const artX = 20; const artY = 20;
+                return (
+                  <svg viewBox="0 0 180 140" width="180" height="140" aria-label="Canvas print mockup">
+                    {/* Wood frame */}
+                    <rect x="0" y="0" width="180" height="140" rx="5" fill="#8B6914" />
+                    <rect x="1.5" y="1.5" width="177" height="137" rx="4" fill="#7A5C12" opacity="0.6" />
+                    {/* Mat */}
+                    <rect x="8" y="8" width="164" height="124" rx="3" fill="#FAF9F6" />
+                    {/* Art area — vertical color bands */}
+                    <clipPath id={`canvasClip-${palette.id}`}>
+                      <rect x={artX} y={artY} width={AW} height={AH} rx="1" />
+                    </clipPath>
+                    <g clipPath={`url(#canvasClip-${palette.id})`}>
+                      {artColors.map((c, i) => (
+                        <rect key={i} x={artX + (i * AW / n)} y={artY} width={AW / n} height={AH} fill={c.hex} />
+                      ))}
+                    </g>
+                    {/* Art area border */}
+                    <rect x={artX} y={artY} width={AW} height={AH} rx="1" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="1" />
+                    {/* Frame corner accents */}
+                    <rect x="0" y="0" width="180" height="140" rx="5" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
+                  </svg>
+                );
+              };
+
+              // Mug mockup: cylindrical mug with palette color body + design stripes
+              const MugMockup = () => {
+                const bodyColor = colors[0].hex;
+                const stripeColors = colors.length > 1 ? band(colors.slice(1), Math.min(colors.length - 1, 4)) : [];
+                const stripeH = stripeColors.length > 0 ? 36 / stripeColors.length : 0;
+                return (
+                  <svg viewBox="0 0 180 140" width="180" height="140" aria-label="Mug mockup">
+                    {/* Shadow */}
+                    <ellipse cx="84" cy="130" rx="52" ry="5" fill="rgba(0,0,0,0.08)" />
+                    {/* Mug body */}
+                    <rect x="24" y="20" width="100" height="98" rx="6" fill={bodyColor} />
+                    {/* Rim (top ellipse) */}
+                    <ellipse cx="74" cy="20" rx="50" ry="9" fill={bodyColor} />
+                    <ellipse cx="74" cy="20" rx="50" ry="9" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="1" />
+                    {/* Inner rim dark */}
+                    <ellipse cx="74" cy="20" rx="40" ry="6" fill="rgba(0,0,0,0.12)" />
+                    {/* Design stripe band */}
+                    {stripeColors.length > 0 && (
+                      <>
+                        <clipPath id={`mugClip-${palette.id}`}>
+                          <rect x="24" y="54" width="100" height="36" />
+                        </clipPath>
+                        <g clipPath={`url(#mugClip-${palette.id})`}>
+                          {stripeColors.map((c, i) => (
+                            <rect key={i} x="24" y={54 + i * stripeH} width="100" height={stripeH} fill={c.hex} opacity="0.9" />
+                          ))}
+                        </g>
+                        <rect x="24" y="54" width="100" height="36" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="0.5" />
+                      </>
+                    )}
+                    {/* Body highlight */}
+                    <rect x="28" y="24" width="18" height="88" rx="3" fill="rgba(255,255,255,0.15)" />
+                    {/* Handle */}
+                    <path d="M124 42 Q158 42 158 69 Q158 96 124 96" fill="none" stroke={bodyColor} strokeWidth="14" strokeLinecap="round" />
+                    <path d="M124 42 Q158 42 158 69 Q158 96 124 96" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="1" strokeLinecap="round" />
+                    {/* Bottom rim */}
+                    <ellipse cx="74" cy="118" rx="50" ry="8" fill="rgba(0,0,0,0.08)" />
+                  </svg>
+                );
+              };
+
+              // Tote bag mockup: fabric bag with palette-color vertical stripes as print
+              const ToteMockup = () => {
+                const bagColor = colors[0].hex;
+                const printColors = colors.length > 1 ? band(colors, Math.min(colors.length, 5)) : [colors[0]];
+                const stripeW = 100 / printColors.length;
+                return (
+                  <svg viewBox="0 0 180 160" width="180" height="160" aria-label="Tote bag mockup">
+                    {/* Shadow */}
+                    <ellipse cx="90" cy="152" rx="55" ry="5" fill="rgba(0,0,0,0.08)" />
+                    {/* Bag body */}
+                    <path d="M30 48 Q28 148 88 148 Q148 148 150 48 Z" fill={bagColor} />
+                    {/* Palette print design — centered vertical stripes */}
+                    <clipPath id={`toteClip-${palette.id}`}>
+                      <path d="M56 80 Q55 138 88 138 Q121 138 124 80 Z" />
+                    </clipPath>
+                    <g clipPath={`url(#toteClip-${palette.id})`}>
+                      {printColors.map((c, i) => (
+                        <rect key={i} x={56 + i * stripeW} y="70" width={stripeW} height="80" fill={c.hex} opacity="0.9" />
+                      ))}
+                    </g>
+                    {/* Bag top edge */}
+                    <path d="M30 48 Q88 56 150 48" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="1.5" />
+                    {/* Bag outline */}
+                    <path d="M30 48 Q28 148 88 148 Q148 148 150 48" fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth="1.5" />
+                    {/* Left handle */}
+                    <path d="M52 48 Q52 14 72 14 Q92 14 92 48" fill="none" stroke={bagColor} strokeWidth="10" strokeLinecap="round" />
+                    <path d="M52 48 Q52 14 72 14 Q92 14 92 48" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="1.2" strokeLinecap="round" />
+                    {/* Right handle */}
+                    <path d="M88 48 Q88 14 108 14 Q128 14 128 48" fill="none" stroke={bagColor} strokeWidth="10" strokeLinecap="round" />
+                    <path d="M88 48 Q88 14 108 14 Q128 14 128 48" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                );
+              };
+
+              return (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">Products</span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+
+                  {/* Product type tabs */}
+                  <div className="flex items-center gap-1 mb-3">
+                    {([
+                      { key: "canvas", label: "Canvas Print" },
+                      { key: "mug",    label: "Mug" },
+                      { key: "tote",   label: "Tote Bag" },
+                    ] as const).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setActiveMockup(key)}
+                        className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors ${
+                          activeMockup === key
+                            ? "bg-[var(--accent)] text-white"
+                            : "bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Mockup preview */}
+                  <div className="flex items-center justify-center py-2 bg-[var(--surface-2)] rounded-[var(--radius-sm)] border border-[var(--border)]">
+                    {activeMockup === "canvas" && <CanvasMockup />}
+                    {activeMockup === "mug" && <MugMockup />}
+                    {activeMockup === "tote" && <ToteMockup />}
+                  </div>
+
+                  <p className="text-[9px] text-[var(--muted)] mt-1.5 leading-relaxed text-center">
+                    Simplified preview — first color sets the product base, remaining colors form the design
+                  </p>
                 </div>
               );
             })()}
