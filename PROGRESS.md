@@ -2,6 +2,25 @@
 
 ---
 
+## 2026-08-23 — Session 208: Flat Hex List Copy + Mockup PNG Download
+
+### What was done
+- **"Copy Hex List (one per line)"** — new copy action in ExportModal (below the existing comma-separated hex copy). Uses a new `copyFlatHexList` util in `exportPalette.ts` that joins hex values with `\n`. Ideal for pasting into Notion, spreadsheets, and AI image prompts where a comma list creates noise.
+- **"Download Mockup PNG"** — button below the Products section mockup preview. When clicked: serializes the active SVG mockup (`canvas`, `mug`, or `tote`) via `XMLSerializer`, loads it into a canvas at 8× scale (e.g. 1440×1120 for canvas/mug, 1440×1280 for tote), then triggers a PNG download named `{palette-slug}-{product}-mockup.png`. `mockupContainerRef` wires the container, `mockupDownloading` drives a spinner while the async pipeline runs.
+- Build: zero TypeScript errors, clean Next.js 16.2.6 production build, 11 routes.
+
+### Key decisions
+- **8× SVG scale** — the SVG viewBox is 180×140 (or 180×160), so 8× produces ~1440×1120 — large enough for reference use without arbitrary 1200×900 cropping that would distort aspect ratio.
+- **`useCallback` for download** — `downloadMockupPng` depends on `palette` and `activeMockup`; wrapping it avoids stale closure bugs when the user switches mockup type before clicking download.
+- **`List` icon for flat hex** — distinguishes it visually from the `Copy` icon used for the comma-separated copy; the List glyph communicates "one item per row" naturally.
+
+### What's next (Session 209)
+- **Similar strip: Shift+click tile opens that palette's ExportModal** — lets Cady export a similar palette without closing the current one and finding it in the library
+- **ΔE badge tier color-coding on similar strip** — color the ΔE badge by tier (emerald < 5, sky < 10, amber < 15, rose ≥ 15)
+- **Palette card: keyboard shortcut hint in hover overlay** — show `E` to export, `R` to rename, etc. as tiny badges when hovering, surfacing the keyboard API Cady may not know about
+
+---
+
 ## 2026-08-23 — Session 207: Product Mockup Preview in ExportModal
 
 ### What was done
