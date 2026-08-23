@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-08-23 — Session 207: Product Mockup Preview in ExportModal
+
+### What was done
+- **Product mockup preview section in ExportModal** — a new "Products" section (between Gradient and Vision) shows the palette applied to three POD product types: Canvas Print, Mug, and Tote Bag. All mockups are pure inline SVG — no external assets.
+  - **Canvas Print**: a wood-framed art print with vertical palette-color bands filling the artwork area inside a simulated mat and frame shadow
+  - **Mug**: cylindrical mug with the first palette color as the body; remaining colors form a horizontal stripe "design band" across the middle; rim ellipse, handle, and body highlight are all rendered in the base color with alpha overlays
+  - **Tote Bag**: fabric bag body in the first palette color; vertical palette-color stripes fill the print area on the bag front; handles and body outline rendered cleanly
+  - Three tab buttons (Canvas Print / Mug / Tote Bag) let Cady flip between product types instantly
+  - Section header and description text follow the existing section design pattern
+- **Similar palette strip: name tooltip 200ms delay** — added Tailwind `delay-200` to the tooltip opacity transition on each similar-palette strip tile, eliminating flicker when hovering quickly across the three tiles.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Inline SVG, not external image** — no file fetching, no CORS issues, instant render. The mockups are abstract/illustrative rather than photorealistic — the goal is "does this palette feel right on a product?" not "exactly how will it print."
+- **First color = product base, remaining = design** — this mirrors how POD actually works: you pick a garment/product color (background), then apply your art/design on top. The stripe-based design is neutral enough to work with any palette and shows all colors without clashing.
+- **Distinct clipPath IDs per palette** — each mockup uses `palette.id` in its `clipPath` id (`canvasClip-${palette.id}`, etc.) to prevent SVG rendering conflicts when multiple ExportModals could theoretically render simultaneously (e.g., during Framer Motion exit animations).
+- **No download button yet** — the preview is informational. A "Download product mockup" button (canvas-to-PNG) can be added in a future session; the SVG structure makes that straightforward.
+
+### What's next (Session 208)
+- **Product mockup PNG download** — render the selected mockup to canvas and download as PNG (1200×900 @2× for print quality)
+- **"Copy as flat hex list" in ExportModal** — one hex per line (newline-separated), more paste-friendly than the current comma-separated format for Notion, spreadsheets, and prompt inputs
+- **Similar strip: interaction to open ExportModal of similar palette** — Shift+click a similar-palette strip tile opens that palette's export modal directly
+
+---
+
 ## 2026-08-22 — Session 206: Fork-to-Collection Quick Action
 
 ### What was done
