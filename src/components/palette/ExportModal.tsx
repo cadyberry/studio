@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2 } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, copyAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
+import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2, List } from "lucide-react";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyFlatHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, copyAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint, simulateColorBlind, type ColorBlindType } from "@/lib/utils";
@@ -28,6 +28,48 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const [gradCopied, setGradCopied] = useState(false);
   const [svgCopied, setSvgCopied] = useState(false);
   const [activeMockup, setActiveMockup] = useState<"canvas" | "mug" | "tote">("canvas");
+  const [mockupDownloading, setMockupDownloading] = useState(false);
+  const mockupContainerRef = useRef<HTMLDivElement>(null);
+
+  const downloadMockupPng = useCallback(async () => {
+    if (!palette || !mockupContainerRef.current) return;
+    const svgEl = mockupContainerRef.current.querySelector("svg");
+    if (!svgEl) return;
+    setMockupDownloading(true);
+    try {
+      const viewBox = svgEl.getAttribute("viewBox")?.split(" ").map(Number) ?? [0, 0, 180, 140];
+      const [, , vbW, vbH] = viewBox;
+      const SCALE = 8;
+      const W = vbW * SCALE;
+      const H = vbH * SCALE;
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(svgEl);
+      const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = url;
+      });
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.fillStyle = "#f5f5f0";
+      ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, 0, 0, W, H);
+      const link = document.createElement("a");
+      const slug = palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
+      link.download = `${slug}-${activeMockup}-mockup.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setMockupDownloading(false);
+    }
+  }, [palette, activeMockup]);
 
   const updatePalette = usePaletteStore((s) => s.updatePalette);
   const cachedStory = usePaletteStore((s) => s.colorStoryCache[palette?.id ?? ""] ?? null);
@@ -192,6 +234,13 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
       desc: "Comma-separated list of all hex values",
       icon: Copy,
       onClick: () => { copyHexList(palette); flash("hex"); },
+    },
+    {
+      key: "hex-flat",
+      label: "Copy Hex List (one per line)",
+      desc: "Newline-separated — paste into Notion, spreadsheets, or AI prompts",
+      icon: List,
+      onClick: () => { copyFlatHexList(palette); flash("hex-flat"); },
     },
     {
       key: "css",
@@ -734,13 +783,30 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                   </div>
 
                   {/* Mockup preview */}
-                  <div className="flex items-center justify-center py-2 bg-[var(--surface-2)] rounded-[var(--radius-sm)] border border-[var(--border)]">
+                  <div ref={mockupContainerRef} className="flex items-center justify-center py-2 bg-[var(--surface-2)] rounded-[var(--radius-sm)] border border-[var(--border)]">
                     {activeMockup === "canvas" && <CanvasMockup />}
                     {activeMockup === "mug" && <MugMockup />}
                     {activeMockup === "tote" && <ToteMockup />}
                   </div>
 
-                  <p className="text-[9px] text-[var(--muted)] mt-1.5 leading-relaxed text-center">
+                  {/* Download mockup PNG */}
+                  <button
+                    onClick={() => { void downloadMockupPng(); }}
+                    disabled={mockupDownloading}
+                    className="mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="w-8 h-8 rounded-md bg-[var(--surface-2)] flex items-center justify-center flex-shrink-0 group-hover:bg-[var(--border)] transition-colors">
+                      {mockupDownloading
+                        ? <Loader2 size={15} className="text-[var(--muted)] animate-spin" />
+                        : <Download size={15} className="text-[var(--muted)]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">Download Mockup PNG</div>
+                      <div className="text-xs text-[var(--muted)] truncate">High-res PNG of the {activeMockup} preview — for quick reference</div>
+                    </div>
+                  </button>
+
+                  <p className="text-[9px] text-[var(--muted)] mt-1 leading-relaxed text-center">
                     Simplified preview — first color sets the product base, remaining colors form the design
                   </p>
                 </div>

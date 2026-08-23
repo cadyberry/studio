@@ -328,6 +328,11 @@ export function copyHexList(palette: Palette): void {
   navigator.clipboard.writeText(hexes);
 }
 
+export function copyFlatHexList(palette: Palette): void {
+  const hexes = palette.colors.map((c) => c.hex).join("\n");
+  navigator.clipboard.writeText(hexes);
+}
+
 export function copyTailwindConfig(palette: Palette): void {
   const slugPalette = palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
 
