@@ -4,6 +4,13 @@ export interface ColorSwatch {
   note?: string;
 }
 
+export interface PaletteSnapshot {
+  id: string;
+  savedAt: string;
+  name: string;
+  colors: ColorSwatch[];
+}
+
 export interface Palette {
   id: string;
   name: string;
@@ -15,6 +22,7 @@ export interface Palette {
   pinned?: boolean;
   notes?: string;
   coverUrl?: string;
+  snapshots?: PaletteSnapshot[];
   createdAt: string;
   updatedAt: string;
 }

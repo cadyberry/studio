@@ -6,7 +6,7 @@ import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Ta
 import { getContrastColor, deltaE, getPaletteMood, getPaletteHueFamily, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteHueFamily, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { exportAsCvdStrip } from "@/lib/exportPalette";
 import { usePaletteStore } from "@/store/paletteStore";
-import type { ColorSwatch, Palette } from "@/types";
+import type { ColorSwatch, Palette, PaletteSnapshot } from "@/types";
 import Button from "@/components/ui/Button";
 
 type KeyedColor = ColorSwatch & { _key: string };
@@ -183,11 +183,14 @@ type NamingState =
   | { type: "error" };
 
 export default function PaletteCard({ palette, onExport, onRename, onAssignCollection, onHarmony, onEditSwatch, onShadeScale, onDuplicate, isSelected = false, selectionActive = false, onSelect, colorMatchHex, isCover = false, onSetCover, className, searchQuery, collectionName, collectionSize, onJumpToCollection, onClearCollection, onFilterByTag, activeTags, onCompare, isCompareAnchor = false, compareActive = false, onPin, isPinned = false, isHighlighted = false, cardId, onContrast, isFocused = false, keyboardFocusActive = false, onFocusCard }: PaletteCardProps) {
-  const { deletePalette, updatePalette, addPalette, collections } = usePaletteStore((s) => ({
+  const { deletePalette, updatePalette, addPalette, collections, saveSnapshot, restoreSnapshot, deleteSnapshot } = usePaletteStore((s) => ({
     deletePalette: s.deletePalette,
     updatePalette: s.updatePalette,
     addPalette: s.addPalette,
     collections: s.collections,
+    saveSnapshot: s.saveSnapshot,
+    restoreSnapshot: s.restoreSnapshot,
+    deleteSnapshot: s.deleteSnapshot,
   }));
   const cachedColorStory = usePaletteStore((s) => s.colorStoryCache[palette.id] ?? null);
   const setColorStoryCache = usePaletteStore((s) => s.setColorStoryCache);
@@ -241,6 +244,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [forkCollectionOpen, setForkCollectionOpen] = useState(false);
   const [forkedToCollectionName, setForkedToCollectionName] = useState<string | null>(null);
   const forkContainerRef = useRef<HTMLDivElement>(null);
+  const [snapshotOpen, setSnapshotOpen] = useState(false);
+  const [snapshotSaved, setSnapshotSaved] = useState(false);
+  const [snapshotRestored, setSnapshotRestored] = useState(false);
+  const snapshotContainerRef = useRef<HTMLDivElement>(null);
   const [similarPalettes, setSimilarPalettes] = useState<{ palette: Palette; avgDe: number }[]>([]);
   const similarComputedRef = useRef(false);
 
@@ -290,6 +297,18 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     document.addEventListener("pointerdown", handler);
     return () => document.removeEventListener("pointerdown", handler);
   }, [forkCollectionOpen]);
+
+  // Close snapshot popover on outside click
+  useEffect(() => {
+    if (!snapshotOpen) return;
+    const handler = (e: PointerEvent) => {
+      if (snapshotContainerRef.current && !snapshotContainerRef.current.contains(e.target as Node)) {
+        setSnapshotOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [snapshotOpen]);
 
   // Keyboard shortcuts — active when this card is hovered, no text field is focused
   useEffect(() => {
@@ -725,6 +744,20 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
     setForkedToCollectionName(targetCollectionName);
     setForkCollectionOpen(false);
     setTimeout(() => setForkedToCollectionName(null), 1800);
+  };
+
+  const handleSaveSnapshot = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    saveSnapshot(palette.id);
+    setSnapshotSaved(true);
+    setTimeout(() => setSnapshotSaved(false), 1600);
+  };
+
+  const handleRestoreSnapshot = (snapshotId: string) => {
+    restoreSnapshot(palette.id, snapshotId);
+    setSnapshotOpen(false);
+    setSnapshotRestored(true);
+    setTimeout(() => setSnapshotRestored(false), 1600);
   };
 
   const openVariations = () => {
@@ -2233,6 +2266,126 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             >
               <Crown size={13} className={isCover ? "fill-amber-400 text-amber-500" : ""} />
             </Button>
+          )}
+          {/* Snapshot history — save + restore color checkpoints */}
+          {!palette.frozen && (
+            <div className="relative" ref={snapshotContainerRef}>
+              <Button
+                variant={snapshotOpen ? "outline" : "ghost"}
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); setSnapshotOpen((v) => !v); }}
+                title={
+                  snapshotRestored
+                    ? "Colors restored!"
+                    : (palette.snapshots?.length ?? 0) > 0
+                    ? `Version history · ${palette.snapshots!.length} snapshot${palette.snapshots!.length === 1 ? "" : "s"} saved`
+                    : "Version history — save color checkpoints to restore later"
+                }
+                className={
+                  snapshotRestored
+                    ? "text-emerald-600 border-emerald-300 dark:text-emerald-400 dark:border-emerald-700"
+                    : snapshotOpen
+                    ? ""
+                    : ""
+                }
+              >
+                <span className="relative inline-flex items-center justify-center">
+                  {snapshotRestored ? (
+                    <Check size={13} className="text-emerald-500" />
+                  ) : (
+                    <Clock size={13} />
+                  )}
+                  {!snapshotRestored && (palette.snapshots?.length ?? 0) > 0 && (
+                    <span className="absolute -top-[3px] -right-[4px] w-[6px] h-[6px] rounded-full bg-violet-500 border border-[var(--surface)]" />
+                  )}
+                </span>
+              </Button>
+              <AnimatePresence>
+                {snapshotOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                    transition={{ duration: 0.12 }}
+                    className="absolute bottom-full mb-1.5 right-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-lg overflow-hidden w-56"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header + save button */}
+                    <div className="px-2.5 py-2 border-b border-[var(--border)] flex items-center justify-between gap-2">
+                      <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)]">Version History</p>
+                      <button
+                        onClick={handleSaveSnapshot}
+                        className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-[3px] transition-colors ${
+                          snapshotSaved
+                            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+                            : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
+                        }`}
+                        title="Save a snapshot of the current colors"
+                        disabled={(palette.snapshots?.length ?? 0) >= 5}
+                      >
+                        {snapshotSaved ? <Check size={10} /> : <Plus size={10} />}
+                        <span>{snapshotSaved ? "Saved" : "Save snapshot"}</span>
+                      </button>
+                    </div>
+                    {/* Snapshot list */}
+                    {(palette.snapshots?.length ?? 0) === 0 ? (
+                      <div className="px-3 py-4 text-center">
+                        <p className="text-[10px] text-[var(--muted)]">No snapshots yet</p>
+                        <p className="text-[9px] text-[var(--muted)]/70 mt-0.5">Save a checkpoint before editing</p>
+                      </div>
+                    ) : (
+                      <div className="py-0.5 max-h-52 overflow-y-auto">
+                        {(palette.snapshots as PaletteSnapshot[]).map((snap, idx) => (
+                          <div
+                            key={snap.id}
+                            className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-[var(--surface-2)] group/snap transition-colors"
+                          >
+                            {/* Mini swatch strip */}
+                            <div className="flex rounded-[2px] overflow-hidden shrink-0 w-14 h-5 border border-[var(--border)]">
+                              {snap.colors.map((c, ci) => (
+                                <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
+                              ))}
+                            </div>
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-medium truncate leading-tight" title={snap.name}>
+                                {snap.name}
+                              </p>
+                              <p className="text-[9px] text-[var(--muted)] leading-tight">
+                                {idx === 0 ? "Latest · " : ""}{formatRelativeAge(snap.savedAt)}
+                              </p>
+                            </div>
+                            {/* Actions */}
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover/snap:opacity-100 transition-opacity shrink-0">
+                              <button
+                                onClick={() => handleRestoreSnapshot(snap.id)}
+                                className="p-1 rounded hover:bg-[var(--accent)]/10 text-[var(--accent)] transition-colors"
+                                title="Restore these colors"
+                              >
+                                <RefreshCw size={9} />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteSnapshot(palette.id, snap.id); }}
+                                className="p-1 rounded hover:bg-rose-100 dark:hover:bg-rose-900/20 text-[var(--muted)] hover:text-rose-500 transition-colors"
+                                title="Delete this snapshot"
+                              >
+                                <X size={9} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Cap note */}
+                    {(palette.snapshots?.length ?? 0) >= 5 && (
+                      <div className="px-2.5 py-1.5 border-t border-[var(--border)]">
+                        <p className="text-[9px] text-[var(--muted)]">5-snapshot limit reached — delete one to save a new checkpoint</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           )}
           <Button
             variant={palette.frozen ? "outline" : "ghost"}

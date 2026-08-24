@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Palette, Collection, CohesionRecord, ColorStory } from "@/types";
+import type { Palette, Collection, CohesionRecord, ColorStory, PaletteSnapshot } from "@/types";
 import { generateId } from "@/lib/utils";
 
 interface PaletteStore {
@@ -30,6 +30,10 @@ interface PaletteStore {
   deleteCollection: (id: string) => void;
 
   getPalettesByCollection: (collectionId: string | null) => Palette[];
+
+  saveSnapshot: (paletteId: string) => PaletteSnapshot | null;
+  restoreSnapshot: (paletteId: string, snapshotId: string) => void;
+  deleteSnapshot: (paletteId: string, snapshotId: string) => void;
 }
 
 export const usePaletteStore = create<PaletteStore>()(
@@ -161,6 +165,51 @@ export const usePaletteStore = create<PaletteStore>()(
         const { palettes } = get();
         if (collectionId === null) return palettes.filter((p) => !p.collectionId);
         return palettes.filter((p) => p.collectionId === collectionId);
+      },
+
+      saveSnapshot: (paletteId) => {
+        const palette = get().palettes.find((p) => p.id === paletteId);
+        if (!palette || palette.frozen) return null;
+        const snapshot: PaletteSnapshot = {
+          id: generateId(),
+          savedAt: new Date().toISOString(),
+          name: palette.name,
+          colors: palette.colors.map((c) => ({ ...c })),
+        };
+        set((s) => ({
+          palettes: s.palettes.map((p) => {
+            if (p.id !== paletteId) return p;
+            const existing = p.snapshots ?? [];
+            // Keep at most 5; drop oldest (last in array)
+            const updated = [snapshot, ...existing].slice(0, 5);
+            return { ...p, snapshots: updated };
+          }),
+        }));
+        return snapshot;
+      },
+
+      restoreSnapshot: (paletteId, snapshotId) => {
+        const palette = get().palettes.find((p) => p.id === paletteId);
+        if (!palette || palette.frozen) return;
+        const snapshot = (palette.snapshots ?? []).find((s) => s.id === snapshotId);
+        if (!snapshot) return;
+        set((s) => ({
+          palettes: s.palettes.map((p) =>
+            p.id === paletteId
+              ? { ...p, colors: snapshot.colors.map((c) => ({ ...c })), updatedAt: new Date().toISOString() }
+              : p
+          ),
+        }));
+      },
+
+      deleteSnapshot: (paletteId, snapshotId) => {
+        set((s) => ({
+          palettes: s.palettes.map((p) =>
+            p.id === paletteId
+              ? { ...p, snapshots: (p.snapshots ?? []).filter((sn) => sn.id !== snapshotId) }
+              : p
+          ),
+        }));
       },
     }),
     {
