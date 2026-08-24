@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-08-24 — Session 210: Palette Version History (Snapshots)
+
+### What was done
+- **Palette snapshot / restore** — a `Clock` button in the PaletteCard action row opens a compact popover for saving and restoring color checkpoints. Up to 5 snapshots per palette; oldest is dropped when a sixth would be saved.
+  - **Save snapshot** — a "Save snapshot" button in the popover header creates a checkpoint of the current palette colors and name, with an ISO timestamp. A violet dot on the Clock icon appears when snapshots exist.
+  - **Snapshot list** — each saved snapshot shows a mini 56×20px swatch strip for instant visual identification, the palette name at save time, and a relative-age label ("3 min ago", "yesterday"). On row hover, Restore (↺) and Delete (×) buttons fade in.
+  - **Restore** — clicking Restore updates the palette's colors to the snapshot values, closes the popover, and flashes a green check on the Clock button for 1.6s. Palette name is NOT overwritten — only colors are restored, so any edits to the name after the snapshot are preserved.
+  - **Delete** — per-snapshot delete removes only that snapshot, leaving others intact.
+  - **Emerald save flash** — clicking "Save snapshot" shows a 1.6s check-plus confirmation before the button resets. A cap note appears when 5 snapshots are saved: "5-snapshot limit reached — delete one to save a new checkpoint."
+  - **Frozen guard** — the entire snapshot button is hidden on frozen palettes; no snapshot mechanism can circumvent a lock.
+- **`PaletteSnapshot` type** — added to `src/types/index.ts` with `id`, `savedAt`, `name`, and `colors` fields. `Palette` now has an optional `snapshots?: PaletteSnapshot[]` array.
+- **Store methods** — `saveSnapshot`, `restoreSnapshot`, `deleteSnapshot` added to `paletteStore.ts`, all operating on the palette's `snapshots[]` array. `saveSnapshot` creates a new snapshot and prepends it (most recent first), slicing to 5.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Restore colors only, not name** — restoring a name alongside colors could surprise the user who deliberately renamed the palette since the snapshot. Restoring colors is the primary "undo my edits" action; name is a label, not part of the creative color work.
+- **5-snapshot cap** — more than 5 snapshots would clutter the popover and grow localStorage. 5 is enough for "before major edit 1, 2, 3…" workflow without storage pressure.
+- **Prepend (newest first) order** — the most recent checkpoint is the one most likely to be restored. Showing newest at top avoids scrolling past irrelevant history.
+- **Violet dot indicator, not count badge** — a count badge at 13px button scale is too small to read; a presence dot is sufficient signal that "you have history here." The tooltip reads the count explicitly on hover.
+- **Hidden on frozen, not disabled** — a disabled button at that size is hard to visually parse and adds noise. Hidden is cleaner: frozen palettes can't be color-edited, so snapshots have no meaning there.
+
+### What's next (Session 211)
+- **Snapshot keyboard shortcut** — add a keyboard shortcut (e.g. `Shift+S`) on a hovered/focused card to save a snapshot without opening the popover
+- **Export modal: "Open in similar" link** — in ExportModal footer, a link that finds the 3 most similar palettes and highlights the first one in the grid
+- **Harmony row: click to jump to originating swatch** — clicking a derived harmony color in the HarmonyModal swatch strip scrolls to and highlights the swatch in the main palette drag strip
+
+---
+
 ## 2026-08-24 — Session 209: Similar Strip Shift+Export + Keyboard Shortcut Hints
 
 ### What was done
