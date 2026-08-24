@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-08-24 — Session 209: Similar Strip Shift+Export + Keyboard Shortcut Hints
+
+### What was done
+- **Similar strip Shift+click to export** — Shift+clicking any of the three similar-palette strip tiles (the color-matched palettes that slide in on card hover) now opens that palette's ExportModal directly. Regular click still scrolls to the palette. A small `⇧E` badge appears in the top-right corner of each tile on hover (200ms delay, matching the name tooltip delay) to surface the gesture. The tile title attribute also updated to "click to jump · Shift+click to export".
+- **Keyboard shortcut hints row** — a compact hints strip (`[E] export · [H] harmony · [D] dup · [C] compare · [L] lock · [?] all`) fades in below the palette name/tags area on card hover. Each entry uses a styled `<kbd>` badge matching the system's existing keyboard shortcut peek overlay aesthetic. The row is `pointer-events-none` and purely informational — it surfaces the already-existing keyboard API to users who may not know the shortcuts exist. The `?` entry directs users to hold `?` to see all shortcuts.
+- Build: zero TypeScript errors, clean Next.js production build, 11 routes.
+
+### Key decisions
+- **Shift+click (not a separate button)** — the similar strip tiles are already very compact (h-10, 3 tiles sharing full width). A separate "export" button per tile would crowd the strip or require expanding its height. Shift+click is a power-user gesture that doesn't add visual noise for users who just want to jump.
+- **`⇧E` badge on tile hover, not card hover** — showing it on the card hover would mean all three tiles always show the hint when hovering the card (visual noise). Showing it on individual tile hover (with 200ms delay) only surfaces it when the user is actively looking at a specific similar palette — exactly when they'd want to know they can export it.
+- **Hint row placement between info and actions** — placing it between the name/tags block and the action button row keeps it contextually adjacent to both: the name gives it context ("this is about THIS palette") and it naturally leads the eye to the action buttons below.
+- **`pointer-events-none` on hint row** — the row is display-only. Clicking "through" it would otherwise accidentally interact with content beneath.
+
+### What's next (Session 210)
+- **Palette "version history" restore point** — a small "Save snapshot" button that captures the current palette state (colors + name) into a hidden `snapshots: []` array on the palette. A restore button in the export modal or action row lets Cady roll back to any saved snapshot. Limited to 5 snapshots per palette to keep storage lean.
+- **Export modal: "Open in similar" link** — in the ExportModal footer, a small link that finds the 3 most similar palettes and jumps to the first one (or opens the similar strip context)
+- **Harmony row: click to jump to swatch in strip** — clicking a derived harmony swatch scrolls to and highlights the originating swatch in the main drag strip
+
+---
+
 ## 2026-08-23 — Session 208: Flat Hex List Copy + Mockup PNG Download
 
 ### What was done
