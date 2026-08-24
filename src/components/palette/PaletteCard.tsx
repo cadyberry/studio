@@ -1493,10 +1493,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   key={sim.id}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (e.shiftKey) {
+                      onExport(sim);
+                      return;
+                    }
                     const el = document.getElementById(sim.id);
                     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
                   }}
-                  title={`${sim.name} · ΔE ${avgDe.toFixed(1)} (${simTier.label}) — click to jump`}
+                  title={`${sim.name} · ΔE ${avgDe.toFixed(1)} (${simTier.label}) — click to jump · Shift+click to export`}
                   className="group/sim flex-1 flex overflow-hidden border-r border-[var(--border)] last:border-r-0 relative hover:opacity-80 transition-opacity"
                 >
                   {sim.colors.map((c, ci) => (
@@ -1513,6 +1517,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
                       {sim.name}
                     </span>
+                  </div>
+                  {/* Shift+click hint — top-right on hover */}
+                  <div className="absolute top-1 right-1 opacity-0 group-hover/sim:opacity-100 transition-opacity delay-200 pointer-events-none">
+                    <span className="text-[6px] font-mono font-bold bg-black/55 text-white/90 rounded px-[2px] py-[1px] leading-none">⇧E</span>
                   </div>
                 </button>
               );
@@ -1971,6 +1979,23 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </div>
             );
           })()}
+        </div>
+
+        {/* Keyboard shortcut hints — fade in on card hover to surface the keyboard API */}
+        <div className="flex items-center gap-2 px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none select-none">
+          {([
+            { key: "E", label: "export" },
+            { key: "H", label: "harmony" },
+            { key: "D", label: "dup" },
+            { key: "C", label: "compare" },
+            { key: "L", label: "lock" },
+            { key: "?", label: "all" },
+          ] as const).map(({ key, label }) => (
+            <span key={key} className="flex items-center gap-0.5">
+              <kbd className="inline-flex items-center justify-center min-w-[14px] h-[13px] px-[3px] rounded text-[7px] font-mono font-bold bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] shadow-[0_1px_0_0_var(--border)] leading-none">{key}</kbd>
+              <span className="text-[7px] text-[var(--muted)]/55 leading-none">{label}</span>
+            </span>
+          ))}
         </div>
 
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
