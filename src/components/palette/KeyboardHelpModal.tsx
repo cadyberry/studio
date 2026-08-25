@@ -46,6 +46,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["⌥", "V"], label: "CVD export — Tritanopia strip PNG" },
       { keys: ["W"], label: "Open SwatchEditor for first swatch" },
       { keys: ["S"], label: "Open / close Color Story" },
+      { keys: ["⇧", "S"], label: "Save color snapshot (without opening popover)" },
       { keys: ["L"], label: "Toggle lock / unlock" },
       { keys: ["P"], label: "Pin / unpin palette" },
       { keys: ["F2"], label: "Rename inline" },

@@ -383,7 +383,14 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           break;
         case "s": case "S":
           e.preventDefault();
-          if (colorStoryOpenRef.current) { setColorStoryOpen(false); } else { openColorStoryRef.current(); }
+          if (e.shiftKey && !pal.frozen) {
+            // Shift+S → save snapshot without opening the popover
+            saveSnapshot(pal.id);
+            setSnapshotSaved(true);
+            setTimeout(() => setSnapshotSaved(false), 1600);
+          } else if (!e.shiftKey) {
+            if (colorStoryOpenRef.current) { setColorStoryOpen(false); } else { openColorStoryRef.current(); }
+          }
           break;
         case "Delete":
           if (!pal.frozen) {
@@ -2022,6 +2029,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             { key: "D", label: "dup" },
             { key: "C", label: "compare" },
             { key: "L", label: "lock" },
+            { key: "⇧S", label: "snapshot" },
             { key: "?", label: "all" },
           ] as const).map(({ key, label }) => (
             <span key={key} className="flex items-center gap-0.5">
