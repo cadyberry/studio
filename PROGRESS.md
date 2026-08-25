@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-08-25 — Session 212: ExportModal Similar Palettes + ⇧S Tooltip
+
+### What was done
+- **"Similar" section in ExportModal** — added a new "Similar" section just above the AI Color Story in the export modal. When the user opens any palette's export drawer, they now see the 3 most color-similar palettes ranked by average directed Hausdorff ΔE. Each row shows a mini 56×28px swatch strip, the palette name, the ΔE score, and color count. Clicking any entry calls `onJumpTo` → highlights and scrolls to that palette in the main grid, then closes the modal. This makes it easy to quickly cross-navigate from one export to a visually related palette without leaving the workflow.
+  - `deltaE` imported from `@/lib/utils`; similarity computed inside a `useMemo` on `palette?.id`, `palette?.colors`, and `allPalettes` from the store.
+  - Section is hidden when `onJumpTo` is not provided or there are no other palettes.
+  - `onJumpTo` wired in page.tsx as `(id) => { handleJumpToPalette(id); setExportTarget(null); }`.
+  - Icon: `Blend` (Lucide) fades in on row hover as a directional hint.
+- **Clock button tooltip now mentions ⇧S** — the version-history Clock button tooltip updated from plain "Version history — …" to "… · ⇧S to save instantly". Users hovering the button now discover the keyboard shortcut without having to open the help modal.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **useMemo over onMouseEnter lazy-compute** — unlike PaletteCard where similar palettes are computed lazily on first hover (to avoid doing it for every card in the grid on mount), ExportModal is a singleton modal opened for one palette at a time. useMemo is cleaner and instant.
+- **Section only when onJumpTo is provided** — ExportModal doesn't know its own context (is it in a standalone view, a shared view, the main grid?). Gating on the prop keeps it inert in contexts where jumping wouldn't make sense.
+- **Directed Hausdorff ΔE, not symmetric** — the score measures "how well can this palette explain the target?" matching PaletteCard's existing similar-strip metric for consistent ranking across features.
+
+### What's next (Session 213)
+- **Harmony row: click to jump to originating swatch** — clicking a derived harmony color in HarmonyModal scrolls to and highlights the source swatch in the main palette drag strip
+- **Export modal: Gradient PNG name includes direction/order** — the downloaded gradient PNG filename currently uses only `{slug}-gradient.png`; append direction and order suffix for easier file management
+- **Similar strip ΔE label** — PaletteCard's similar strip tiles could show the ΔE distance on hover, consistent with ExportModal's new similar section
+
+---
+
 ## 2026-08-25 — Session 211: Shift+S Snapshot Keyboard Shortcut
 
 ### What was done
