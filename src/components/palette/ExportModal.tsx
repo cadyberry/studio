@@ -2,19 +2,20 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2, List } from "lucide-react";
+import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2, List, Blend } from "lucide-react";
 import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyFlatHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, copyAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
-import { getContrastColor, simulateCmykPrint, simulateColorBlind, type ColorBlindType } from "@/lib/utils";
+import { getContrastColor, simulateCmykPrint, simulateColorBlind, deltaE, type ColorBlindType } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 
 interface ExportModalProps {
   palette: Palette | null;
   onClose: () => void;
+  onJumpTo?: (paletteId: string) => void;
 }
 
-export default function ExportModal({ palette, onClose }: ExportModalProps) {
+export default function ExportModal({ palette, onClose, onJumpTo }: ExportModalProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [hoveredSwatch, setHoveredSwatch] = useState<number | null>(null);
   const [storyLoading, setStoryLoading] = useState(false);
@@ -77,6 +78,26 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
   const liveTags = usePaletteStore(
     (s) => s.palettes.find((p) => p.id === (palette?.id ?? ""))?.tags ?? palette?.tags ?? []
   );
+  const allPalettes = usePaletteStore((s) => s.palettes);
+
+  const similarPalettes = useMemo(() => {
+    if (!palette || palette.colors.length === 0) return [];
+    const others = allPalettes.filter((p) => p.id !== palette.id && p.colors.length > 0);
+    if (others.length === 0) return [];
+    const score = (p: Palette) => {
+      const sum = palette.colors.reduce((acc, ca) => {
+        const min = p.colors.reduce((m, cb) => Math.min(m, deltaE(ca.hex, cb.hex)), Infinity);
+        return acc + min;
+      }, 0);
+      return sum / palette.colors.length;
+    };
+    return others
+      .map((p) => ({ palette: p, avgDe: score(p) }))
+      .sort((a, b) => a.avgDe - b.avgDe)
+      .slice(0, 3);
+  // palette.id and colors change together; allPalettes length guards additions/deletions
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [palette?.id, palette?.colors, allPalettes]);
 
   // Sync story from cache when palette changes (ExportModal is a persistent instance, not remounted)
   useEffect(() => {
@@ -864,6 +885,45 @@ export default function ExportModal({ palette, onClose }: ExportModalProps) {
                 </div>
               );
             })()}
+
+            {/* Similar Palettes */}
+            {onJumpTo && similarPalettes.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted)] select-none">Similar</span>
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
+                <div className="space-y-1">
+                  {similarPalettes.map(({ palette: sim, avgDe }) => (
+                    <button
+                      key={sim.id}
+                      onClick={() => { onJumpTo(sim.id); onClose(); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] transition-colors text-left group"
+                      title={`ΔE ${avgDe.toFixed(1)} average color distance`}
+                    >
+                      {/* Mini swatch strip */}
+                      <div className="flex h-7 w-14 rounded-md overflow-hidden border border-black/[0.07] dark:border-white/[0.07] flex-shrink-0">
+                        {sim.colors.map((c, i) => (
+                          <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} />
+                        ))}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate">{sim.name}</div>
+                        <div className="text-[10px] text-[var(--muted)]">
+                          ΔE {avgDe.toFixed(1)} · {sim.colors.length} color{sim.colors.length !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <div className="text-[var(--muted)] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Blend size={13} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-[var(--muted)] mt-1.5 leading-relaxed">
+                  Nearest palettes by average color distance — click to jump
+                </p>
+              </div>
+            )}
 
             {/* AI Color Story */}
             <div>

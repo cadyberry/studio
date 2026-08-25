@@ -3011,7 +3011,11 @@ export default function Home() {
         paletteB={compareTarget}
         onClose={() => { setCompareAnchor(null); setCompareTarget(null); }}
       />
-      <ExportModal palette={exportTarget} onClose={() => setExportTarget(null)} />
+      <ExportModal
+        palette={exportTarget}
+        onClose={() => setExportTarget(null)}
+        onJumpTo={(id) => { handleJumpToPalette(id); setExportTarget(null); }}
+      />
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />
       <HarmonyModal palette={harmonyTarget} onClose={() => setHarmonyTarget(null)} />

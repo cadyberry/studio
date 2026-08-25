@@ -2286,8 +2286,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   snapshotRestored
                     ? "Colors restored!"
                     : (palette.snapshots?.length ?? 0) > 0
-                    ? `Version history · ${palette.snapshots!.length} snapshot${palette.snapshots!.length === 1 ? "" : "s"} saved`
-                    : "Version history — save color checkpoints to restore later"
+                    ? `Version history · ${palette.snapshots!.length} snapshot${palette.snapshots!.length === 1 ? "" : "s"} saved · ⇧S to save instantly`
+                    : "Version history — save color checkpoints · ⇧S to save instantly"
                 }
                 className={
                   snapshotRestored
