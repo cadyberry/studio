@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-08-25 — Session 211: Shift+S Snapshot Keyboard Shortcut
+
+### What was done
+- **`Shift+S` saves a color snapshot without opening the popover** — hovering or focusing any palette card and pressing `Shift+S` immediately saves a checkpoint of the current colors. A 1.6s green "Saved" flash on the Clock button confirms the save, identical to clicking "Save snapshot" inside the popover.
+  - Implemented in the existing keyboard switch: when `e.shiftKey` is true inside `case "s": case "S":`, save the snapshot and flash `snapshotSaved` instead of toggling Color Story. Without Shift, `s` still toggles Color Story as before.
+  - Frozen-palette guard preserved — the shortcut no-ops on frozen palettes, consistent with the button being hidden there.
+  - 5-snapshot cap handled automatically by `paletteStore.saveSnapshot`, which prepends and slices; the keyboard path calls the same function.
+- **Keyboard hint row updated** — `⇧S snapshot` added between the `L` (lock) and `?` (all) hint chips on the card footer.
+- **KeyboardHelpModal documented** — `{ keys: ["⇧", "S"], label: "Save color snapshot (without opening popover)" }` added after the existing `S` Color Story entry.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Check `e.shiftKey` inside the switch case, not a pre-switch block** — the switch already captures `case "V":` for Protanopia CVD export (Shift+V → `e.key === "V"`). A blanket `if (e.shiftKey) return;` before the switch would silently break Shift+V. Checking shiftKey inside the specific `s`/`S` case is surgical: only `S` behavior changes.
+- **`!e.shiftKey` guard on Color Story branch** — without it, CapsLock+s would trigger both the snapshot and Color Story paths in theory. Explicit `else if (!e.shiftKey)` keeps the logic clean and avoids any unexpected double-trigger.
+- **No popover open** — the whole point of the shortcut is speed. Opening the popover before saving would negate the workflow advantage (user would still have to click "Save snapshot"). The flash on the Clock button is sufficient confirmation.
+
+### What's next (Session 212)
+- **Export modal: "Open in similar" link** — in ExportModal footer, a link that finds the 3 most similar palettes and highlights the first one in the grid
+- **Harmony row: click to jump to originating swatch** — clicking a derived harmony color in HarmonyModal scrolls to and highlights its source swatch in the main palette drag strip
+- **Snapshot keyboard shortcut tooltip** — the Clock button tooltip should mention `⇧S` so keyboard users discover the shortcut without reading the help modal
+
+---
+
 ## 2026-08-24 — Session 210: Palette Version History (Snapshots)
 
 ### What was done
