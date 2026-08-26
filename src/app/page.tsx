@@ -23,7 +23,7 @@ import ColorBrowser from "@/components/palette/ColorBrowser";
 import DuplicatesModal from "@/components/palette/DuplicatesModal";
 import GeneratePaletteModal from "@/components/palette/GeneratePaletteModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, getPaletteHueFamily, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
-import { batchExportZip } from "@/lib/exportPalette";
+import { batchExportZip, exportCollectionSheet } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
 
 const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
@@ -282,6 +282,7 @@ export default function Home() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkExporting, setBulkExporting] = useState(false);
   const [collectionHexCopied, setCollectionHexCopied] = useState(false);
+  const [collectionSheetExporting, setCollectionSheetExporting] = useState(false);
   const [collectionExporting, setCollectionExporting] = useState<string | null>(null);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
@@ -881,6 +882,18 @@ export default function Home() {
       setTimeout(() => setCollectionHexCopied(false), 1800);
     });
   }, [activeCollection, palettes]);
+
+  const handleDownloadCollectionSheet = useCallback(() => {
+    if (activeCollection === "all" || !activeCollectionInfo) return;
+    const collectionPalettes = palettes.filter((p) => p.collectionId === activeCollection);
+    if (collectionPalettes.length === 0) return;
+    setCollectionSheetExporting(true);
+    // Run on next tick so the state update renders before the synchronous canvas work
+    setTimeout(() => {
+      exportCollectionSheet(collectionPalettes, activeCollectionInfo.name);
+      setCollectionSheetExporting(false);
+    }, 0);
+  }, [activeCollection, activeCollectionInfo, palettes]);
 
   const frozenSelectedCount = selectedIds.size > 0
     ? [...selectedIds].filter(id => palettes.find(p => p.id === id)?.frozen).length
@@ -1694,18 +1707,29 @@ export default function Home() {
                     — {activeCollectionInfo.name} · {activeCollectionCount}
                   </span>
                   {activeCollectionCount > 0 && (
-                    <button
-                      onClick={handleCopyCollectionHex}
-                      title={collectionHexCopied ? "Copied!" : "Copy all hex codes in this collection"}
-                      className={`shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                        collectionHexCopied
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                      }`}
-                    >
-                      {collectionHexCopied ? <Check size={10} /> : <Copy size={10} />}
-                      <span>{collectionHexCopied ? "Copied" : "Copy hex"}</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={handleCopyCollectionHex}
+                        title={collectionHexCopied ? "Copied!" : "Copy all hex codes in this collection"}
+                        className={`shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                          collectionHexCopied
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        {collectionHexCopied ? <Check size={10} /> : <Copy size={10} />}
+                        <span>{collectionHexCopied ? "Copied" : "Copy hex"}</span>
+                      </button>
+                      <button
+                        onClick={handleDownloadCollectionSheet}
+                        disabled={collectionSheetExporting}
+                        title="Download collection reference sheet — all palettes as a single PNG"
+                        className="shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors text-[var(--muted)] hover:text-[var(--foreground)] disabled:opacity-40"
+                      >
+                        {collectionSheetExporting ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+                        <span>Sheet</span>
+                      </button>
+                    </>
                   )}
                 </>
               )}

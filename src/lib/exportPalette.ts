@@ -259,6 +259,135 @@ export function exportAsPngStrip(palette: Palette): void {
   link.click();
 }
 
+export function exportCollectionSheet(palettes: Palette[], collectionName: string): void {
+  if (palettes.length === 0) return;
+
+  const SANS = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+  const MONO = "'Courier New', Courier, monospace";
+
+  const W = 1200;
+  const HEADER_H = 72;
+  const FOOTER_H = 36;
+  const ROW_SWATCH_H = 52;
+  const ROW_LABEL_H = 30;
+  const ROW_H = ROW_SWATCH_H + ROW_LABEL_H;
+  const ROW_GAP = 1; // separator line between rows
+  const PAD_X = 32;
+
+  const totalH = HEADER_H + palettes.length * (ROW_H + ROW_GAP) + FOOTER_H;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = totalH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Background
+  ctx.fillStyle = "#fafaf8";
+  ctx.fillRect(0, 0, W, totalH);
+
+  // Header
+  const grd = ctx.createLinearGradient(PAD_X, 18, PAD_X + 28, 46);
+  grd.addColorStop(0, "#fda4af");
+  grd.addColorStop(0.5, "#c4b5fd");
+  grd.addColorStop(1, "#93c5fd");
+  ctx.fillStyle = grd;
+  const [mx, my, mw, mh, mr] = [PAD_X, 18, 28, 28, 6];
+  ctx.beginPath();
+  ctx.moveTo(mx + mr, my);
+  ctx.lineTo(mx + mw - mr, my);
+  ctx.quadraticCurveTo(mx + mw, my, mx + mw, my + mr);
+  ctx.lineTo(mx + mw, my + mh - mr);
+  ctx.quadraticCurveTo(mx + mw, my + mh, mx + mw - mr, my + mh);
+  ctx.lineTo(mx + mr, my + mh);
+  ctx.quadraticCurveTo(mx, my + mh, mx, my + mh - mr);
+  ctx.lineTo(mx, my + mr);
+  ctx.quadraticCurveTo(mx, my, mx + mr, my);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#1c1c19";
+  ctx.font = `bold 20px ${SANS}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  const displayName = collectionName.length > 80 ? collectionName.slice(0, 80) + "…" : collectionName;
+  ctx.fillText(displayName, PAD_X + mw + 12, HEADER_H / 2);
+
+  ctx.fillStyle = "#9a9a90";
+  ctx.font = `13px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.fillText(`${palettes.length} palette${palettes.length !== 1 ? "s" : ""}`, W - PAD_X, HEADER_H / 2);
+
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, HEADER_H - 1, W, 1);
+
+  // Palette rows
+  let rowY = HEADER_H;
+  palettes.forEach((palette, idx) => {
+    const n = palette.colors.length;
+    const swatchAreaW = W - PAD_X * 2;
+    const SW = swatchAreaW / Math.max(n, 1);
+
+    // Swatch strip
+    let cx = PAD_X;
+    palette.colors.forEach((color, i) => {
+      const w = i === n - 1 ? PAD_X + swatchAreaW - Math.round(cx) : Math.round(SW);
+      ctx.fillStyle = color.hex;
+      ctx.fillRect(Math.round(cx), rowY, w, ROW_SWATCH_H);
+      cx += SW;
+    });
+
+    // Label row
+    const labelY = rowY + ROW_SWATCH_H;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, labelY, W, ROW_LABEL_H);
+
+    ctx.fillStyle = "#e2e2da";
+    ctx.fillRect(0, labelY, W, 1); // top border of label area
+
+    // Palette name
+    ctx.fillStyle = "#1c1c19";
+    ctx.font = `500 12px ${SANS}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const nameTrunc = palette.name.length > 90 ? palette.name.slice(0, 90) + "…" : palette.name;
+    ctx.fillText(nameTrunc, PAD_X, labelY + ROW_LABEL_H / 2);
+
+    // Hex codes (first 5) + color count
+    const hexStr = palette.colors.slice(0, 5).map((c) => c.hex.toUpperCase()).join("  ");
+    const more = palette.colors.length > 5 ? `  +${palette.colors.length - 5}` : "";
+    ctx.fillStyle = "#9a9a90";
+    ctx.font = `10px ${MONO}`;
+    ctx.textAlign = "right";
+    ctx.fillText(`${hexStr}${more}`, W - PAD_X, labelY + ROW_LABEL_H / 2);
+
+    // Row separator
+    if (idx < palettes.length - 1) {
+      ctx.fillStyle = "#e8e8e0";
+      ctx.fillRect(0, labelY + ROW_LABEL_H, W, ROW_GAP);
+    }
+
+    rowY += ROW_H + ROW_GAP;
+  });
+
+  // Footer
+  ctx.fillStyle = "#f0f0e8";
+  ctx.fillRect(0, rowY, W, FOOTER_H);
+  ctx.fillStyle = "#e2e2da";
+  ctx.fillRect(0, rowY, W, 1);
+  ctx.fillStyle = "#aaaaa0";
+  ctx.font = `10px ${SANS}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("Made with Palette · color intelligence for creators", W / 2, rowY + FOOTER_H / 2);
+
+  const link = document.createElement("a");
+  const slug = collectionName.replace(/\s+/g, "-").toLowerCase().replace(/[^a-z0-9-]/g, "") || "collection";
+  link.download = `${slug}-palette-sheet.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
 export async function batchExportZip(palettes: Palette[], zipName?: string): Promise<void> {
   const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
