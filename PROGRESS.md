@@ -5973,3 +5973,25 @@
 - **Export: bulk "Copy all hex codes" for a collection** — from the collection view, copy every hex value from every palette in the collection in one action (formatted as a newline-separated or comma-separated list, with palette name headers)
 - **Palette card: "Fork to collection" quick action** — when hovering a palette that belongs to a collection, show a quick button to duplicate it into a different named collection without going through the collection modal
 - **Keyboard shortcut `P`** — open a palette's Export modal directly from the library view with a single keypress
+
+---
+
+## 2026-08-26 — Session 206: Global P Shortcut for Export Modal
+
+### What was done
+- **Global `P` shortcut opens Export modal for keyboard-focused palette** — pressing `P` anywhere in the library view (no need to hover a card) now opens the Export modal for whichever palette card is currently keyboard-focused via J/K navigation or single-click focus.
+  - `page.tsx`: Added `P` to the global keydown handler. Reads `focusedCardId` via a new `focusedCardIdRef` (same pattern as `displayListRef`) and fetches the palette via `usePaletteStore.getState().palettes` — both avoid stale-closure bugs without adding items to the dependency array.
+  - `page.tsx`: Added `focusedCardIdRef` alongside `displayListRef`, updated in the render body so it's always current.
+  - `PaletteCard.tsx`: The card-level `P` case (which pins) now skips its action when the card is keyboard-focused-but-not-hovered (`isFocusedRef.current && !isHoveredRef.current`). This prevents double-firing: hover-P still pins as before; J/K-focus-P opens Export via the global handler.
+  - `KeyboardHelpModal.tsx`: Added `P` entry to the Global section ("Open Export modal for the focused card"); updated the J/K description to mention P.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **`focusedCardIdRef` + `usePaletteStore.getState()` — no dep-array churn** — the global keyboard handler is in a `useEffect([colorSearchActive])` that re-registers on colorSearchActive changes only. Adding `focusedCardId` and `palettes` to the dep array would re-register frequently. Refs solve the stale-closure problem without the overhead.
+- **Card-level P: skip on keyboard-focus-only, not always** — when a user hovers a card (mouse context), P should still pin. Only when the card gained focus via J/K (no mouse hover) does the global P take over. The `isFocusedRef.current && !isHoveredRef.current` guard preserves both behaviors cleanly.
+- **No rebinding of E** — card-level E (export on hover) still works unchanged. Global P adds a second path to the same action for keyboard-only navigation.
+
+### What's next (Session 207)
+- **Export: bulk "Copy all hex codes" for a collection** — from the collection view, copy every hex from every palette in one click (formatted as newline-separated with palette name headers)
+- **Palette card "Fork to collection" quick action** — hover a card that belongs to a collection; a quick button appears to duplicate it into a different named collection
+- **ExportModal section count badges** — small count pills on Download / Copy section headers
