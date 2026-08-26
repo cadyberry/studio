@@ -5995,3 +5995,31 @@
 - **Export: bulk "Copy all hex codes" for a collection** — from the collection view, copy every hex from every palette in one click (formatted as newline-separated with palette name headers)
 - **Palette card "Fork to collection" quick action** — hover a card that belongs to a collection; a quick button appears to duplicate it into a different named collection
 - **ExportModal section count badges** — small count pills on Download / Copy section headers
+
+---
+
+## 2026-08-26 — Session 207: Collection Reference Sheet Export
+
+### What was done
+- **Collection Reference Sheet PNG export** — when a collection is active, a "Sheet ↓" button appears in the library header row (next to the existing "Copy hex" button). Clicking it downloads a single PNG reference sheet of every palette in the collection.
+  - `exportCollectionSheet(palettes, collectionName)` added to `exportPalette.ts` — builds a 1200px-wide canvas with:
+    - Gradient logo mark + collection name + palette count in the header
+    - Each palette as a full-width row: 52px swatch strip (all colors) + 30px label bar (palette name left, hex codes right)
+    - 1px separator lines between rows
+    - "Made with Palette" footer
+  - `handleDownloadCollectionSheet` callback in `page.tsx` — gathers the active collection's palettes, calls `exportCollectionSheet`, uses a `collectionSheetExporting` state flag to show a spinner and disable the button while the canvas renders.
+  - Button shows a `Loader2` spinner while exporting and is disabled during the render tick.
+  - File is named `{collection-slug}-palette-sheet.png`.
+- Build: clean Next.js 16.2.6 production build, TypeScript zero errors, 11 routes passing.
+
+### Key decisions
+- **Full-width per-palette rows, not a 2-column grid** — wider swatch strips are more legible for visual comparison; a 2-column layout would halve the swatch width and make hex codes hard to read. Full-width rows scale cleanly to any number of palettes.
+- **52px swatch height** — tall enough to read color character clearly without making the sheet too long for typical collection sizes (5–20 palettes → 600–1700px total).
+- **Hex codes in the label row (right-aligned, first 5 + "+N")** — gives instant reference without repeating the full detail of each palette's card PNG. Complements rather than duplicates the per-palette export.
+- **setTimeout(0) before canvas work** — canvas rendering is synchronous and CPU-bound; yielding to the event loop first allows the spinner state to render before the browser freezes briefly.
+- **`activeCollectionInfo` in callback dep array** — the collection name is needed for the header and the filename slug; accessing it via the dep array (not a ref) is safe because the button is only shown when `activeCollectionInfo` is non-null.
+
+### What's next (Session 208)
+- **Collection Sheet: per-palette CMYK risk summary** — add a small colored indicator on each row's label bar (amber/red dot) if any swatch in that palette has a print-shift risk
+- **Palette drag-to-reorder within library** — manual ordering of palettes in the library view using Framer Motion's Reorder, persisted to the store
+- **Palette "quick compare" from library header** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through the card menu
