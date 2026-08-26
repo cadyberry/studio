@@ -357,6 +357,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           if (onCompareRef.current) { e.preventDefault(); onCompareRef.current(pal); }
           break;
         case "p": case "P":
+          // When focused via J/K (not hovered), P is claimed by the global handler to open
+          // the Export modal — so we skip pin here to avoid conflict.
+          if (isFocusedRef.current && !isHoveredRef.current) break;
           if (onPinRef.current) { e.preventDefault(); onPinRef.current(pal); }
           break;
         case "e": case "E":

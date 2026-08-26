@@ -315,6 +315,7 @@ export default function Home() {
   const presetNameInputRef = useRef<HTMLInputElement>(null);
   const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
   const displayListRef = useRef<Palette[]>([]);
+  const focusedCardIdRef = useRef<string | null>(null);
 
   const jumpToCollection = useCallback((id: string) => {
     setActiveCollection(id);
@@ -479,6 +480,19 @@ export default function Home() {
       // Escape — clear keyboard card focus (harmless if already null; modals handle their own Escape)
       if (e.key === "Escape" && !inInput) {
         setFocusedCardId(null);
+      }
+
+      // P — open Export modal for the keyboard-focused card (J/K navigation)
+      if ((e.key === "p" || e.key === "P") && !inInput && !e.shiftKey) {
+        const fid = focusedCardIdRef.current;
+        if (fid) {
+          const pal = usePaletteStore.getState().palettes.find((p) => p.id === fid);
+          if (pal) {
+            e.preventDefault();
+            setExportTarget(pal);
+          }
+        }
+        return;
       }
 
       // J / K — navigate between palette cards (vim-style, no wrap)
@@ -892,8 +906,9 @@ export default function Home() {
   })();
   const pinnedDisplay = displayList.filter((p) => p.pinned);
   const unpinnedDisplay = displayList.filter((p) => !p.pinned);
-  // Keep ref current so J/K handler always sees the latest ordered list without re-registering
+  // Keep refs current so keyboard handlers always see the latest state without re-registering
   displayListRef.current = displayList;
+  focusedCardIdRef.current = focusedCardId;
 
   // Color Browser: all unique hex values from currently-filtered palettes, sorted by oklch hue
   const colorIndex = useMemo(() => {
