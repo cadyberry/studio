@@ -6023,3 +6023,27 @@
 - **Collection Sheet: per-palette CMYK risk summary** — add a small colored indicator on each row's label bar (amber/red dot) if any swatch in that palette has a print-shift risk
 - **Palette drag-to-reorder within library** — manual ordering of palettes in the library view using Framer Motion's Reorder, persisted to the store
 - **Palette "quick compare" from library header** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through the card menu
+
+---
+
+## 2026-08-27 — Session 208: Palette Drag-to-Reorder in Manual Sort Mode
+
+### What was done
+- **"Manual order ↕" sort option** — a new sort mode in the palette library dropdown. When selected, palettes preserve their store order (how they were added, or a previously dragged order) rather than being re-sorted by any algorithmic criterion.
+- **Drag-to-reorder grid** — when in manual sort mode, the library switches from the 2-column AnimatePresence grid to a single-column `Reorder.Group` (Framer Motion). Each palette card is wrapped in a `Reorder.Item`.
+- **`DraggableItem` component** — a small wrapper component that uses `useDragControls()` so only the grip handle initiates a drag, keeping all card buttons, hover effects, and keyboard shortcuts fully functional without interference.
+- **Grip handle** — a `GripVertical` icon appears at the top-left of each card on hover (opacity 0 → 70%, with 100% on direct hover). It acts as the exclusive drag trigger; the rest of the card remains interactive.
+- **`reorderPalettes(orderedSubsetIds)` store action** — takes an array of palette IDs in their new desired order and rearranges the underlying Zustand `palettes` array, keeping non-subset palettes in their relative positions. Persisted automatically via the existing `localStorage` middleware.
+- **No pinned-first in manual mode** — in manual sort mode, `displayList` preserves raw store order (no pinned-first reordering). Pinning still works, but the card order is entirely user-controlled.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **`dragControls` + `dragListener={false}` on `Reorder.Item`** — this pattern ensures that clicking buttons and hovering on the card never accidentally initiates a drag. Only a pointer-down on the grip handle starts the reorder gesture.
+- **Store order as the source of truth for manual sort** — `reorderPalettes` rearranges the `palettes` array directly, so the order persists to localStorage without any separate ordering state. The existing `persist` middleware handles it automatically.
+- **Single-column in manual mode** — Framer Motion's `Reorder` works best in one-dimensional lists. Switching to single-column in manual mode ensures predictable drag behavior and avoids the complexity of 2D grid reordering.
+- **Subset reorder** — `reorderPalettes` uses position mapping (not array splice) so dragging within a filtered view (e.g., a collection, a tag filter) correctly places the reordered palettes at the positions they previously occupied globally, without disturbing unfiltered palettes.
+
+### What's next (Session 209)
+- **Collection Sheet: per-palette CMYK risk indicator** — add a colored dot (amber/red) on each row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+- **Palette "quick compare" from library** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through the card menu
+- **ExportModal section count badges** — small count pills on Download / Copy section headers
