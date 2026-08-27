@@ -249,6 +249,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [snapshotRestored, setSnapshotRestored] = useState(false);
   const snapshotContainerRef = useRef<HTMLDivElement>(null);
   const [similarPalettes, setSimilarPalettes] = useState<{ palette: Palette; avgDe: number }[]>([]);
+  const [harmonyHovered, setHarmonyHovered] = useState(false);
+  const [harmonyAnchorFlash, setHarmonyAnchorFlash] = useState(false);
   const similarComputedRef = useRef(false);
 
   // Reset similar palettes cache when this palette's colors change
@@ -621,6 +623,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const freshness = getFreshness(palette.createdAt, palette.updatedAt);
   const aging = getAging(palette.createdAt, palette.updatedAt);
   const harmonyColors = getHarmonyColors(palette.colors);
+
+  // Most-saturated swatch is the anchor from which all harmony colors are derived
+  const harmonyAnchorHex = palette.colors.reduce<string | null>((best, c) => {
+    const rgb = hexToRgb(c.hex);
+    if (!rgb) return best;
+    const { s } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    if (best === null) return c.hex;
+    const bestRgb = hexToRgb(best);
+    const bestS = bestRgb ? rgbToHsl(bestRgb.r, bestRgb.g, bestRgb.b).s : -1;
+    return s > bestS ? c.hex : best;
+  }, null);
 
   // oklch L-range for the gradient bar (darkest → lightest sorted by perceptual lightness)
   const oklchRange = (() => {
@@ -1070,6 +1083,13 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   {isNoteMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(96,165,250,0.85)" }} />
                   )}
+                  {/* Harmony anchor ring — pulses when harmony strip is hovered/clicked */}
+                  {harmonyColors.length > 0 && harmonyAnchorHex && color.hex.toLowerCase() === harmonyAnchorHex.toLowerCase() && (harmonyHovered || harmonyAnchorFlash) && (
+                    <div
+                      className="absolute inset-0 pointer-events-none z-[3] transition-all duration-200"
+                      style={{ boxShadow: harmonyAnchorFlash ? "inset 0 0 0 3px rgba(139,92,246,0.9)" : "inset 0 0 0 2px rgba(139,92,246,0.5)" }}
+                    />
+                  )}
                   {copiedSwatchKey === color._key && (
                     <motion.div
                       className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -1205,6 +1225,13 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   )}
                   {isNoteMatch && (
                     <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 0 2px rgba(96,165,250,0.85)" }} />
+                  )}
+                  {/* Harmony anchor ring — pulses when harmony strip is hovered/clicked */}
+                  {harmonyColors.length > 0 && harmonyAnchorHex && color.hex.toLowerCase() === harmonyAnchorHex.toLowerCase() && (harmonyHovered || harmonyAnchorFlash) && (
+                    <div
+                      className="absolute inset-0 pointer-events-none z-[3] transition-all duration-200"
+                      style={{ boxShadow: harmonyAnchorFlash ? "inset 0 0 0 3px rgba(139,92,246,0.9)" : "inset 0 0 0 2px rgba(139,92,246,0.5)" }}
+                    />
                   )}
                   {copiedSwatchKey === color._key && (
                     <motion.div
@@ -1451,7 +1478,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
 
       {/* Harmony mini-preview — slides in on hover */}
       {harmonyColors.length > 0 && (
-        <div className="overflow-hidden max-h-0 group-hover:max-h-9 transition-[max-height] duration-200 ease-out">
+        <div
+          className="overflow-hidden max-h-0 group-hover:max-h-9 transition-[max-height] duration-200 ease-out"
+          onMouseEnter={() => setHarmonyHovered(true)}
+          onMouseLeave={() => setHarmonyHovered(false)}
+        >
           <div className="flex h-9 border-t border-[var(--border)]">
             {/* Label */}
             <div className="flex-shrink-0 flex items-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
@@ -1470,8 +1501,13 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   navigator.clipboard.writeText(hc.hex);
                   setCopiedHarmonyHex(hc.hex);
                   setTimeout(() => setCopiedHarmonyHex(null), 800);
+                  // Flash the source swatch (most-saturated color)
+                  if (harmonyAnchorHex) {
+                    setHarmonyAnchorFlash(true);
+                    setTimeout(() => setHarmonyAnchorFlash(false), 1300);
+                  }
                 }}
-                title={`${hc.label} · ${hc.hex}`}
+                title={`${hc.label} · ${hc.hex} — click to copy · highlights source swatch`}
               >
                 <div
                   className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/hc:opacity-100 transition-opacity pointer-events-none"
