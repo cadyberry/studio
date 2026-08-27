@@ -34,6 +34,8 @@ interface PaletteStore {
   saveSnapshot: (paletteId: string) => PaletteSnapshot | null;
   restoreSnapshot: (paletteId: string, snapshotId: string) => void;
   deleteSnapshot: (paletteId: string, snapshotId: string) => void;
+
+  reorderPalettes: (orderedSubsetIds: string[]) => void;
 }
 
 export const usePaletteStore = create<PaletteStore>()(
@@ -210,6 +212,25 @@ export const usePaletteStore = create<PaletteStore>()(
               : p
           ),
         }));
+      },
+
+      reorderPalettes: (orderedSubsetIds) => {
+        set((s) => {
+          const subsetSet = new Set(orderedSubsetIds);
+          // Collect positions in the current array where subset items live
+          const subsetPositions: number[] = [];
+          s.palettes.forEach((p, i) => {
+            if (subsetSet.has(p.id)) subsetPositions.push(i);
+          });
+          const paletteMap = new Map(s.palettes.map((p) => [p.id, p]));
+          const newPalettes = [...s.palettes];
+          // Place the subset IDs in the collected positions in their new order
+          orderedSubsetIds.forEach((id, i) => {
+            const pal = paletteMap.get(id);
+            if (pal) newPalettes[subsetPositions[i]] = pal;
+          });
+          return { palettes: newPalettes };
+        });
       },
     }),
     {

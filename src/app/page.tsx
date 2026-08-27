@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo, type JSX, type ElementType } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle, Glasses, Copy, Check } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useMemo, type JSX, type ElementType, type ReactNode } from "react";
+import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion";
+import { Layers, Search, FolderOpen, Sparkles, BarChart2, Compass, BookMarked, BookmarkPlus, X, ArrowUpDown, Trash2, CheckSquare, Pipette, Download, Loader2, Archive, CheckCircle2, Lock, LockOpen, CopyPlus, ChevronRight, ChevronDown, RotateCcw, Import, ArrowLeftRight, Pencil, Tag, Pin, ShieldCheck, ScanSearch, Shuffle, Glasses, Copy, Check, GripVertical } from "lucide-react";
 import { usePaletteStore } from "@/store/paletteStore";
 import Button from "@/components/ui/Button";
 import Extractor from "@/components/palette/Extractor";
@@ -206,8 +206,38 @@ function LibraryHueWheel({
   );
 }
 
+// Wrapper component for a single draggable palette card in manual sort mode.
+// Uses useDragControls so only the grip handle initiates the drag, keeping all
+// other card interactions (buttons, hover effects) fully functional.
+function DraggableItem({ palette, children }: { palette: Palette; children: ReactNode }) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={palette}
+      dragControls={controls}
+      dragListener={false}
+      layout
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="group relative"
+    >
+      <div
+        className="absolute top-2 left-2 z-20 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-70 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing select-none"
+        style={{ touchAction: "none", color: "var(--muted)" }}
+        onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
+        title="Drag to reorder"
+      >
+        <GripVertical size={12} />
+      </div>
+      {children}
+    </Reorder.Item>
+  );
+}
+
 export default function Home() {
-  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection, updatePalette, togglePin } = usePaletteStore();
+  const { palettes, collections, addPalette, duplicatePalette, deletePalettes, assignPalettesToCollection, updateCollection, updatePalette, togglePin, reorderPalettes } = usePaletteStore();
   const [search, setSearch] = useState("");
   const [activeCollection, setActiveCollection] = useState<string | "all">("all");
   const [exportTarget, setExportTarget] = useState<Palette | null>(null);
@@ -227,7 +257,7 @@ export default function Home() {
   const [showGeneratePalette, setShowGeneratePalette] = useState(false);
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first" | "random">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first" | "random" | "manual">("newest");
   const [randomSortKey, setRandomSortKey] = useState<number>(() => Math.floor(Math.random() * 0x7fffffff));
   const [cvdMode, setCvdMode] = useState<"off" | "deuteranopia" | "protanopia" | "tritanopia">("off");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
@@ -842,6 +872,8 @@ export default function Home() {
         const bMin = Math.min(...b.colors.map((c) => deltaE(c.hex, validColorSearch)));
         return aMin - bMin;
       })
+    : sortBy === "manual"
+    ? [...filtered]
     : [...filtered].sort((a, b) => {
         switch (sortBy) {
           case "newest": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -902,8 +934,10 @@ export default function Home() {
     ? [...selectedIds].filter(id => !palettes.find(p => p.id === id)?.frozen)
     : [];
 
-  // Pinned palettes always first; cover palette first within the unpinned section
+  // In manual sort mode, preserve store order exactly (no pinned-first reordering).
+  // Otherwise, pinned palettes float first; cover palette leads the unpinned section.
   const displayList = (() => {
+    if (sortBy === "manual") return [...sorted];
     const pinnedItems = sorted.filter((p) => p.pinned);
     const rest = sorted.filter((p) => !p.pinned);
     if (activeCollection !== "all" && coverPaletteId) {
@@ -1824,6 +1858,7 @@ export default function Home() {
                           <option value="print-safe-first">Print safe first</option>
                           <option value="ai-first">AI-generated first</option>
                           <option value="random">Random</option>
+                          <option value="manual">Manual order ↕</option>
                         </select>
                       </div>
                       {sortBy === "random" && (
@@ -2881,6 +2916,75 @@ export default function Home() {
                 collectionFilter={colorBrowserCollection}
                 onCollectionFilterChange={setColorBrowserCollection}
               />
+            ) : sortBy === "manual" ? (
+              /* Manual drag-to-reorder — single column, each card wrapped in a Reorder.Item */
+              <Reorder.Group
+                axis="y"
+                values={displayList}
+                onReorder={(newOrder: Palette[]) => reorderPalettes(newOrder.map((p) => p.id))}
+                as="div"
+                className="flex flex-col gap-3"
+                style={{ filter: cvdMode !== "off" ? `url(#cvd-${cvdMode})` : undefined }}
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {displayList.map((palette) => {
+                    const isCoverPalette = activeCollection !== "all" && palette.id === coverPaletteId;
+                    const palCollectionName = palette.collectionId
+                      ? collections.find((c) => c.id === palette.collectionId)?.name
+                      : undefined;
+                    const palCollectionSize = palette.collectionId
+                      ? palettes.filter((p) => p.collectionId === palette.collectionId).length
+                      : undefined;
+                    return (
+                      <DraggableItem key={palette.id} palette={palette}>
+                        <PaletteCard
+                          key={palette.id}
+                          cardId={`pc-${palette.id}`}
+                          palette={palette}
+                          onExport={setExportTarget}
+                          onRename={setRenameTarget}
+                          onAssignCollection={setCollectionTarget}
+                          onHarmony={setHarmonyTarget}
+                          onContrast={setContrastTarget}
+                          onEditSwatch={(p, i) => setEditTarget({ palette: p, swatchIndex: i })}
+                          onShadeScale={(p, i) => setShadeTarget({ hex: p.colors[i].hex, name: p.colors[i].name })}
+                          onCompare={(p) => {
+                            if (!compareAnchor) {
+                              setCompareAnchor(p);
+                            } else if (compareAnchor.id === p.id) {
+                              setCompareAnchor(null);
+                            } else {
+                              setCompareTarget(p);
+                            }
+                          }}
+                          isCompareAnchor={compareAnchor?.id === palette.id}
+                          compareActive={!!compareAnchor}
+                          onDuplicate={(p) => { const copy = duplicatePalette(p.id); if (copy) setRenameTarget(copy); }}
+                          isSelected={selectedIds.has(palette.id)}
+                          selectionActive={selectedIds.size > 0}
+                          onSelect={toggleSelect}
+                          colorMatchHex={validColorSearch ?? undefined}
+                          isCover={isCoverPalette}
+                          onSetCover={activeCollection !== "all" ? handleSetCover : undefined}
+                          searchQuery={search || undefined}
+                          collectionName={palCollectionName}
+                          collectionSize={palCollectionSize}
+                          onJumpToCollection={jumpToCollection}
+                          onClearCollection={palette.collectionId ? () => updatePalette(palette.id, { collectionId: undefined }) : undefined}
+                          onFilterByTag={(tag) => toggleTag(tag)}
+                          activeTags={activeTags.length > 0 ? activeTags : undefined}
+                          onPin={(p) => togglePin(p.id)}
+                          isPinned={!!palette.pinned}
+                          isHighlighted={palette.id === highlightedPaletteId}
+                          isFocused={focusedCardId === palette.id}
+                          keyboardFocusActive={focusedCardId !== null}
+                          onFocusCard={setFocusedCardId}
+                        />
+                      </DraggableItem>
+                    );
+                  })}
+                </AnimatePresence>
+              </Reorder.Group>
             ) : (
               <motion.div
                 layout
