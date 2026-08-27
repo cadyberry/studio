@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-08-27 — Session 213: Harmony Strip Source Highlight
+
+### What was done
+- **Harmony anchor hover/click highlight** — when hovering the harmony mini-preview strip (the row of derived harmony colors that slides in on card hover), the most-saturated palette swatch — the "anchor" from which all harmony colors are mathematically derived — now lights up with a subtle violet ring. This makes the derivation relationship immediately visible: users see at a glance which swatch in their palette generated the complement, analogs, triadic colors, etc.
+  - `harmonyAnchorHex` computed from `palette.colors` using the same most-saturated logic as `getHarmonyColors` in `lib/utils.ts`, so the highlighted swatch always matches the true anchor.
+  - `harmonyHovered` state tracks when the cursor is over the harmony strip container (`onMouseEnter`/`onMouseLeave`); the ring shows immediately on hover at 2px, 50% violet opacity.
+  - `harmonyAnchorFlash` state triggers on any harmony tile click: 3px, 90% violet ring that auto-clears after 1.3s.
+  - Both frozen and unfrozen swatch strip render paths include the ring, so the behavior is consistent regardless of palette lock state.
+  - Harmony tile `title` attribute updated to `"… — click to copy · highlights source swatch"` so the interaction is discoverable via tooltip.
+  - Ring uses `transition-all duration-200` so it animates in softly rather than popping.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Hover reveal + click flash, not click-only** — showing the ring on hover (before clicking) gives users a passive "here's where these colors come from" signal that's educational without requiring interaction. The brighter click flash confirms the relationship on demand.
+- **`harmonyAnchorHex` computed inline, not exported from `getHarmonyColors`** — avoids changing the return type of a shared utility. The computation is O(n) on palette.colors (trivial) and mirrors the utility's internal logic exactly.
+- **Ring on anchor swatch, not arrow between strip and swatch** — an arrow/line indicator would require absolute positioning across element boundaries (harmony strip → swatch strip), which is brittle. A ring on the target swatch is self-contained and immediately legible.
+- **`z-[3]` on ring overlay** — sits above the swatch background and highlight matches (z-0/z-1) but below the copy checkmark and edit buttons (z-[5]+). Stack order preserved.
+
+### What's next (Session 214)
+- **Export modal: gradient PNG filename suffix** — append direction (top-to-bottom, left-to-right, diagonal) and color order (original, sorted) to the downloaded gradient PNG filename, e.g. `{slug}-gradient-lr-sorted.png`
+- **Similar strip ΔE label** — add `ΔE` prefix to the number badge on each similar strip tile (currently just the number), consistent with ExportModal's similar section label format
+- **Harmony anchor label** — show a small "src" or "anchor" chip below the harmony label column when the strip is hovered, to make the terminology more discoverable
+
+---
+
 ## 2026-08-25 — Session 212: ExportModal Similar Palettes + ⇧S Tooltip
 
 ### What was done
