@@ -6096,3 +6096,25 @@
 - **Collection Sheet: per-palette CMYK risk indicator** — add a colored dot (amber/red) on each row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
 - **Palette "quick compare" from library** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through the card menu
 - **ExportModal section count badges** — small count pills on Download / Copy section headers
+
+---
+
+## 2026-08-28 — Session 215: Harmony Strip "src ↑" Anchor Label
+
+### What was done
+- **"src ↑" chip in harmony strip label on hover** — when the user hovers the harmony mini-preview strip, a small "src ↑" chip fades in below the "harmony" label text in the left column. The upward arrow gestures toward the anchor ring on the palette swatch strip above, making the derivation relationship immediately discoverable without requiring the user to read a tooltip.
+  - `PaletteCard.tsx`: changed label column from `flex items-center` → `flex flex-col items-center justify-center` to stack "harmony" + the chip vertically.
+  - Chip is always in the DOM (`opacity-0` when not hovered, transitions to `opacity-100`) — no layout shift on hover.
+  - Chip text: `text-[7px]` violet (`text-violet-500/80 dark:text-violet-400/80`), `tracking-wide uppercase`, matching the visual register of the 9px "harmony" text while staying visually subordinate.
+  - `title` attribute on the chip reads "Anchor swatch — the most-saturated color in this palette, from which harmony colors are derived" for further discoverability on long hover.
+- Build: clean Next.js build, 9 routes, TypeScript zero errors.
+
+### Key decisions
+- **"src ↑" over "anchor"** — "src" is shorter (3 chars vs 6) and fits comfortably in the narrow label column at 7px without truncation. The ↑ does the conceptual heavy lifting: it points from the harmony strip up to the anchor ring on the swatch strip, so users visually connect the chip to the ring in one glance.
+- **Always-in-DOM with opacity transition** — rendering the chip at `opacity-0` prevents layout shift when the strip is hovered; the label column maintains constant width regardless of hover state. A conditional render (`{harmonyHovered && ...}`) would cause the column to widen momentarily.
+- **Violet matches the ring** — `text-violet-500/80` exactly echoes `rgba(139,92,246,0.5)` used for the anchor ring, so the color itself signals "these two things are related."
+
+### What's next (Session 216)
+- **Export modal: "Copy all hex codes" for active collection** — from the collection view, copy all hex values from every palette in the collection in one button (formatted as newline-separated with palette name headers)
+- **Similar strip name tooltip delay → 300ms** — increase from 200ms to 300ms on fast hover-throughs to reduce flicker on rapid mouse movement
+- **Palette card "recently viewed" ring** — faint highlight ring on palettes opened in the current session, reset on reload
