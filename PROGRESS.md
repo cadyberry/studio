@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-08-28 — Session 214: ΔE Prefix on Similar Strip + Gradient PNG Filename Suffix
+
+### What was done
+- **ΔE prefix on similar palette strip tile badges** — the ΔE distance badge on each similar-palette strip tile (shown on palette card hover) now reads `ΔE 11.3` instead of bare `11.3`. Consistent with the ExportModal's "Similar" section which already labels distances as `ΔE X.X`, and consistent with how color-search match badges are labeled elsewhere in the UI.
+- **Gradient PNG filename includes direction + order suffix** — `exportAsGradientPng` now appends direction and color order to the downloaded filename:
+  - `{slug}-gradient-lr-orig.png` (left-to-right, palette order)
+  - `{slug}-gradient-tb-hue.png` (top-to-bottom, hue-sorted)
+  - `{slug}-gradient-diag-light-dark.png` (diagonal, light-dark sorted)
+  - `{slug}-gradient-radial-dark-light.png` (radial, dark-light sorted)
+  - Makes downloaded files self-documenting: no need to open them to know which variant they are. Direction slugs: `lr` / `tb` / `diag` / `radial`. Order slugs: `orig` / `light-dark` / `dark-light` / `hue`.
+- Build: clean Next.js 16.2.6 production build, 9 routes, TypeScript zero errors.
+
+### Key decisions
+- **`ΔE ` (with space) not `ΔE` (no space)** — the space before the number makes the badge read like a label–value pair and is easier to scan at tiny 7px text. Same convention ExportModal uses on its similar section row.
+- **`orig` not `palette`** for palette order slug — `palette` in a filename is ambiguous (everything is a palette). `orig` signals "as-extracted / original order" clearly.
+- **Lookup tables, not conditionals** — `dirSlug` and `orderSlug` are plain `Record<…, string>` objects, making it trivial to add a new direction/order variant without touching the filename logic.
+
+### What's next (Session 215)
+- **Harmony anchor label** — show a small "src" or "anchor" chip in the label column of the harmony strip when the strip is hovered, so the terminology is discoverable without reading the tooltip
+- **Export modal: "Copy all hex codes" for active collection** — from the collection view, copy all hex values from every palette in the collection in one button
+- **Similar strip name tooltip delay** — already 200ms but could be increased to 300ms on fast hover-throughs to further reduce flicker on rapid mouse movement
+
+---
+
 ## 2026-08-27 — Session 213: Harmony Strip Source Highlight
 
 ### What was done
