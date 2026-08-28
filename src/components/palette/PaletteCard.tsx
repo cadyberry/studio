@@ -1485,9 +1485,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         >
           <div className="flex h-9 border-t border-[var(--border)]">
             {/* Label */}
-            <div className="flex-shrink-0 flex items-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
-              <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 uppercase select-none whitespace-nowrap">
+            <div className="flex-shrink-0 flex flex-col items-center justify-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
+              <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 uppercase select-none whitespace-nowrap leading-none">
                 harmony
+              </span>
+              <span
+                className={`text-[7px] font-semibold tracking-wide uppercase select-none whitespace-nowrap leading-none mt-0.5 transition-opacity duration-150 ${
+                  harmonyHovered ? "text-violet-500/80 dark:text-violet-400/80 opacity-100" : "opacity-0"
+                }`}
+                title="Anchor swatch — the most-saturated color in this palette, from which harmony colors are derived"
+              >
+                src ↑
               </span>
             </div>
             {/* Derived color swatches */}
