@@ -613,8 +613,20 @@ export function exportAsGradientPng(
   ctx.fillText("Palette", W - 28, 22);
 
   const slug = palette.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const dirSlug: Record<GradientDirection, string> = {
+    "to right": "lr",
+    "to bottom": "tb",
+    "135deg": "diag",
+    "radial": "radial",
+  };
+  const orderSlug: Record<GradientOrder, string> = {
+    "palette": "orig",
+    "light-dark": "light-dark",
+    "dark-light": "dark-light",
+    "hue": "hue",
+  };
   const link = document.createElement("a");
-  link.download = `${slug}-gradient.png`;
+  link.download = `${slug}-gradient-${dirSlug[direction]}-${orderSlug[order]}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }

@@ -1588,7 +1588,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   {/* ΔE badge — tier-colored: emerald < 5, sky < 10, amber < 15, rose ≥ 15 */}
                   <div className="absolute top-1 left-1 pointer-events-none">
                     <span className={`text-[7px] font-bold leading-none px-[3px] py-[1px] rounded-[2px] tabular-nums ${simTier.overlay}`}>
-                      {avgDe.toFixed(1)}
+                      ΔE {avgDe.toFixed(1)}
                     </span>
                   </div>
                   {/* Name tooltip — slides in on hover at bottom, delayed 200ms to prevent flicker on fast hover-throughs */}
