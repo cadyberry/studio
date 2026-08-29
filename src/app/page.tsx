@@ -3158,6 +3158,7 @@ export default function Home() {
         palette={exportTarget}
         onClose={() => setExportTarget(null)}
         onJumpTo={(id) => { handleJumpToPalette(id); setExportTarget(null); }}
+        activeCollectionId={activeCollection !== "all" ? activeCollection : null}
       />
       <RenameModal palette={renameTarget} onClose={() => setRenameTarget(null)} />
       <CollectionModal palette={collectionTarget} onClose={() => setCollectionTarget(null)} />

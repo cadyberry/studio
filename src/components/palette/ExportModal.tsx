@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Copy, Code2, Braces, FileJson, FileText, Printer, Link2, AlertTriangle, LayoutGrid, Moon, Sun, Smartphone, Tablet, Layers, Sparkles, Loader2, Check, RefreshCw, ShoppingBag, Tag, Shapes, FileCode2, List, Blend } from "lucide-react";
-import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyFlatHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, copyAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
+import { exportAsPngStrip, exportAsCsv, exportAsMoodBoard, exportAsDarkMoodBoard, exportAsPortraitMoodBoard, exportAsDarkPortraitMoodBoard, copyCssVariables, copyHexList, copyFlatHexList, copyTailwindConfig, getJsonExport, copyCmykList, getPaletteShareUrl, exportAsProcreateSwatches, exportAsAse, exportAsFigmaTokensJson, copyAsFigmaTokensJson, exportAsStoryMoodBoard, exportAsLightStoryMoodBoard, getGradientCss, exportAsGradientPng, copyGradientSvg, exportAsCvdStrip, copyCollectionHexList, type GradientDirection, type GradientOrder } from "@/lib/exportPalette";
 import Button from "@/components/ui/Button";
 import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint, simulateColorBlind, deltaE, type ColorBlindType } from "@/lib/utils";
@@ -13,9 +13,10 @@ interface ExportModalProps {
   palette: Palette | null;
   onClose: () => void;
   onJumpTo?: (paletteId: string) => void;
+  activeCollectionId?: string | null;
 }
 
-export default function ExportModal({ palette, onClose, onJumpTo }: ExportModalProps) {
+export default function ExportModal({ palette, onClose, onJumpTo, activeCollectionId }: ExportModalProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [hoveredSwatch, setHoveredSwatch] = useState<number | null>(null);
   const [storyLoading, setStoryLoading] = useState(false);
@@ -79,6 +80,17 @@ export default function ExportModal({ palette, onClose, onJumpTo }: ExportModalP
     (s) => s.palettes.find((p) => p.id === (palette?.id ?? ""))?.tags ?? palette?.tags ?? []
   );
   const allPalettes = usePaletteStore((s) => s.palettes);
+  const allCollections = usePaletteStore((s) => s.collections);
+
+  const activeCollection = useMemo(() => {
+    if (!activeCollectionId) return null;
+    return allCollections.find((c) => c.id === activeCollectionId) ?? null;
+  }, [activeCollectionId, allCollections]);
+
+  const collectionPalettes = useMemo(() => {
+    if (!activeCollectionId) return [];
+    return allPalettes.filter((p) => p.collectionId === activeCollectionId);
+  }, [activeCollectionId, allPalettes]);
 
   const similarPalettes = useMemo(() => {
     if (!palette || palette.colors.length === 0) return [];
@@ -249,6 +261,13 @@ export default function ExportModal({ palette, onClose, onJumpTo }: ExportModalP
   ];
 
   const copyActions: { key: string; label: string; desc: string; icon: React.ElementType; onClick: () => void; disabled?: boolean }[] = [
+    ...(activeCollection && collectionPalettes.length > 1 ? [{
+      key: "collection-hex",
+      label: `Copy All — ${activeCollection.name}`,
+      desc: `All hex codes from all ${collectionPalettes.length} palettes in this collection`,
+      icon: LayoutGrid,
+      onClick: () => { copyCollectionHexList(collectionPalettes, activeCollection.name); flash("collection-hex"); },
+    }] : []),
     {
       key: "hex",
       label: "Copy Hex Codes",

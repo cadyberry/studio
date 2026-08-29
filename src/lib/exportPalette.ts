@@ -462,6 +462,15 @@ export function copyFlatHexList(palette: Palette): void {
   navigator.clipboard.writeText(hexes);
 }
 
+export function copyCollectionHexList(palettes: Palette[], collectionName: string): void {
+  const header = `# ${collectionName}`;
+  const body = palettes.flatMap((p) => [
+    `## ${p.name}`,
+    ...p.colors.map((c) => c.hex.toUpperCase()),
+  ]);
+  navigator.clipboard.writeText([header, ...body].join("\n"));
+}
+
 export function copyTailwindConfig(palette: Palette): void {
   const slugPalette = palette.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "palette";
 
