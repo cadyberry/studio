@@ -6118,3 +6118,28 @@
 - **Export modal: "Copy all hex codes" for active collection** — from the collection view, copy all hex values from every palette in the collection in one button (formatted as newline-separated with palette name headers)
 - **Similar strip name tooltip delay → 300ms** — increase from 200ms to 300ms on fast hover-throughs to reduce flicker on rapid mouse movement
 - **Palette card "recently viewed" ring** — faint highlight ring on palettes opened in the current session, reset on reload
+
+---
+
+## 2026-08-29 — Session 216: Export Modal "Copy All Collection Hex"
+
+### What was done
+- **"Copy All — Collection Name" in Export modal Copy section** — when a collection is active, the Export modal now shows a new entry at the top of the Copy list: "Copy All — {Collection Name}". Clicking it copies all hex codes from every palette in the active collection to the clipboard.
+  - Format: `# Collection Name` header, then `## Palette Name` + one `#HEX` per line for each palette.
+  - Entry only appears when the active collection has ≥ 2 palettes (a single-palette collection doesn't need bulk copy).
+  - Previously this was only accessible via the library header "Copy hex" button — a separate UI element outside the modal that required closing the modal, scrolling, and finding the button. Now the action surfaces exactly where the user already is.
+  - `exportPalette.ts`: added `copyCollectionHexList(palettes, collectionName)` — clean function alongside the existing single-palette copy functions.
+  - `ExportModal.tsx`: new optional `activeCollectionId?: string | null` prop; reads collection info and collection palettes from the store via two `useMemo`s; prepends the action to `copyActions` via a conditional spread.
+  - `page.tsx`: passes `activeCollectionId={activeCollection !== "all" ? activeCollection : null}` to ExportModal.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Prepend to copyActions, not append** — the collection copy is the most contextually relevant action when a collection is active; placing it first surfaces it without requiring a scroll.
+- **`≥ 2 palettes` threshold** — a collection with a single palette is identical to copying that palette's hex codes (which is already in the list). The new entry only appears when "all palettes in the collection" is meaningfully different from "this palette's hex codes."
+- **Conditional spread `...(condition ? [{...}] : [])` in the array literal** — avoids introducing a separate `useMemo` or derived state just to conditionally include one action; the spread pattern is readable at a glance and consistent with how similar conditional items are handled elsewhere.
+- **ExportModal reads from store directly** — rather than threading collection data as additional props through page.tsx, ExportModal already imports `usePaletteStore` and can select what it needs. The only new prop is the collection ID, which the store resolves to the name and its palettes.
+
+### What's next (Session 217)
+- **Similar strip name tooltip delay → 300ms** — increase from 200ms to 300ms on fast hover-throughs to reduce flicker on rapid mouse movement
+- **Palette card "recently viewed" ring** — faint highlight ring on palettes opened in the current session, reset on reload
+- **ExportModal: section count badges update for collection-hex row** — the count pill on the Copy section header already shows `copyActions.length`; verify it accounts for the conditional collection entry correctly (it does, since the array is computed before render)
