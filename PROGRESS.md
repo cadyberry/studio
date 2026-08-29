@@ -6143,3 +6143,26 @@
 - **Similar strip name tooltip delay → 300ms** — increase from 200ms to 300ms on fast hover-throughs to reduce flicker on rapid mouse movement
 - **Palette card "recently viewed" ring** — faint highlight ring on palettes opened in the current session, reset on reload
 - **ExportModal: section count badges update for collection-hex row** — the count pill on the Copy section header already shows `copyActions.length`; verify it accounts for the conditional collection entry correctly (it does, since the array is computed before render)
+
+---
+
+## 2026-08-29 — Session 217: Palette Card "Recently Viewed" Ring
+
+### What was done
+- **Session-scoped "recently viewed" ring on palette cards** — palettes hovered during the current browser session now show a faint emerald ring (`ring-1 ring-emerald-200/35 dark:ring-emerald-800/30`) on their card border. The ring resets on page reload — it's a within-session visual memory aid, not persistent state.
+  - `src/store/sessionStore.ts` — new non-persisted Zustand store with `viewedPaletteIds: Set<string>` and `markViewed(id)`. No `persist` middleware, so it's purely in-memory and clears on every page load.
+  - `PaletteCard.tsx`: imports `useSessionStore`, reads `isRecentlyViewed = viewedPaletteIds.has(palette.id)`, and calls `markViewed(palette.id)` inside `onMouseEnter` (alongside the existing similar-palette computation). The ring is added to the card `className` ternary chain as a new fallback case between aging and the plain default — so it only appears on cards with no other special ring state (not highlighted, frozen, pinned, cover, compare-active, or keyboard-focused).
+  - Performance: selector `(s) => s.viewedPaletteIds.has(palette.id)` returns a boolean, so Zustand's `===` equality check means only the card whose view state changes re-renders. All other cards skip the update.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Non-persisted store over localStorage** — "recently viewed" is intentionally session-scoped. A persistent store would make the ring meaningless (everything stays green forever). A fresh Set on every page load is the right semantic: "I've looked at this during this work session."
+- **`onMouseEnter` as the trigger** — hovering a card is the lightest meaningful signal of attention. Using click or export-open would be too delayed (users scan the library visually before clicking). Hover is instant and matches how the similar-palette computation is already triggered.
+- **Ring only in the default fallback** — the recently-viewed ring is a subtle ambient indicator, not a primary state. It's intentionally suppressed when higher-priority states (highlighted, frozen, pinned, cover, focused) already apply a ring, to avoid visual noise and ring conflicts.
+- **Emerald color** — distinct from the violet (focus/compare), amber (cover/pinned/aging), indigo (frozen), and sky (highlight) rings already in use. Emerald reads as "recently active" without urgency. At `/35` opacity it's truly faint — just barely perceptible, a "fingerprint" not a callout.
+- **`markViewed` skips re-creation if already viewed** — the action returns early (`if (s.viewedPaletteIds.has(id)) return s`) so repeated mouse-enters don't create a new Set and don't trigger subscriber updates.
+
+### What's next (Session 218)
+- **Similar strip name tooltip delay → 300ms** — increase from 200ms to 300ms on fast hover-throughs to reduce flicker on rapid mouse movement across the similar palette strip
+- **Palette quick-compare from library** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through card menus
+- **ExportModal: gradient preview inside modal** — show a small live gradient preview bar in the Download section when gradient PNG is available
