@@ -6,6 +6,7 @@ import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Ta
 import { getContrastColor, deltaE, getPaletteMood, getPaletteHueFamily, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteHueFamily, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { exportAsCvdStrip } from "@/lib/exportPalette";
 import { usePaletteStore } from "@/store/paletteStore";
+import { useSessionStore } from "@/store/sessionStore";
 import type { ColorSwatch, Palette, PaletteSnapshot } from "@/types";
 import Button from "@/components/ui/Button";
 
@@ -194,6 +195,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   }));
   const cachedColorStory = usePaletteStore((s) => s.colorStoryCache[palette.id] ?? null);
   const setColorStoryCache = usePaletteStore((s) => s.setColorStoryCache);
+
+  const isRecentlyViewed = useSessionStore((s) => s.viewedPaletteIds.has(palette.id));
+  const markViewed = useSessionStore((s) => s.markViewed);
 
   // All unique tags in the library (for autocomplete)
   const allLibraryTags = usePaletteStore((s) => {
@@ -976,6 +980,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       exit={{ opacity: 0, scale: 0.96 }}
       onMouseEnter={() => {
         isHoveredRef.current = true;
+        markViewed(palette.id);
         if (!similarComputedRef.current) {
           similarComputedRef.current = true;
           const allPalettes = usePaletteStore.getState().palettes;
@@ -998,6 +1003,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         isSelected ? "border-[var(--accent)] shadow-sm" :
         (compareActive && !isCompareAnchor) ? "border-violet-200 dark:border-violet-800/50 ring-1 ring-violet-200/40 dark:ring-violet-800/30" :
         aging ? `border-[var(--border)] ${AGING_STYLES[aging.ageClass].border}` :
+        (isRecentlyViewed && !isFocused) ? "border-[var(--border)] ring-1 ring-emerald-200/35 dark:ring-emerald-800/30" :
         "border-[var(--border)]"
       } ${isFocused ? "ring-2 ring-[var(--accent)]/40 shadow-md" : ""} ${className ?? ""}`}
     >
