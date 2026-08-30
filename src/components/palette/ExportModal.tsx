@@ -129,6 +129,8 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
 
   if (!palette) return null;
 
+  const gradientCss = getGradientCss(palette, gradDir, gradOrder);
+
   const generateStory = async () => {
     setStoryLoading(true);
     setStoryError(false);
@@ -178,7 +180,7 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
     ? `PNG card with CMYK data · ${[highCount > 0 && `${highCount} high-risk`, cautionCount > 0 && `${cautionCount} caution`].filter(Boolean).join(", ")} flagged`
     : "PNG reference card — hex, RGB & CMYK per swatch";
 
-  const downloadActions: { key: string; label: string; desc: string; icon: React.ElementType; onClick: () => void; disabled?: boolean }[] = [
+  const downloadActions: { key: string; label: string; desc: string; icon: React.ElementType; onClick: () => void; disabled?: boolean; preview?: string }[] = [
     {
       key: "png",
       label: "Download Palette Card",
@@ -258,9 +260,17 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
       icon: FileText,
       onClick: () => { exportAsCsv(palette); },
     },
+    {
+      key: "gradient-png",
+      label: "Download Gradient PNG",
+      desc: "Smooth color blend — background, header, or social graphic",
+      icon: Blend,
+      preview: gradientCss,
+      onClick: () => { exportAsGradientPng(palette, gradDir, gradOrder); },
+    },
   ];
 
-  const copyActions: { key: string; label: string; desc: string; icon: React.ElementType; onClick: () => void; disabled?: boolean }[] = [
+  const copyActions: { key: string; label: string; desc: string; icon: React.ElementType; onClick: () => void; disabled?: boolean; preview?: string }[] = [
     ...(activeCollection && collectionPalettes.length > 1 ? [{
       key: "collection-hex",
       label: `Copy All — ${activeCollection.name}`,
@@ -453,8 +463,13 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
                             : "hover:bg-[var(--surface-2)]"
                         }`}
                       >
-                        <div className="w-8 h-8 rounded-md bg-[var(--surface-2)] flex items-center justify-center flex-shrink-0 group-hover:bg-[var(--border)] transition-colors">
-                          <action.icon size={15} className="text-[var(--muted)]" />
+                        <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 ring-1 ring-transparent group-hover:ring-[var(--border)] transition-all">
+                          {action.preview
+                            ? <div className="w-full h-full" style={{ background: action.preview }} title="Gradient preview" />
+                            : <div className="w-full h-full bg-[var(--surface-2)] flex items-center justify-center group-hover:bg-[var(--border)] transition-colors">
+                                <action.icon size={15} className="text-[var(--muted)]" />
+                              </div>
+                          }
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium">
