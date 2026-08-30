@@ -3332,6 +3332,29 @@ export default function Home() {
                 </AnimatePresence>
               </div>
 
+              {/* Quick-compare: show only when exactly 2 palettes are selected */}
+              {selectedIds.size === 2 && (() => {
+                const [idA, idB] = [...selectedIds];
+                const pA = palettes.find(p => p.id === idA) ?? null;
+                const pB = palettes.find(p => p.id === idB) ?? null;
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCompareAnchor(pA);
+                      setCompareTarget(pB);
+                      clearSelection();
+                    }}
+                    className="shrink-0 gap-1.5 text-violet-600 border-violet-300 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30"
+                    title={`Compare "${pA?.name}" vs "${pB?.name}"`}
+                  >
+                    <ArrowLeftRight size={13} />
+                    Compare
+                  </Button>
+                );
+              })()}
+
               {/* Bulk freeze/unfreeze */}
               <Button
                 variant={frozenSelectedCount === selectedIds.size ? "outline" : "ghost"}
