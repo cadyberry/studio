@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-08-30 — Session 218: Gradient PNG in Download List + Tooltip Delay 300ms
+
+### What was done
+- **Gradient PNG surfaced in Export Modal Download section** — "Download Gradient PNG" is now a first-class entry in the Download section list alongside Palette Card, Mood Boards, Procreate Swatches, etc. Previously, the gradient PNG download was only accessible by scrolling down to the CSS Gradient Generator subsection. The new list row shows a live 32×32px gradient preview strip in the icon position — reflecting the currently selected direction and color order — so users can see what they'll download at a glance without opening the Gradient subsection.
+  - `ExportModal.tsx`: computed `gradientCss` at component top level (after `if (!palette) return null;`) so it's available both for the Download list row and the existing Gradient subsection. Extended both `downloadActions` and `copyActions` type definitions to include `preview?: string`. Added gradient-png entry to `downloadActions`. Updated the action row renderer to display a gradient bar div when `preview` is set, with a `ring-[var(--border)]` outline on hover instead of the usual icon square.
+  - Build: clean Next.js 16.2.6 production build, 9 routes, TypeScript zero errors.
+- **Similar strip name tooltip delay 200ms → 300ms** — the name tooltip and Shift+click hint that fade in on hover over the similar-palette strip tiles now delay 300ms instead of 200ms, reducing flicker when the mouse moves quickly across the strip without intending to hover any tile.
+  - `PaletteCard.tsx`: changed `transition-opacity delay-200` to `transition-opacity delay-300` on both the name tooltip div and the ⇧E hint div.
+
+### Key decisions
+- **Live gradient preview in the row icon** — the 32×32px slot normally shows a generic icon; for the gradient row it shows the actual gradient CSS applied as `background`. This makes the action self-documenting: no label disambiguation needed between "Gradient PNG" and the direction/order variants.
+- **`gradientCss` computed once at top level** — avoids computing it twice (once for the Download list, once for the Gradient subsection) and ensures both always show the same gradient state.
+- **`preview?: string` on both action arrays** — `downloadActions` and `copyActions` share the same render loop; adding `preview?` to both types keeps TypeScript happy without casting.
+
+### What's next (Session 219)
+- **Palette quick-compare from library** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through card menus
+- **ExportModal: gradient direction/order mini-controls in the Download row** — small direction toggle chips inline under the gradient PNG row so the user can change direction without scrolling to the Gradient subsection
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+
+---
+
 ## 2026-08-28 — Session 214: ΔE Prefix on Similar Strip + Gradient PNG Filename Suffix
 
 ### What was done
