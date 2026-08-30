@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-08-30 — Session 219: Compare Button in Bulk-Select Bar
+
+### What was done
+- **Compare button in multi-select toolbar** — when exactly 2 palettes are checked (via checkbox selection), a violet-accented `Compare` button now appears in the fixed bulk-action bar at the bottom. Clicking it opens the existing `CompareModal` with those two palettes pre-loaded, then clears the checkbox selection so the bar dismisses cleanly.
+  - `page.tsx`: injected the button into the bulk action bar (line ~3335) using an IIFE to destructure the two IDs, resolve them to `Palette` objects, and wire `setCompareAnchor`/`setCompareTarget` + `clearSelection` into the onClick.
+  - Button is only rendered when `selectedIds.size === 2` — zero visual noise for other selection sizes.
+  - Violet color treatment (`text-violet-600 border-violet-300`) visually distinguishes it as an analysis action vs. the neutral tag/lock/export/delete cluster.
+  - `CompareModal` was already fully built (nearest-neighbor ΔE pairs, avg/closest/furthest stats, tier color-coding); this session surfaces it through the checkbox workflow the PROGRESS notes have flagged since session 218.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **IIFE pattern in JSX** — `{selectedIds.size === 2 && (() => { ... })()}` keeps the ID destructuring and palette lookup scoped without requiring a separate memoized value or extraction hook. Two palettes means exactly two IDs, making destructuring clean.
+- **Clear selection on open** — after opening CompareModal the bulk bar closes (selection cleared), keeping the UI uncluttered while the modal is open. Selection can be rebuilt after dismissing.
+- **Position: before freeze/lock** — the Compare button sits just left of freeze/lock because it's a read-only analysis action (no mutation), so placing it before the mutating actions (lock, export, delete) felt right ergonomically.
+
+### What's next (Session 220)
+- **ExportModal: gradient direction/order mini-controls in the Download row** — small direction toggle chips inline under the gradient PNG row so the user can change direction without scrolling to the Gradient subsection
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+- **Compare: swap button** — small ⇄ button in CompareModal header to flip A↔B and re-run the nearest-neighbor pairs from the other direction
+
+---
+
 ## 2026-08-30 — Session 218: Gradient PNG in Download List + Tooltip Delay 300ms
 
 ### What was done
