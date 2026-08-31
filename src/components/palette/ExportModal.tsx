@@ -9,6 +9,20 @@ import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint, simulateColorBlind, deltaE, type ColorBlindType } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 
+const DIRS: { value: GradientDirection; label: string; title: string }[] = [
+  { value: "to right",  label: "→", title: "Left to right" },
+  { value: "135deg",    label: "↘", title: "Diagonal (135°)" },
+  { value: "to bottom", label: "↓", title: "Top to bottom" },
+  { value: "radial",    label: "○", title: "Radial from center" },
+];
+
+const ORDERS: { value: GradientOrder; label: string; title: string }[] = [
+  { value: "palette",    label: "Original", title: "Palette swatch order" },
+  { value: "light-dark", label: "☀→●",     title: "Light to dark" },
+  { value: "dark-light", label: "●→☀",     title: "Dark to light" },
+  { value: "hue",        label: "Hue",       title: "Sorted by hue (rainbow order)" },
+];
+
 interface ExportModalProps {
   palette: Palette | null;
   onClose: () => void;
@@ -453,31 +467,73 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
                   </div>
                   <div className="space-y-1 mb-4">
                     {list.map((action) => (
-                      <button
-                        key={action.key}
-                        onClick={action.disabled ? undefined : action.onClick}
-                        disabled={action.disabled}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] transition-colors text-left group ${
-                          action.disabled
-                            ? "opacity-40 cursor-not-allowed"
-                            : "hover:bg-[var(--surface-2)]"
-                        }`}
-                      >
-                        <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 ring-1 ring-transparent group-hover:ring-[var(--border)] transition-all">
-                          {action.preview
-                            ? <div className="w-full h-full" style={{ background: action.preview }} title="Gradient preview" />
-                            : <div className="w-full h-full bg-[var(--surface-2)] flex items-center justify-center group-hover:bg-[var(--border)] transition-colors">
-                                <action.icon size={15} className="text-[var(--muted)]" />
-                              </div>
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium">
-                            {copied === action.key ? "Copied!" : action.label}
+                      <React.Fragment key={action.key}>
+                        <button
+                          onClick={action.disabled ? undefined : action.onClick}
+                          disabled={action.disabled}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] transition-colors text-left group ${
+                            action.disabled
+                              ? "opacity-40 cursor-not-allowed"
+                              : "hover:bg-[var(--surface-2)]"
+                          }`}
+                        >
+                          <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 ring-1 ring-transparent group-hover:ring-[var(--border)] transition-all relative">
+                            {action.preview
+                              ? <>
+                                  <div className="w-full h-full" style={{ background: action.preview }} title="Gradient preview" />
+                                  {action.key === "gradient-png" && (
+                                    <span className="absolute inset-0 flex items-center justify-center text-white/80 text-[11px] font-medium drop-shadow pointer-events-none select-none">
+                                      {DIRS.find(d => d.value === gradDir)?.label}
+                                    </span>
+                                  )}
+                                </>
+                              : <div className="w-full h-full bg-[var(--surface-2)] flex items-center justify-center group-hover:bg-[var(--border)] transition-colors">
+                                  <action.icon size={15} className="text-[var(--muted)]" />
+                                </div>
+                            }
                           </div>
-                          <div className="text-xs text-[var(--muted)] truncate">{action.desc}</div>
-                        </div>
-                      </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium">
+                              {copied === action.key ? "Copied!" : action.label}
+                            </div>
+                            <div className="text-xs text-[var(--muted)] truncate">{action.desc}</div>
+                          </div>
+                        </button>
+                        {/* Gradient mini-controls: inline config directly below the download button */}
+                        {section === "Download" && action.key === "gradient-png" && (
+                          <div className="flex items-center gap-1 pl-11 -mt-0.5 mb-0.5 flex-wrap" onClick={e => e.stopPropagation()}>
+                            {DIRS.map(({ value, label, title }) => (
+                              <button
+                                key={value}
+                                onClick={() => setGradDir(value)}
+                                title={title}
+                                className={`w-6 h-5 rounded text-[11px] flex items-center justify-center transition-colors ${
+                                  gradDir === value
+                                    ? "bg-[var(--surface-2)] ring-1 ring-[var(--border)] text-[var(--foreground)]"
+                                    : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                            <div className="w-px h-3 bg-[var(--border)] mx-0.5 self-center" />
+                            {ORDERS.map(({ value, label, title }) => (
+                              <button
+                                key={value}
+                                onClick={() => setGradOrder(value)}
+                                title={title}
+                                className={`px-1.5 h-5 rounded text-[9px] flex items-center justify-center transition-colors ${
+                                  gradOrder === value
+                                    ? "bg-[var(--surface-2)] ring-1 ring-[var(--border)] text-[var(--foreground)]"
+                                    : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </React.Fragment>
                     ))}
                   </div>
                 </div>
@@ -556,21 +612,6 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
             {/* CSS Gradient Generator */}
             {(() => {
               if (!palette) return null;
-              const gradientCss = getGradientCss(palette, gradDir, gradOrder);
-
-              const DIRS: { value: GradientDirection; label: string; title: string }[] = [
-                { value: "to right", label: "→", title: "Left to right" },
-                { value: "135deg",   label: "↘", title: "Diagonal (135°)" },
-                { value: "to bottom", label: "↓", title: "Top to bottom" },
-                { value: "radial",   label: "○", title: "Radial from center" },
-              ];
-
-              const ORDERS: { value: GradientOrder; label: string; title: string }[] = [
-                { value: "palette",    label: "Original", title: "Palette swatch order" },
-                { value: "light-dark", label: "☀→●",     title: "Light to dark" },
-                { value: "dark-light", label: "●→☀",     title: "Dark to light" },
-                { value: "hue",        label: "Hue",       title: "Sorted by hue (rainbow order)" },
-              ];
 
               const copyGradient = () => {
                 navigator.clipboard.writeText(`background: ${gradientCss};`);
