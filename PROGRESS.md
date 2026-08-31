@@ -6209,3 +6209,24 @@
 - **Similar strip name tooltip delay → 300ms** — increase from 200ms to 300ms on fast hover-throughs to reduce flicker on rapid mouse movement across the similar palette strip
 - **Palette quick-compare from library** — select two palettes via checkboxes and open a side-by-side ΔE comparison without going through card menus
 - **ExportModal: gradient preview inside modal** — show a small live gradient preview bar in the Download section when gradient PNG is available
+
+---
+
+## 2026-08-31 — Session 218: Gradient Mini-Controls in Export Modal Download Section
+
+### What was done
+- **Gradient direction + order picker inline in the Download section** — previously users had to scroll past the Print/CMYK section to reach the Gradient controls below. Now a compact mini-toolbar (direction: →↘↓○, order: Original/☀→●/●→☀/Hue) appears directly below the "Download Gradient PNG" row. Selecting a direction or order updates the gradient preview thumbnail and the CSS in the Gradient section below instantly (shared state).
+- **Direction arrow overlay on 32×32 gradient thumbnail** — the direction symbol (→, ↘, ↓, ○) is overlaid in the center of the preview thumbnail in the Download row icon area, making the current setting immediately visible without reading the controls.
+- **DIRS/ORDERS refactor** — moved from IIFE-local constants inside the Gradient section to module-level constants, eliminating duplication and making them available in the Download section render. Removed redundant local `gradientCss` computation inside the IIFE (the outer component-scope one is identical).
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Shared `gradDir`/`gradOrder` state** — the mini-controls in the Download section write to the same state as the full controls in the Gradient section. Changing direction in either place updates both views. This is intentional: one setting, two access points.
+- **Mini-control sizing (h-5, text-[9-11px])** — slightly smaller than the full Gradient section controls (h-6/7) to feel auxiliary rather than primary. The Gradient section retains its role as the canonical "configure and preview" area.
+- **`onClick e.stopPropagation()` on mini-control row** — prevents the click from bubbling to a parent container that might interfere.
+- **Direction overlay uses `text-white/80 drop-shadow`** — ensures readability against any gradient color combination without needing to compute contrast dynamically.
+
+### What's next (Session 219)
+- **Similar strip: "show more" expander** — similar palette strip currently shows at most 4 palettes; add a "+N more" chip that expands to show all similar palettes in a grid below
+- **Palette card subtitle line** — below the palette name in the card header, show the collection name (if in a collection) or the relative "added X days ago" date in muted text
+- **Color name chips on swatch hover** — when hovering a swatch in the library card, show a small color-name chip (from the swatch's `name` field if set, otherwise derive from hue/tone)
