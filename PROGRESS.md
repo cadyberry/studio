@@ -6230,3 +6230,26 @@
 - **Similar strip: "show more" expander** — similar palette strip currently shows at most 4 palettes; add a "+N more" chip that expands to show all similar palettes in a grid below
 - **Palette card subtitle line** — below the palette name in the card header, show the collection name (if in a collection) or the relative "added X days ago" date in muted text
 - **Color name chips on swatch hover** — when hovering a swatch in the library card, show a small color-name chip (from the swatch's `name` field if set, otherwise derive from hue/tone)
+
+---
+
+## 2026-08-31 — Session 220: Palette Card Subtitle Line
+
+### What was done
+- **Subtitle line below palette name on every card** — each palette card in the library now shows a compact subtitle line between the name and the tags/pill row:
+  - **In a collection**: a small `FolderOpen` icon (9px, muted) followed by the collection name in `text-[10px] text-[var(--muted)]`. When `onJumpToCollection` prop is present (always the case in the library), the name is a `<button>` that jumps directly to the collection on click — matching the existing badge behavior but visible without scanning the tags row.
+  - **Not in a collection**: a small `Clock` icon (9px, muted, 50% opacity) followed by the relative age string from `formatRelativeAge(palette.createdAt)` — e.g. "just now", "3 days ago", "2 weeks ago". On hover, a title attribute shows the exact added date via `formatDate(createdAt)`.
+  - The subtitle is hidden during inline rename editing (suppressed by `!inlineEditing` guard) so it doesn't interfere with the name input.
+  - Uses `mt-[2px]` to keep tight proximity to the name above, separate from the `mt-0.5` gap before the tags row.
+- Build: clean Next.js build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Collection name takes precedence over date** — if a palette is in a collection, that context is more useful at a glance than knowing "2 months ago." The date is always discoverable via the aging/freshness badges.
+- **Clickable collection name** — the subtitle collection name button reuses the same `onJumpToCollection` callback as the badge in the tags row. Two entry points to the same action; the subtitle is the faster-to-reach one without reading the tag pills.
+- **No change to the existing collection badge in the tags row** — the badge shows collection name + count and remains for users who want the detailed view. The subtitle is a quick-scan element; the badge is the interactive detailed version.
+- **`min-w-0` on subtitle container** — ensures the collection name truncates cleanly rather than overflowing the card.
+
+### What's next (Session 221)
+- **Compare modal: swap button** — small ⇄ button in the CompareModal header to flip A↔B and re-run nearest-neighbor ΔE pairs from the other direction
+- **Similar strip "show more" expander** — the similar palette strip shows at most 4 palettes; add a "+N more" chip that expands to a grid below
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
