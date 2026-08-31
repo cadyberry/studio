@@ -1654,6 +1654,39 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </div>
             </div>
           )}
+          {/* Subtitle — collection name (clickable) or relative added date */}
+          {!inlineEditing && (
+            <div className="flex items-center gap-0.5 mt-[2px] min-w-0">
+              {palette.collectionId ? (
+                <>
+                  <FolderOpen size={9} className="text-[var(--muted)] flex-shrink-0 opacity-60" />
+                  {onJumpToCollection ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onJumpToCollection(palette.collectionId!); }}
+                      className="text-[10px] text-[var(--muted)] truncate leading-tight hover:text-[var(--accent)] transition-colors text-left"
+                      title={`Jump to collection: ${collectionName ?? "collection"}`}
+                    >
+                      {collectionName ?? "in collection"}
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-[var(--muted)] truncate leading-tight">
+                      {collectionName ?? "in collection"}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Clock size={9} className="text-[var(--muted)] flex-shrink-0 opacity-50" />
+                  <span
+                    className="text-[10px] text-[var(--muted)] truncate leading-tight"
+                    title={`Added ${formatDate(palette.createdAt)}`}
+                  >
+                    {formatRelativeAge(palette.createdAt)}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
             <span className="text-xs text-[var(--muted)]">{palette.colors.length} colors</span>
             {lightnessRange && (
