@@ -74,6 +74,13 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    title: "Compare Modal",
+    shortcuts: [
+      { keys: ["S"], label: "Swap A ↔ B — re-run pairs from the other direction" },
+      { keys: ["Esc"], label: "Close compare modal" },
+    ],
+  },
+  {
     title: "Tags",
     shortcuts: [
       { keys: ["Enter", ","], label: "Add tag", sep: "/" },

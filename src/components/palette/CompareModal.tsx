@@ -36,6 +36,21 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     if (open) setSwapped(false);
   }, [open]);
 
+  // S = swap A↔B while modal is open
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      const inInput = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
+      if ((e.key === "s" || e.key === "S") && !inInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setSwapped((s) => !s);
+      }
+    };
+    document.addEventListener("keydown", handler, { capture: true });
+    return () => document.removeEventListener("keydown", handler, { capture: true });
+  }, [open]);
+
   const effectiveA = swapped ? paletteB : paletteA;
   const effectiveB = swapped ? paletteA : paletteB;
 
@@ -95,7 +110,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setSwapped((s) => !s)}
-                  title="Swap A ↔ B — re-run nearest-neighbor pairs from the other direction"
+                  title="Swap A ↔ B — re-run nearest-neighbor pairs from the other direction (S)"
                   className={`flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] font-medium transition-colors ${
                     swapped
                       ? "bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800"
@@ -104,6 +119,11 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 >
                   <ArrowLeftRight size={12} />
                   {swapped && <span>swapped</span>}
+                  {!swapped && (
+                    <kbd className="hidden sm:inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] leading-none opacity-60">
+                      S
+                    </kbd>
+                  )}
                 </button>
                 <button
                   onClick={onClose}
