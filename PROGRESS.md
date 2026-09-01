@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-09-01 — Session 220: CompareModal A↔B Swap Button
+
+### What was done
+- **Swap button in CompareModal header** — a small ⇄ button in the header row lets the user flip which palette is the "source" (A) and which is the "target" (B) for the nearest-neighbor ΔE pairs. Clicking it re-runs the pairs from the opposite direction in one click, without closing and re-opening the modal.
+  - `swapped` boolean state lives inside `CompareModal`; `effectiveA`/`effectiveB` are derived from it, keeping the parent API (`paletteA`, `paletteB` props) unchanged.
+  - `useEffect` resets `swapped = false` each time `open` transitions to true, so every fresh open starts in canonical A→B direction.
+  - Button shows a muted `ArrowLeftRight` icon in the default state; when active (swapped) it gains a violet fill + border + a small "swapped" label so the state is unambiguous.
+  - Palette strips gained "A" / "B" prefix labels and "source" / "target" sub-labels so the directionality of the nearest-neighbor algorithm is immediately clear regardless of swap state.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Local state, not a prop** — the swap is a view-only operation within the modal (the ΔE math re-runs on effectiveA/effectiveB). No parent state change needed; keeping it local avoids refactoring the 3 call-sites in `page.tsx` that set `compareAnchor`/`compareTarget`.
+- **Reset on open, not on close** — resetting in a `useEffect` keyed to `open` (not to `paletteA`/`paletteB`) means the reset fires exactly once per open event and doesn't fire on every prop re-render while open.
+- **"swapped" label only when swapped** — zero noise in the default state; the label appears only when the user needs confirmation they're in non-canonical view.
+
+### What's next (Session 221)
+- **ExportModal: gradient direction/order mini-controls in Download row** — inline direction toggle chips under the gradient PNG download row so user can change direction without scrolling to the Gradient subsection
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each row's label bar in collection reference sheet PNG if any swatch has a print-shift risk
+- **CompareModal: keyboard shortcut** — press `S` while modal open to swap A↔B
+
+---
+
 ## 2026-08-30 — Session 219: Compare Button in Bulk-Select Bar
 
 ### What was done
