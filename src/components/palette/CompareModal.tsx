@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeftRight } from "lucide-react";
 import { deltaE } from "@/lib/utils";
@@ -29,14 +29,23 @@ interface CompareModalProps {
 
 export default function CompareModal({ paletteA, paletteB, onClose }: CompareModalProps) {
   const open = !!(paletteA && paletteB);
+  const [swapped, setSwapped] = useState(false);
 
-  // For each swatch in A, find the nearest match in B
+  // Reset swap direction each time the modal opens with a new pair
+  useEffect(() => {
+    if (open) setSwapped(false);
+  }, [open]);
+
+  const effectiveA = swapped ? paletteB : paletteA;
+  const effectiveB = swapped ? paletteA : paletteB;
+
+  // For each swatch in effectiveA, find the nearest match in effectiveB
   const pairs = useMemo((): ComparePair[] => {
-    if (!paletteA || !paletteB) return [];
-    return paletteA.colors.map((swA) => {
+    if (!effectiveA || !effectiveB) return [];
+    return effectiveA.colors.map((swA) => {
       let bestDelta = Infinity;
-      let bestB = paletteB.colors[0];
-      for (const swB of paletteB.colors) {
+      let bestB = effectiveB.colors[0];
+      for (const swB of effectiveB.colors) {
         const d = deltaE(swA.hex, swB.hex);
         if (d < bestDelta) { bestDelta = d; bestB = swB; }
       }
@@ -48,7 +57,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
         dE: Math.round(bestDelta * 10) / 10,
       };
     }).sort((a, b) => a.dE - b.dE);
-  }, [paletteA, paletteB]);
+  }, [effectiveA, effectiveB]);
 
   const avgDelta = useMemo(() => {
     if (pairs.length === 0) return 0;
@@ -83,27 +92,44 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 <ArrowLeftRight size={14} className="text-[var(--muted)]" />
                 <h2 className="text-sm font-semibold">Compare Palettes</h2>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-              >
-                <X size={14} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setSwapped((s) => !s)}
+                  title="Swap A ↔ B — re-run nearest-neighbor pairs from the other direction"
+                  className={`flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] font-medium transition-colors ${
+                    swapped
+                      ? "bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                  }`}
+                >
+                  <ArrowLeftRight size={12} />
+                  {swapped && <span>swapped</span>}
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
 
             <div className="p-5 space-y-4">
               {/* Palette strips + overall ΔE */}
               <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start">
                 <div className="space-y-1.5 min-w-0">
-                  <p className="text-xs font-semibold text-[var(--foreground)] truncate" title={paletteA!.name}>
-                    {paletteA!.name}
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">A</span>
+                    <p className="text-xs font-semibold text-[var(--foreground)] truncate" title={effectiveA!.name}>
+                      {effectiveA!.name}
+                    </p>
+                  </div>
                   <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
-                    {paletteA!.colors.map((c, i) => (
+                    {effectiveA!.colors.map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} title={c.hex} />
                     ))}
                   </div>
-                  <p className="text-[10px] text-[var(--muted)]">{paletteA!.colors.length} swatches</p>
+                  <p className="text-[10px] text-[var(--muted)]">{effectiveA!.colors.length} swatches · source</p>
                 </div>
 
                 <div className="flex flex-col items-center gap-0.5 pt-1 shrink-0">
@@ -117,15 +143,18 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 </div>
 
                 <div className="space-y-1.5 min-w-0">
-                  <p className="text-xs font-semibold text-[var(--foreground)] truncate text-right" title={paletteB!.name}>
-                    {paletteB!.name}
-                  </p>
+                  <div className="flex items-center gap-1 justify-end">
+                    <p className="text-xs font-semibold text-[var(--foreground)] truncate text-right" title={effectiveB!.name}>
+                      {effectiveB!.name}
+                    </p>
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">B</span>
+                  </div>
                   <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
-                    {paletteB!.colors.map((c, i) => (
+                    {effectiveB!.colors.map((c, i) => (
                       <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} title={c.hex} />
                     ))}
                   </div>
-                  <p className="text-[10px] text-[var(--muted)] text-right">{paletteB!.colors.length} swatches</p>
+                  <p className="text-[10px] text-[var(--muted)] text-right">{effectiveB!.colors.length} swatches · target</p>
                 </div>
               </div>
 
