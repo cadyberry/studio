@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-09-01 — Session 221: CompareModal S Keyboard Shortcut
+
+### What was done
+- **`S` keyboard shortcut to swap A↔B in CompareModal** — pressing `S` while the Compare Modal is open now flips the nearest-neighbor direction instantly, without reaching for the swap button.
+  - `CompareModal.tsx`: added a `useEffect` (keyed to `open`) that registers a capture-phase `keydown` listener on the document. On `s`/`S` (no modifier, no active input), it calls `setSwapped(s => !s)` and calls `e.stopPropagation()` to prevent the key from reaching the global page handler (which would otherwise trigger card-hover `S` = "Open Color Story").
+  - Capture phase is intentional — the CompareModal's modal overlay owns keyboard input while it's visible; using capture phase ensures the intercept happens before any bubbling listeners.
+  - Swap button tooltip updated: `"… (S)"` suffix so the shortcut is discoverable on hover without requiring a ? lookup.
+  - Swap button gets a small inline `<kbd>S</kbd>` chip (visible on sm+ screens) in the unswapped state, which disappears when swapped to leave room for the "swapped" label — no layout jitter.
+- **KeyboardHelpModal updated** — added a new "Compare Modal" section with `S → Swap A ↔ B` and `Esc → Close`.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Capture phase over bubble phase** — The global page.tsx handler runs at bubble phase and handles `S` for the "Color Story" card shortcut. Using `addEventListener(..., { capture: true })` ensures CompareModal wins the race when open, without needing to modify the global handler.
+- **`e.stopPropagation()` on the capture path** — prevents the event from reaching any card-hover handlers that might be registered on intermediate elements.
+- **`kbd` chip hidden when swapped** — the "swapped" label text and the `S` chip would compete for space in the compact button. Since the label is only meaningful when active (swapped), and the `kbd` hint is only meaningful when idle, they're mutually exclusive with no extra CSS tricks needed.
+- **Section in KeyboardHelpModal, not inline label** — the modal already lists modal-specific shortcuts per section (Swatch Editor, Tags, Inline Rename). "Compare Modal" follows the same pattern so ? help stays the single source of truth.
+
+### What's next (Session 222)
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each row's label bar in collection reference sheet PNG if any swatch has a print-shift risk
+- **Similar strip "show more" expander** — "+N more" chip to expand the 4-tile limit to a full grid
+- **CompareModal: total unique colors count** — show how many distinct colors appear across both palettes combined vs. their union size
+
+---
+
 ## 2026-09-01 — Session 220: CompareModal A↔B Swap Button
 
 ### What was done
