@@ -345,13 +345,30 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
     ctx.fillStyle = "#e2e2da";
     ctx.fillRect(0, labelY, W, 1); // top border of label area
 
+    // CMYK print-risk indicator
+    const sims = palette.colors.map((c) => simulateCmykPrint(c.hex));
+    const hasHighRisk = sims.some((s) => s.risk === "high");
+    const hasCautionRisk = sims.some((s) => s.risk === "caution");
+    const riskLevel = hasHighRisk ? "high" : hasCautionRisk ? "caution" : "safe";
+    const DOT_R = 4;
+    const dotCY = labelY + ROW_LABEL_H / 2;
+    const dotCX = PAD_X + DOT_R;
+    const nameX = riskLevel !== "safe" ? dotCX + DOT_R + 7 : PAD_X;
+
+    if (riskLevel !== "safe") {
+      ctx.beginPath();
+      ctx.arc(dotCX, dotCY, DOT_R, 0, Math.PI * 2);
+      ctx.fillStyle = riskLevel === "high" ? "#e11d48" : "#d97706";
+      ctx.fill();
+    }
+
     // Palette name
     ctx.fillStyle = "#1c1c19";
     ctx.font = `500 12px ${SANS}`;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     const nameTrunc = palette.name.length > 90 ? palette.name.slice(0, 90) + "…" : palette.name;
-    ctx.fillText(nameTrunc, PAD_X, labelY + ROW_LABEL_H / 2);
+    ctx.fillText(nameTrunc, nameX, labelY + ROW_LABEL_H / 2);
 
     // Hex codes (first 5) + color count
     const hexStr = palette.colors.slice(0, 5).map((c) => c.hex.toUpperCase()).join("  ");
@@ -380,6 +397,29 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("Made with Palette · color intelligence for creators", W / 2, rowY + FOOTER_H / 2);
+
+  // Risk legend — only if any palette has a risk dot
+  const anyRisk = palettes.some((p) => p.colors.some((c) => simulateCmykPrint(c.hex).risk !== "safe"));
+  if (anyRisk) {
+    const legendDots: { color: string; label: string }[] = [
+      { color: "#e11d48", label: "high CMYK shift" },
+      { color: "#d97706", label: "caution" },
+    ];
+    let lx = PAD_X;
+    const ly = rowY + FOOTER_H / 2;
+    legendDots.forEach(({ color, label }) => {
+      ctx.beginPath();
+      ctx.arc(lx + 4, ly, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.fillStyle = "#aaaaa0";
+      ctx.font = `10px ${SANS}`;
+      ctx.textAlign = "left";
+      ctx.fillText(label, lx + 11, ly);
+      const textW = ctx.measureText(label).width;
+      lx += 11 + textW + 16;
+    });
+  }
 
   const link = document.createElement("a");
   const slug = collectionName.replace(/\s+/g, "-").toLowerCase().replace(/[^a-z0-9-]/g, "") || "collection";
