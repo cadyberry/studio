@@ -6299,3 +6299,29 @@
 - **Compare modal: swap button** — small ⇄ button in the CompareModal header to flip A↔B and re-run nearest-neighbor ΔE pairs from the other direction
 - **Similar strip "show more" expander** — the similar palette strip shows at most 4 palettes; add a "+N more" chip that expands to a grid below
 - **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+
+---
+
+## 2026-09-02 — Session 222: Similar Strip "Show More" Expander
+
+### What was done
+- **"+N more" chip expands similar strip to a compact grid** — the similar palette strip on hover now shows up to 3 palettes in the strip row as before, but if more matches exist, a `+N` chip appears at the right end. Clicking it expands the strip downward into a 3-column grid showing the additional palettes (each 32px tall). Clicking again collapses back to the strip-only view.
+  - Changed similar palette computation from `.slice(0, 3)` → `.slice(0, 8)` so there's always grid content.
+  - `SIMILAR_VISIBLE = 3` constant defines the strip cap; `moreSimilar = similarPalettes.slice(SIMILAR_VISIBLE)` feeds the grid.
+  - `isCardHovered` state replaces the CSS `group-hover:max-h-10` for the container, so strip and expanded grid collapse together on mouse leave.
+  - `showMoreSimilar` state resets to `false` in `onMouseLeave` — each new hover starts collapsed.
+  - Container uses inline `style={{ maxHeight }}` for smooth JS-controlled height transition (0px → 40px → 40+rows×32px).
+  - `+N` chip shows `▲` when expanded; the same `simBtn()` helper renders palette buttons in both the strip and the grid with identical behavior (click to jump, Shift+click to export).
+  - Grid items have `border-b` to visually separate rows; each column is `last:border-r-0` in the final column slot of each row.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **IIFE pattern (`{similarPalettes.length > 0 && (() => { ... })()}`)**  — the `SIMILAR_VISIBLE` constant and `simBtn` helper are scoped to the render block, avoiding hoisting them to module scope where they'd be disconnected from the component's closure. A named sub-component would require threading 6+ props; the IIFE keeps it self-contained.
+- **JS hover state over CSS group-hover for the container** — the expanded grid lives inside the same `overflow-hidden` container as the strip row. A CSS `group-hover:max-h-[...]` can only target one fixed height; `isCardHovered` + `showMoreSimilar` give two distinct height values (40px or 40+N×32px) while still using a CSS transition for the animation.
+- **`+N` chip resets on mouse leave** — `showMoreSimilar = false` in `onMouseLeave` ensures the next hover always starts with the compact strip view. Keeping the expanded state across hovers would make the card feel "stuck" in a non-default layout.
+- **3 columns for the expanded grid** — matches the strip's 3-swatch layout, creating a visual grid that feels like a natural extension of the strip rather than a new UI zone.
+
+### What's next (Session 223)
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+- **Color name chips on swatch hover** — when hovering a swatch in the library card, show a small color-name chip
+- **Tooltip delay for similar strip → 300ms** — increase from 200ms (already done for the name tooltip, verify the delay attribute is consistent across strip and grid)
