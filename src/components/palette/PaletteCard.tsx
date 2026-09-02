@@ -253,6 +253,8 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [snapshotRestored, setSnapshotRestored] = useState(false);
   const snapshotContainerRef = useRef<HTMLDivElement>(null);
   const [similarPalettes, setSimilarPalettes] = useState<{ palette: Palette; avgDe: number }[]>([]);
+  const [isCardHovered, setIsCardHovered] = useState(false);
+  const [showMoreSimilar, setShowMoreSimilar] = useState(false);
   const [harmonyHovered, setHarmonyHovered] = useState(false);
   const [harmonyAnchorFlash, setHarmonyAnchorFlash] = useState(false);
   const similarComputedRef = useRef(false);
@@ -980,6 +982,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       exit={{ opacity: 0, scale: 0.96 }}
       onMouseEnter={() => {
         isHoveredRef.current = true;
+        setIsCardHovered(true);
         markViewed(palette.id);
         if (!similarComputedRef.current) {
           similarComputedRef.current = true;
@@ -988,11 +991,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           const scored = others
             .map((p) => ({ palette: p, avgDe: paletteDe(palette, p) }))
             .sort((a, b) => a.avgDe - b.avgDe)
-            .slice(0, 3);
+            .slice(0, 8);
           setSimilarPalettes(scored);
         }
       }}
-      onMouseLeave={() => { isHoveredRef.current = false; }}
+      onMouseLeave={() => { isHoveredRef.current = false; setIsCardHovered(false); setShowMoreSimilar(false); }}
       onClick={() => { if (onFocusCard) onFocusCard(palette.id); }}
       id={cardId}
       className={`group bg-[var(--surface)] rounded-[var(--radius)] border overflow-hidden hover:shadow-md transition-shadow duration-200 relative ${
@@ -1571,56 +1574,82 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       )}
 
       {/* Similar palettes — slides in on hover, computed lazily on first hover */}
-      {similarPalettes.length > 0 && (
-        <div className="overflow-hidden max-h-0 group-hover:max-h-10 transition-[max-height] duration-200 ease-out">
-          <div className="flex h-10 border-t border-[var(--border)]">
-            <div className="flex-shrink-0 flex items-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
-              <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 uppercase select-none whitespace-nowrap">
-                similar
-              </span>
-            </div>
-            {similarPalettes.map(({ palette: sim, avgDe }) => {
-              const simTier = getMatchTier(avgDe);
-              return (
+      {similarPalettes.length > 0 && (() => {
+        const SIMILAR_VISIBLE = 3;
+        const visibleSimilar = similarPalettes.slice(0, SIMILAR_VISIBLE);
+        const moreSimilar = similarPalettes.slice(SIMILAR_VISIBLE);
+        const expandedRows = Math.ceil(moreSimilar.length / 3);
+        const expandedH = expandedRows * 32;
+        const containerMaxH = isCardHovered
+          ? showMoreSimilar ? 40 + expandedH : 40
+          : 0;
+        const simBtn = ({ palette: sim, avgDe }: { palette: Palette; avgDe: number }, extraClass = "") => {
+          const simTier = getMatchTier(avgDe);
+          return (
+            <button
+              key={sim.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (e.shiftKey) { onExport(sim); return; }
+                const el = document.getElementById(sim.id);
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              title={`${sim.name} · ΔE ${avgDe.toFixed(1)} (${simTier.label}) — click to jump · Shift+click to export`}
+              className={`group/sim flex overflow-hidden border-r border-[var(--border)] relative hover:opacity-80 transition-opacity ${extraClass}`}
+            >
+              {sim.colors.map((c, ci) => (
+                <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
+              ))}
+              <div className="absolute top-0.5 left-0.5 pointer-events-none">
+                <span className={`text-[7px] font-bold leading-none px-[3px] py-[1px] rounded-[2px] tabular-nums ${simTier.overlay}`}>
+                  ΔE {avgDe.toFixed(1)}
+                </span>
+              </div>
+              <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity delay-300 pointer-events-none">
+                <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
+                  {sim.name}
+                </span>
+              </div>
+              <div className="absolute top-0.5 right-0.5 opacity-0 group-hover/sim:opacity-100 transition-opacity delay-300 pointer-events-none">
+                <span className="text-[6px] font-mono font-bold bg-black/55 text-white/90 rounded px-[2px] py-[1px] leading-none">⇧E</span>
+              </div>
+            </button>
+          );
+        };
+        return (
+          <div
+            className="overflow-hidden transition-[max-height] duration-200 ease-out"
+            style={{ maxHeight: `${containerMaxH}px` }}
+          >
+            {/* Strip row — top 3 similar palettes + optional "+N more" chip */}
+            <div className="flex h-10 border-t border-[var(--border)]">
+              <div className="flex-shrink-0 flex items-center px-2 bg-[var(--surface-2)]/80 border-r border-[var(--border)]">
+                <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 uppercase select-none whitespace-nowrap">
+                  similar
+                </span>
+              </div>
+              {visibleSimilar.map((entry) => simBtn(entry, "flex-1 last:border-r-0"))}
+              {moreSimilar.length > 0 && (
                 <button
-                  key={sim.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (e.shiftKey) {
-                      onExport(sim);
-                      return;
-                    }
-                    const el = document.getElementById(sim.id);
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
-                  title={`${sim.name} · ΔE ${avgDe.toFixed(1)} (${simTier.label}) — click to jump · Shift+click to export`}
-                  className="group/sim flex-1 flex overflow-hidden border-r border-[var(--border)] last:border-r-0 relative hover:opacity-80 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); setShowMoreSimilar((s) => !s); }}
+                  title={showMoreSimilar ? "Collapse" : `Show ${moreSimilar.length} more similar palettes`}
+                  className="flex-shrink-0 flex items-center justify-center px-2 border-l border-[var(--border)] bg-[var(--surface-2)]/80 hover:bg-[var(--accent)]/15 transition-colors"
                 >
-                  {sim.colors.map((c, ci) => (
-                    <div key={ci} style={{ flex: 1, backgroundColor: c.hex }} />
-                  ))}
-                  {/* ΔE badge — tier-colored: emerald < 5, sky < 10, amber < 15, rose ≥ 15 */}
-                  <div className="absolute top-1 left-1 pointer-events-none">
-                    <span className={`text-[7px] font-bold leading-none px-[3px] py-[1px] rounded-[2px] tabular-nums ${simTier.overlay}`}>
-                      ΔE {avgDe.toFixed(1)}
-                    </span>
-                  </div>
-                  {/* Name tooltip — slides in on hover at bottom, delayed 300ms to prevent flicker on fast hover-throughs */}
-                  <div className="absolute inset-0 flex items-end justify-center pb-1 opacity-0 group-hover/sim:opacity-100 transition-opacity delay-300 pointer-events-none">
-                    <span className="text-[7px] font-medium leading-tight text-center truncate max-w-[90%] px-1 py-0.5 rounded-[2px] bg-black/50 text-white">
-                      {sim.name}
-                    </span>
-                  </div>
-                  {/* Shift+click hint — top-right on hover */}
-                  <div className="absolute top-1 right-1 opacity-0 group-hover/sim:opacity-100 transition-opacity delay-300 pointer-events-none">
-                    <span className="text-[6px] font-mono font-bold bg-black/55 text-white/90 rounded px-[2px] py-[1px] leading-none">⇧E</span>
-                  </div>
+                  <span className="text-[9px] font-semibold tracking-wider text-[var(--muted)]/70 whitespace-nowrap uppercase select-none">
+                    {showMoreSimilar ? "▲" : `+${moreSimilar.length}`}
+                  </span>
                 </button>
-              );
-            })}
+              )}
+            </div>
+            {/* Expanded grid — additional similar palettes in rows of 3 */}
+            {moreSimilar.length > 0 && (
+              <div className="grid grid-cols-3 border-t border-[var(--border)]">
+                {moreSimilar.map((entry) => simBtn(entry, `h-8 last:border-r-0 border-b border-[var(--border)]`))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Info row */}
       <div className="px-3 py-2.5 flex items-center justify-between">
