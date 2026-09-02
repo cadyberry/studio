@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-09-02 — Session 222: Collection Sheet CMYK Risk Dots
+
+### What was done
+- **Per-palette CMYK risk indicator on collection reference sheet PNG** — each palette row in the exported collection sheet now shows a colored dot on its label bar when any swatch has a meaningful CMYK print-shift risk.
+  - `exportPalette.ts` (`exportCollectionSheet`): for each palette row, all colors are run through `simulateCmykPrint`. If any color has `risk === "high"`, a red dot (`#e11d48`) appears; if any has `risk === "caution"` (and none are high), an amber dot (`#d97706`) appears; all-safe palettes get no dot — zero visual noise.
+  - The dot (r=4px) sits at the left edge of the label bar. When a dot is present, the palette name shifts right by ~15px to avoid overlap. When no dot, the name sits at the original `PAD_X` position — no layout change for safe palettes.
+  - **Footer legend** — if any palette in the collection has at least one risk dot, the sheet footer gains a small inline legend with colored dots and labels ("high CMYK shift", "caution") so the sheet is self-explanatory without requiring the app open.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **`simulateCmykPrint` per-color, not per-palette** — same function already used in the single-palette Export Modal card PNG (which has per-swatch badges). Using the same utility ensures the collection sheet's risk dots are consistent with what users see when they open the Export Modal for each palette individually.
+- **Red/amber only, no green "safe" dot** — a green dot on every all-safe row would be visual noise. The dot is purely a warning indicator: present = needs attention, absent = no concern.
+- **Footer legend gated on `anyRisk`** — the legend only appears if there's at least one risk dot in the collection. A collection of all-safe palettes gets a clean footer with no legend clutter.
+- **`dotCX + DOT_R + 7` name offset** — 4px dot radius + 4px clearance + 7px gap = 15px total shift, which gives comfortable breathing room on the 1200px canvas where 32px padding leaves ~1136px of usable width.
+
+### What's next (Session 223)
+- **CompareModal: total unique colors count** — show how many distinct colors appear across both palettes combined vs. their union size
+- **Similar strip "show more" animation polish** — the expanded grid transitions abruptly; add a staggered fade-in on the newly revealed tiles
+- **ExportModal: gradient direction/order mini-controls in the Download row** — inline direction toggle chips under the gradient PNG download row
+
+---
+
 ## 2026-09-01 — Session 221: CompareModal S Keyboard Shortcut
 
 ### What was done
