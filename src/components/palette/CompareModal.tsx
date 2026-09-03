@@ -82,6 +82,22 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const closestDelta = pairs.length > 0 ? pairs[0].dE : 0;
   const furthestDelta = pairs.length > 0 ? pairs[pairs.length - 1].dE : 0;
 
+  const uniqueColorStats = useMemo(() => {
+    if (!effectiveA || !effectiveB) return null;
+    const hexesA = new Set(effectiveA.colors.map((c) => c.hex.toLowerCase()));
+    const hexesB = new Set(effectiveB.colors.map((c) => c.hex.toLowerCase()));
+    const unionCount = new Set([...hexesA, ...hexesB]).size;
+    const exactShared = [...hexesA].filter((h) => hexesB.has(h)).length;
+    const nearDups = pairs.filter((p) => p.dE < 5).length;
+    return {
+      totalA: effectiveA.colors.length,
+      totalB: effectiveB.colors.length,
+      unionCount,
+      exactShared,
+      nearDups,
+    };
+  }, [effectiveA, effectiveB, pairs]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -257,6 +273,50 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                    avgDelta < 20 ? "Loose similarity — some shared hues but distinct character." :
                    "Low similarity — these palettes have little color overlap."}
                 </p>
+
+                {uniqueColorStats && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] text-center mb-2">
+                      Color Distribution
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <p className="text-sm font-bold tabular-nums text-[var(--foreground)]">
+                          {uniqueColorStats.totalA + uniqueColorStats.totalB}
+                        </p>
+                        <p className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-0.5">
+                          combined
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold tabular-nums text-[var(--foreground)]">
+                          {uniqueColorStats.unionCount}
+                        </p>
+                        <p className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-0.5">
+                          unique
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-sm font-bold tabular-nums ${uniqueColorStats.nearDups > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--muted)]"}`}>
+                          {uniqueColorStats.nearDups}
+                        </p>
+                        <p className="text-[9px] text-[var(--muted)] uppercase tracking-wide mt-0.5">
+                          near-identical
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-[var(--muted)] text-center mt-2">
+                      {uniqueColorStats.exactShared > 0
+                        ? `${uniqueColorStats.exactShared} exact hex ${uniqueColorStats.exactShared === 1 ? "match" : "matches"} · `
+                        : ""}
+                      {uniqueColorStats.nearDups > 0
+                        ? `${uniqueColorStats.nearDups} pair${uniqueColorStats.nearDups === 1 ? "" : "s"} within ΔE 5`
+                        : uniqueColorStats.unionCount === uniqueColorStats.totalA + uniqueColorStats.totalB
+                        ? "No duplicate hexes across either palette"
+                        : `${(uniqueColorStats.totalA + uniqueColorStats.totalB) - uniqueColorStats.unionCount} repeated hex${(uniqueColorStats.totalA + uniqueColorStats.totalB) - uniqueColorStats.unionCount === 1 ? "" : "es"}`}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
