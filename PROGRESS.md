@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-09-03 — Session 223: CompareModal Unique Color Distribution
+
+### What was done
+- **Color Distribution stats block in CompareModal** — the footer of the Compare Modal now has a second stats section labelled "Color Distribution" with three columns:
+  - **Combined**: total swatch count across both palettes (A.length + B.length)
+  - **Unique**: hex union size — distinct colors across both palettes after lowercasing and deduplication via Set
+  - **Near-identical**: count of nearest-neighbor pairs where ΔE < 5 (emerald-colored when > 0)
+  - Description line below the three stats contextualizes the numbers: calls out exact hex matches (rare but possible) and near-duplicate pair count, or confirms "No duplicate hexes" when union = combined
+- `uniqueColorStats` is a `useMemo` keyed to `effectiveA`, `effectiveB`, and `pairs` — updates correctly when the user presses `S` to swap A↔B direction.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Hex normalization to lowercase** — image extractors and user-entered hex codes may differ in case; `.toLowerCase()` before Set operations ensures `#FF0000` and `#ff0000` are treated as the same color.
+- **Three-tier "sameness" levels** — exact hex (perfect duplicate), ΔE < 5 (visually near-identical), and union/combined ratio together give a complete picture: extracted palettes almost never share exact hexes, but ΔE < 5 near-matches are meaningful and actionable.
+- **Emerald highlight only on near-identical** — the stat goes green when > 0, signaling "these palettes share tones closely enough to be interchangeable", while the label stays muted when 0 (no near-matches) to avoid false urgency.
+- **Placed below the ΔE description sentence** — the unique-color stats are supplemental to the ΔE analysis already in the footer; nesting them below with their own label and divider keeps the layout scannable without adding width.
+
+### What's next (Session 224)
+- **Similar strip "show more" animation polish** — the expanded grid transitions abruptly; add a staggered fade-in on the newly revealed tiles
+- **ExportModal: gradient direction/order mini-controls in the Download row** — inline direction toggle chips under the gradient PNG download row so user can change direction without scrolling to the Gradient subsection
+- **CompareModal: coverage % badge** — what % of palette A's colors have a "good" match (ΔE < 10) in palette B?
+
+---
+
 ## 2026-09-02 — Session 222: Collection Sheet CMYK Risk Dots
 
 ### What was done
