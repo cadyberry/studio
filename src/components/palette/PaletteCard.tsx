@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode, type MouseEvent } from "react";
+import { useState, useEffect, useRef, useMemo, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Trash2, Download, FolderOpen, Edit2, Eye, Pencil, Wand2, X, Loader2, Tag, CopyPlus, Check, Crown, Lock, LockOpen, StickyNote, Plus, Layers, ArrowLeftRight, Pin, Shuffle, Tags, Printer, Keyboard, Image as ImageIcon, Sparkles, RefreshCw, Copy, ShieldCheck, Clock, Glasses, GitFork } from "lucide-react";
-import { getContrastColor, deltaE, getPaletteMood, getPaletteHueFamily, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, type PaletteMood, type PaletteHueFamily, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
+import { getContrastColor, deltaE, getPaletteMood, getPaletteHueFamily, formatRelativeAge, formatDate, getHarmonyColors, hexToRgb, rgbToHsl, hexToOklch, oklchToHex, isOklchOutOfSrgbGamut, derivePaletteVariant, getContrastRatio, getColorNameSuggestions, type PaletteMood, type PaletteHueFamily, type PaletteVariant, PALETTE_VARIANT_LABELS } from "@/lib/utils";
 import { exportAsCvdStrip } from "@/lib/exportPalette";
 import { usePaletteStore } from "@/store/paletteStore";
 import { useSessionStore } from "@/store/sessionStore";
@@ -745,6 +745,17 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       )
     : null;
 
+  // Derived color names for swatches that have no explicit name — computed once per orderedColors change
+  const derivedSwatchNames = useMemo<Record<string, string>>(() => {
+    const result: Record<string, string> = {};
+    orderedColors.forEach((c) => {
+      if (!c.name) {
+        result[c._key] = getColorNameSuggestions(c.hex, 1)[0] ?? "";
+      }
+    });
+    return result;
+  }, [orderedColors]);
+
   const handleDuplicate = () => {
     onDuplicate(palette);
     setDuplicated(true);
@@ -1133,9 +1144,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     </div>
                   )}
                   <div
-                    className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                    className="absolute inset-0 flex flex-col items-center justify-end pb-1.5 gap-0.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
                     style={{ color: getContrastColor(color.hex) }}
                   >
+                    {!color.name && derivedSwatchNames[color._key] && (
+                      <span
+                        className="text-[8px] font-medium leading-none px-1 py-px rounded-[2px]"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.28)" : "rgba(255,255,255,0.38)",
+                        }}
+                      >
+                        {derivedSwatchNames[color._key]}
+                      </span>
+                    )}
                     <span className="text-[9px] font-mono font-bold tracking-wider">
                       {color.hex.slice(1).toUpperCase()}
                     </span>
@@ -1276,9 +1297,19 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                     </div>
                   )}
                   <div
-                    className="absolute inset-0 flex items-end justify-center pb-1.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
+                    className="absolute inset-0 flex flex-col items-center justify-end pb-1.5 gap-0.5 opacity-0 group-hover/swatch:opacity-100 transition-opacity pointer-events-none"
                     style={{ color: getContrastColor(color.hex) }}
                   >
+                    {!color.name && derivedSwatchNames[color._key] && (
+                      <span
+                        className="text-[8px] font-medium leading-none px-1 py-px rounded-[2px]"
+                        style={{
+                          backgroundColor: getContrastColor(color.hex) === "#fafaf8" ? "rgba(0,0,0,0.28)" : "rgba(255,255,255,0.38)",
+                        }}
+                      >
+                        {derivedSwatchNames[color._key]}
+                      </span>
+                    )}
                     <span className="text-[9px] font-mono font-bold tracking-wider">
                       {color.hex.slice(1).toUpperCase()}
                     </span>
