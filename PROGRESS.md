@@ -6347,3 +6347,27 @@
 - **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
 - **Color name chips on swatch hover** — when hovering a swatch in the library card, show a small color-name chip
 - **Tooltip delay for similar strip → 300ms** — increase from 200ms (already done for the name tooltip, verify the delay attribute is consistent across strip and grid)
+
+---
+
+## 2026-09-03 — Session 223: Color Name Chips on Swatch Hover
+
+### What was done
+- **Derived color name chips on swatch hover for unnamed swatches** — when hovering a swatch that has no explicit `color.name` set, a small derived name chip (e.g. "Sage", "Teal", "Rust") appears just above the hex code in the hover overlay. The name is resolved by nearest-neighbor ΔE match against the 130-entry designer color vocabulary already in `getColorNameSuggestions`.
+  - Added `useMemo` to the React import (was previously missing from PaletteCard).
+  - Added `getColorNameSuggestions` to the `@/lib/utils` import.
+  - New `derivedSwatchNames` memo (`Record<string, string>`) computes once per `orderedColors` change; only processes swatches without an explicit name, leaving named swatches untouched.
+  - Hex hover overlay changed from `flex items-end justify-center` single-child to `flex flex-col items-center justify-end gap-0.5` — name chip and hex code stack cleanly.
+  - Applied identically to both the frozen (static `<div>`) and unfrozen (`<Reorder.Item>`) swatch rendering paths.
+  - Named swatches: no behavior change — their explicit name still shows at the bottom (fades on hover → hex takes over); the chip is gated on `!color.name`.
+
+### Key decisions
+- **Nearest-neighbor ΔE over hue-bucket lookup** — the existing `getColorNameSuggestions` already does perceptual matching across 130 names; using it here means derived names are consistent with the SwatchEditor's name suggestions. No new lookup table needed.
+- **`useMemo` over inline computation** — `getColorNameSuggestions` iterates ~130 entries per swatch; for a full library with 20+ palette cards each with 8 swatches, inlining in render would be ~20,000 ΔE ops per frame. The memo runs once on mount and when colors change.
+- **Chip below hex, not above it** — stacking chip above hex reads more naturally: designer name first, hex code second (same order as how creatives communicate color — "that Sage green" → "#8BAA7D").
+- **`gap-0.5` separation** — 2px gap keeps chip and hex visually distinct without taking much vertical space in a compact swatch.
+
+### What's next (Session 224)
+- **Compare modal: swap button** — small ⇄ button in the CompareModal header to flip A↔B and re-run nearest-neighbor ΔE pairs from the other direction
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+- **Tone bar hover: show swatch name** — when hovering a bar in the tone map at the bottom of a card, show a tooltip with the swatch's name (or derived name)
