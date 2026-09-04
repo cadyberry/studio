@@ -6395,3 +6395,27 @@
 - **Compare modal: swap button** — small ⇄ button in the CompareModal header to flip A↔B and re-run nearest-neighbor ΔE pairs from the other direction
 - **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
 - **Tone bar hover: show swatch name** — when hovering a bar in the tone map at the bottom of a card, show a tooltip with the swatch's name (or derived name)
+
+---
+
+## 2026-09-04 — Session 224: Tone Bar Hover Swatch Name Chip
+
+### What was done
+- **Swatch name chip on tone bar hover** — when hovering a bar in the per-swatch sparkline at the bottom of a palette card, a small floating chip now appears just above the tone map. The chip shows: a small colored square (swatch color), the swatch name (explicit name if set, otherwise derived from nearest-neighbor ΔE match via `getColorNameSuggestions`), and the hex code. The chip clears on `onMouseLeave` from the tone map container.
+  - Added `hoveredToneKey: string | null` state.
+  - Wrapped the tone map in a `relative` outer div so the chip can position itself with `bottom-full` (above the 14px bar area) without being clipped by the bar's `overflow-hidden`.
+  - Removed `pointer-events-none` from the default sparkline bars div; added `onMouseEnter(() => setHoveredToneKey(color._key))` to each bar, `onMouseLeave(() => setHoveredToneKey(null))` on the outer container.
+  - Chip reuses `derivedSwatchNames` memo already computed in the component — no new ΔE computation per render.
+  - The histogram group-hover CSS behavior is unchanged; chip remains visible while the histogram fades in.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Chip positioned above tone map, not inside** — the tone map div has `overflow-hidden` to clip the histogram bars. Positioning the chip inside would clip it. A relative wrapper around both elements lets the chip escape with `bottom-full` while still staying associated with the bar being hovered.
+- **`pointer-events` on bars (not `pointer-events-none`)** — removing `pointer-events-none` from the sparkline bars div is necessary for `onMouseEnter` to fire on individual bars. Without it, only the outer container receives pointer events (no per-bar discrimination).
+- **Chip shows alongside histogram** — when hovering, the sparkline fades to opacity-0 (CSS group hover) and the histogram fades in. The chip is still rendered and visible because it's outside the `overflow-hidden` container. This gives both the histogram view (tonal distribution) and the per-bar name chip simultaneously — complementary information.
+- **Hex code shown in chip** — color name alone is sometimes ambiguous; adding the hex code makes the chip a complete one-glance reference.
+
+### What's next (Session 225)
+- **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
+- **Tone bar: bin labels on histogram hover** — when hovering a bin in the histogram view, show which label it belongs to (Shadows / Dark / Mid / Light / Highlights) and how many swatches it contains
+- **Compare modal: directional label** — "A → B" label in the pairs list header clarifying the nearest-neighbor direction; currently the swap label in the header is the only indicator
