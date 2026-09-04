@@ -6419,3 +6419,27 @@
 - **Collection Sheet: per-palette CMYK risk indicator** — colored dot on each palette row's label bar in the collection reference sheet PNG if any swatch has a print-shift risk
 - **Tone bar: bin labels on histogram hover** — when hovering a bin in the histogram view, show which label it belongs to (Shadows / Dark / Mid / Light / Highlights) and how many swatches it contains
 - **Compare modal: directional label** — "A → B" label in the pairs list header clarifying the nearest-neighbor direction; currently the swap label in the header is the only indicator
+
+---
+
+## 2026-09-04 — Session 225: Histogram Bin Label Chip on Hover
+
+### What was done
+- **Bin label chip when hovering histogram bins** — the 5-bin tonal histogram (which appears when hovering the tone map area at the bottom of a palette card) now shows a floating chip above the map when hovering an individual bin. The chip shows: a small gray square at the bin's representative luminance midpoint, the bin label (Shadows / Dark / Mid / Light / Highlights), the L-range (e.g. `L 40–60`), and the swatch count (`N swatches`).
+  - Added `hoveredBinIndex: number | null` state alongside the existing `hoveredToneKey`.
+  - Unified the floating chip render: `hoveredBinIndex !== null` takes priority over `hoveredToneKey` — only one chip shows at a time.
+  - Disabled pointer events on sparkline bars during group hover (`group-hover/sparkline:pointer-events-none`) so histogram bins become the sole mouse event receivers when the histogram is visible — no competition between the two layers.
+  - Each histogram bin `div` gains `onMouseEnter={() => setHoveredBinIndex(i)}` and `cursor-default`; the outer container's `onMouseLeave` clears both `hoveredToneKey` and `hoveredBinIndex`.
+  - Hovered histogram bar brightens from `opacity: 0.82` to `opacity: 1` as immediate hover feedback.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Bin chip priority over swatch chip** — when hovering the histogram, the swatch chip from a previously hovered sparkline bar would be stale/confusing. Giving priority to `hoveredBinIndex` means the currently visible chip always matches the currently visible view (histogram vs sparkline).
+- **L-range in chip** — `L 0–20`, `L 20–40`, etc. gives the user immediate perceptual context without needing to know the "Shadows" naming convention. The label + range together serve both novice and expert creators.
+- **`group-hover/sparkline:pointer-events-none` on sparkline bars** — CSS-only solution, no JS state needed to track which "mode" is active. The group hover class already controls which layer is visible; tying pointer-events to the same class keeps the two layers in sync without additional bookkeeping.
+- **Amber dot (flat-tones warning) preserved** — the `toneMap.isFlatTones` dot is in the histogram div; moving pointer events from `pointer-events-none` to per-element means the amber dot is now also hoverable (it passes through to the underlying bin), which is acceptable behavior.
+
+### What's next (Session 226)
+- **Compare modal: directional label** — "A → B" label in the pairs list header clarifying nearest-neighbor direction
+- **Collection Sheet: A4/Letter size toggle** — allow exporting the reference sheet in A4 (210×297mm) vs Letter (8.5×11in) sizes
+- **Tone map tooltip consistency** — verify delay attribute is 300ms across all tooltips in the tone map zone (name chip, bin chip, L-range gradient bar)
