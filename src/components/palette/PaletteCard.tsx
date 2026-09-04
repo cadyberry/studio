@@ -257,6 +257,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [showMoreSimilar, setShowMoreSimilar] = useState(false);
   const [harmonyHovered, setHarmonyHovered] = useState(false);
   const [harmonyAnchorFlash, setHarmonyAnchorFlash] = useState(false);
+  const [hoveredToneKey, setHoveredToneKey] = useState<string | null>(null);
   const similarComputedRef = useRef(false);
 
   // Reset similar palettes cache when this palette's colors change
@@ -1458,48 +1459,72 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       </div>
 
       {/* Tone map — dual view: per-swatch sparkline (default) / 5-bin luminance histogram (hover) */}
-      <div
-        className="group/sparkline relative bg-[var(--surface-2)]/30 cursor-default overflow-hidden"
-        style={{ height: 14 }}
-        title={
-          toneMap.isFlatTones
-            ? `Tonal spread: ${toneMap.binLabels.map((l, i) => `${l} ${toneMap.bins[i]}`).join(" · ")} · All mid-tone — low contrast potential`
-            : `Lightness profile · ${orderedColors.map((c) => { const rgb = hexToRgb(c.hex); return rgb ? `${rgbToHsl(rgb.r, rgb.g, rgb.b).l}%` : "?"; }).join(" · ")} · Hover for tonal spread`
-        }
-      >
-        {/* Default: per-swatch bars (each bar = one swatch, height = lightness) */}
-        <div className="absolute inset-0 flex items-end gap-[2px] px-2 group-hover/sparkline:opacity-0 transition-opacity duration-150 pointer-events-none">
-          {orderedColors.map((color) => {
-            const rgb = hexToRgb(color.hex);
-            const l = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
-            return (
-              <div
-                key={color._key}
-                className="flex-1 rounded-t-[2px]"
-                style={{ height: Math.max(2, Math.round((l / 100) * 11)), backgroundColor: color.hex, opacity: 0.72 }}
+      <div className="relative">
+        {/* Swatch name chip — floats above tone bars when hovering a specific bar */}
+        {hoveredToneKey && (() => {
+          const hovColor = orderedColors.find((c) => c._key === hoveredToneKey);
+          if (!hovColor) return null;
+          const chipName = hovColor.name || derivedSwatchNames[hovColor._key] || "";
+          if (!chipName) return null;
+          return (
+            <div
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5 z-30 flex items-center gap-1 px-1.5 py-[3px] rounded bg-[var(--surface-2)] border border-[var(--border)] shadow-sm pointer-events-none whitespace-nowrap"
+              style={{ fontSize: 10, lineHeight: 1.2 }}
+            >
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-[2px] flex-shrink-0 border border-black/10 dark:border-white/10"
+                style={{ backgroundColor: hovColor.hex }}
               />
-            );
-          })}
-        </div>
-
-        {/* Hover: 5-bin tonal histogram (grayscale bins showing tonal distribution) */}
-        <div className="absolute inset-0 flex items-end px-2 gap-[3px] opacity-0 group-hover/sparkline:opacity-100 transition-opacity duration-150 pointer-events-none">
-          {toneMap.bins.map((count, i) => {
-            const binMidL = i * 20 + 10; // midpoint L for each bin: 10, 30, 50, 70, 90
-            const heightPx = count === 0 ? 1 : Math.max(2, Math.round((count / toneMap.maxBin) * 11));
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end" style={{ height: "100%" }}>
+              <span className="font-medium text-[var(--foreground)]">{chipName}</span>
+              <span className="text-[var(--muted)] font-mono">{hovColor.hex}</span>
+            </div>
+          );
+        })()}
+        <div
+          className="group/sparkline relative bg-[var(--surface-2)]/30 cursor-default overflow-hidden"
+          style={{ height: 14 }}
+          onMouseLeave={() => setHoveredToneKey(null)}
+          title={
+            toneMap.isFlatTones
+              ? `Tonal spread: ${toneMap.binLabels.map((l, i) => `${l} ${toneMap.bins[i]}`).join(" · ")} · All mid-tone — low contrast potential`
+              : `Lightness profile · ${orderedColors.map((c) => { const rgb = hexToRgb(c.hex); return rgb ? `${rgbToHsl(rgb.r, rgb.g, rgb.b).l}%` : "?"; }).join(" · ")} · Hover for tonal spread`
+          }
+        >
+          {/* Default: per-swatch bars (each bar = one swatch, height = lightness) */}
+          <div className="absolute inset-0 flex items-end gap-[2px] px-2 group-hover/sparkline:opacity-0 transition-opacity duration-150">
+            {orderedColors.map((color) => {
+              const rgb = hexToRgb(color.hex);
+              const l = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
+              return (
                 <div
-                  className="w-full rounded-t-[2px]"
-                  style={{ height: heightPx, backgroundColor: `hsl(0,0%,${binMidL}%)`, opacity: count === 0 ? 0.18 : 0.82 }}
+                  key={color._key}
+                  className="flex-1 rounded-t-[2px]"
+                  style={{ height: Math.max(2, Math.round((l / 100) * 11)), backgroundColor: color.hex, opacity: 0.72 }}
+                  onMouseEnter={() => setHoveredToneKey(color._key)}
                 />
-              </div>
-            );
-          })}
-          {/* Amber dot when palette is flat-toned (no shadows or highlights) */}
-          {toneMap.isFlatTones && (
-            <div className="absolute right-1.5 top-1 w-1.5 h-1.5 rounded-full bg-amber-400" title="All mid-tone" />
-          )}
+              );
+            })}
+          </div>
+
+          {/* Hover: 5-bin tonal histogram (grayscale bins showing tonal distribution) */}
+          <div className="absolute inset-0 flex items-end px-2 gap-[3px] opacity-0 group-hover/sparkline:opacity-100 transition-opacity duration-150 pointer-events-none">
+            {toneMap.bins.map((count, i) => {
+              const binMidL = i * 20 + 10; // midpoint L for each bin: 10, 30, 50, 70, 90
+              const heightPx = count === 0 ? 1 : Math.max(2, Math.round((count / toneMap.maxBin) * 11));
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                  <div
+                    className="w-full rounded-t-[2px]"
+                    style={{ height: heightPx, backgroundColor: `hsl(0,0%,${binMidL}%)`, opacity: count === 0 ? 0.18 : 0.82 }}
+                  />
+                </div>
+              );
+            })}
+            {/* Amber dot when palette is flat-toned (no shadows or highlights) */}
+            {toneMap.isFlatTones && (
+              <div className="absolute right-1.5 top-1 w-1.5 h-1.5 rounded-full bg-amber-400" title="All mid-tone" />
+            )}
+          </div>
         </div>
       </div>
 
