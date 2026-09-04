@@ -258,6 +258,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [harmonyHovered, setHarmonyHovered] = useState(false);
   const [harmonyAnchorFlash, setHarmonyAnchorFlash] = useState(false);
   const [hoveredToneKey, setHoveredToneKey] = useState<string | null>(null);
+  const [hoveredBinIndex, setHoveredBinIndex] = useState<number | null>(null);
   const similarComputedRef = useRef(false);
 
   // Reset similar palettes cache when this palette's colors change
@@ -1460,8 +1461,31 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
 
       {/* Tone map — dual view: per-swatch sparkline (default) / 5-bin luminance histogram (hover) */}
       <div className="relative">
-        {/* Swatch name chip — floats above tone bars when hovering a specific bar */}
-        {hoveredToneKey && (() => {
+        {/* Floating chip — shows bin label when hovering histogram, swatch name when hovering sparkline */}
+        {(hoveredBinIndex !== null || hoveredToneKey) && (() => {
+          if (hoveredBinIndex !== null) {
+            const count = toneMap.bins[hoveredBinIndex];
+            const label = toneMap.binLabels[hoveredBinIndex];
+            const binMidL = hoveredBinIndex * 20 + 10;
+            const rangeStart = hoveredBinIndex * 20;
+            const rangeEnd = rangeStart + 20;
+            return (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5 z-30 flex items-center gap-1 px-1.5 py-[3px] rounded bg-[var(--surface-2)] border border-[var(--border)] shadow-sm pointer-events-none whitespace-nowrap"
+                style={{ fontSize: 10, lineHeight: 1.2 }}
+              >
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-[2px] flex-shrink-0 border border-black/10 dark:border-white/10"
+                  style={{ backgroundColor: `hsl(0,0%,${binMidL}%)` }}
+                />
+                <span className="font-medium text-[var(--foreground)]">{label}</span>
+                <span className="text-[var(--muted)]">L {rangeStart}–{rangeEnd}</span>
+                <span className="text-[var(--muted)]">·</span>
+                <span className="text-[var(--foreground)]">{count}</span>
+                <span className="text-[var(--muted)]">{count === 1 ? "swatch" : "swatches"}</span>
+              </div>
+            );
+          }
           const hovColor = orderedColors.find((c) => c._key === hoveredToneKey);
           if (!hovColor) return null;
           const chipName = hovColor.name || derivedSwatchNames[hovColor._key] || "";
@@ -1483,7 +1507,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <div
           className="group/sparkline relative bg-[var(--surface-2)]/30 cursor-default overflow-hidden"
           style={{ height: 14 }}
-          onMouseLeave={() => setHoveredToneKey(null)}
+          onMouseLeave={() => { setHoveredToneKey(null); setHoveredBinIndex(null); }}
           title={
             toneMap.isFlatTones
               ? `Tonal spread: ${toneMap.binLabels.map((l, i) => `${l} ${toneMap.bins[i]}`).join(" · ")} · All mid-tone — low contrast potential`
@@ -1491,7 +1515,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           }
         >
           {/* Default: per-swatch bars (each bar = one swatch, height = lightness) */}
-          <div className="absolute inset-0 flex items-end gap-[2px] px-2 group-hover/sparkline:opacity-0 transition-opacity duration-150">
+          <div className="absolute inset-0 flex items-end gap-[2px] px-2 group-hover/sparkline:opacity-0 group-hover/sparkline:pointer-events-none transition-opacity duration-150">
             {orderedColors.map((color) => {
               const rgb = hexToRgb(color.hex);
               const l = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b).l : 50;
@@ -1507,15 +1531,25 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           </div>
 
           {/* Hover: 5-bin tonal histogram (grayscale bins showing tonal distribution) */}
-          <div className="absolute inset-0 flex items-end px-2 gap-[3px] opacity-0 group-hover/sparkline:opacity-100 transition-opacity duration-150 pointer-events-none">
+          <div className="absolute inset-0 flex items-end px-2 gap-[3px] opacity-0 group-hover/sparkline:opacity-100 transition-opacity duration-150">
             {toneMap.bins.map((count, i) => {
               const binMidL = i * 20 + 10; // midpoint L for each bin: 10, 30, 50, 70, 90
               const heightPx = count === 0 ? 1 : Math.max(2, Math.round((count / toneMap.maxBin) * 11));
+              const isHovered = hoveredBinIndex === i;
               return (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center justify-end cursor-default"
+                  style={{ height: "100%" }}
+                  onMouseEnter={() => setHoveredBinIndex(i)}
+                >
                   <div
-                    className="w-full rounded-t-[2px]"
-                    style={{ height: heightPx, backgroundColor: `hsl(0,0%,${binMidL}%)`, opacity: count === 0 ? 0.18 : 0.82 }}
+                    className="w-full rounded-t-[2px] transition-opacity duration-75"
+                    style={{
+                      height: heightPx,
+                      backgroundColor: `hsl(0,0%,${binMidL}%)`,
+                      opacity: count === 0 ? 0.18 : isHovered ? 1 : 0.82,
+                    }}
                   />
                 </div>
               );
