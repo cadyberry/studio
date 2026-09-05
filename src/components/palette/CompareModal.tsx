@@ -82,6 +82,13 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const closestDelta = pairs.length > 0 ? pairs[0].dE : 0;
   const furthestDelta = pairs.length > 0 ? pairs[pairs.length - 1].dE : 0;
 
+  const coverageStats = useMemo(() => {
+    if (pairs.length === 0) return null;
+    const good = pairs.filter((p) => p.dE < 10).length;
+    const total = pairs.length;
+    return { good, total, pct: Math.round((good / total) * 100) };
+  }, [pairs]);
+
   const uniqueColorStats = useMemo(() => {
     if (!effectiveA || !effectiveB) return null;
     const hexesA = new Set(effectiveA.colors.map((c) => c.hex.toLowerCase()));
@@ -284,6 +291,44 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                    avgDelta < 20 ? "Loose similarity — some shared hues but distinct character." :
                    "Low similarity — these palettes have little color overlap."}
                 </p>
+
+                {coverageStats && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                        Coverage <span className="normal-case tracking-normal font-normal">(ΔE &lt; 10)</span>
+                      </p>
+                      <span
+                        className={`text-sm font-bold tabular-nums ${
+                          coverageStats.pct >= 80 ? "text-emerald-600 dark:text-emerald-400" :
+                          coverageStats.pct >= 50 ? "text-sky-600 dark:text-sky-400" :
+                          coverageStats.pct >= 25 ? "text-amber-600 dark:text-amber-400" :
+                          "text-rose-600 dark:text-rose-400"
+                        }`}
+                        title={`${coverageStats.good} of ${coverageStats.total} source colors have a good match (ΔE < 10) in the target palette`}
+                      >
+                        {coverageStats.pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full rounded-full ${
+                          coverageStats.pct >= 80 ? "bg-emerald-500" :
+                          coverageStats.pct >= 50 ? "bg-sky-500" :
+                          coverageStats.pct >= 25 ? "bg-amber-500" :
+                          "bg-rose-500"
+                        }`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${coverageStats.pct}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-[var(--muted)] text-center mt-1.5">
+                      {coverageStats.good} of {coverageStats.total} source{" "}
+                      {coverageStats.total === 1 ? "color has" : "colors have"} a good match in B
+                    </p>
+                  </div>
+                )}
 
                 {uniqueColorStats && (
                   <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
