@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-09-05 — Session 224: CompareModal Coverage % Badge
+
+### What was done
+- **Coverage % badge in CompareModal** — a new "Coverage" section in the footer (between the ΔE description and the Color Distribution block) shows what % of palette A's source colors have a "good" match (ΔE < 10) in palette B.
+  - `coverageStats` useMemo: counts `pairs.filter(p => p.dE < 10)` and computes `pct = Math.round((good / total) * 100)`.
+  - **Percentage label** — color-coded by tier: emerald (≥80%), sky (≥50%), amber (≥25%), rose (<25%).
+  - **Animated progress bar** — Framer Motion `easeOut` animation from 0→% on mount; bar fill color matches the label tier.
+  - **Plain-English line** — "N of M source colors have a good match in B" directly below the bar.
+  - Responds to the `S` swap shortcut — `coverageStats` is keyed to `pairs` which already re-derives from `effectiveA`/`effectiveB`, so swapping A↔B updates the coverage instantly.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **ΔE < 10 as the "good" threshold** — consistent with `getMatchTier` which uses < 10 for the "good" tier (sky). Excellent (< 5) is also "good" for coverage purposes; the threshold captures colors close enough to be usable together.
+- **Separate `coverageStats` memo, not merged into `uniqueColorStats`** — keeps concerns separate: `uniqueColorStats` is about structural hex overlap; `coverageStats` is about perceptual match quality. Independent memos also minimize recalculation.
+- **Framer Motion bar, not CSS transition** — using `animate={{ width }}` lets the bar re-animate whenever pairs change (swap, or different palette pair opened), giving a satisfying visual feedback on each interaction.
+- **Placed between ΔE description and Color Distribution** — the coverage % is a direct extension of the ΔE analysis (it answers "but how many colors are actually well matched?"), so it naturally follows the ΔE summary prose before the structural hex-overlap stats.
+
+### What's next (Session 225)
+- **Similar strip "show more" animation polish** — staggered fade-in on newly revealed tiles when the grid expands
+- **ExportModal: gradient direction/order mini-controls in the Download row** — inline direction toggle chips under the gradient PNG download row so user can change direction without scrolling to the Gradient subsection
+- **CompareModal: per-pair coverage indicator** — a small "covered / not covered" icon on each pair row (ΔE < 10 = checkmark, else X) so users can see at a glance which source colors have good matches
+
+---
+
 ## 2026-09-03 — Session 223: CompareModal Unique Color Distribution
 
 ### What was done
