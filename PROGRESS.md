@@ -6443,3 +6443,27 @@
 - **Compare modal: directional label** — "A → B" label in the pairs list header clarifying nearest-neighbor direction
 - **Collection Sheet: A4/Letter size toggle** — allow exporting the reference sheet in A4 (210×297mm) vs Letter (8.5×11in) sizes
 - **Tone map tooltip consistency** — verify delay attribute is 300ms across all tooltips in the tone map zone (name chip, bin chip, L-range gradient bar)
+
+---
+
+## 2026-09-05 — Session 226: Compare Modal Directional Label
+
+### What was done
+- **"A → B" directional label in CompareModal pairs header** — the nearest-neighbor pairs list now shows a right-aligned "A → B" indicator (small bold `A`, ArrowRight icon, bold `B`) next to "· by closeness" to make explicit that each row maps a swatch from A to its nearest match in B.
+  - Added `ArrowRight` to the lucide-react import alongside the existing `ArrowLeftRight`.
+  - Replaced the single `<p>` header with a flex row: section title (`Nearest-neighbor pairs`) left-aligned, directional badge right-aligned.
+  - Badge has `title` tooltip: "For each swatch in A, the closest match in B is shown — sorted by ΔE, lowest first."
+  - Shortened "sorted by closeness" → "· by closeness" in the badge to keep the row compact.
+  - "A" and "B" labels use `font-mono font-bold` to visually match the A/B labels in the palette strips above.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Right-aligned badge, not inline text** — splitting the header into a `flex justify-between` row keeps the section title clean while the directional badge is discoverable at the right edge — a natural reading position for supplementary metadata.
+- **ArrowRight (not ArrowLeftRight)** — `ArrowLeftRight` is the swap icon in the modal header. Using the single-direction `ArrowRight` in the pairs label reinforces that the current pairing is one-directional (A to B), distinguishing it from the bidirectional swap control.
+- **Tooltip for full algorithm description** — the badge is compact by design; the tooltip carries the prose explanation for users who want to understand the nearest-neighbor algorithm without cluttering the UI.
+- **"· by closeness" not "· sorted by closeness"** — the shorter form fits the compact badge row without wrapping on narrow viewports.
+
+### What's next (Session 227)
+- **Collection Sheet: A4/Letter size toggle** — allow exporting the reference sheet in A4 (210×297mm) vs Letter (8.5×11in) sizes
+- **Tone map tooltip consistency** — verify delay attribute is 300ms across all tooltips in the tone map zone (name chip, bin chip, L-range gradient bar)
+- **Compare modal: show effectiveA/B names in the "A → B" badge on hover** — tooltip or popover showing "A = [palette name] · B = [palette name]"
