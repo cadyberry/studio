@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeftRight } from "lucide-react";
+import { X, ArrowLeftRight, ArrowRight } from "lucide-react";
 import { deltaE } from "@/lib/utils";
 import type { Palette } from "@/types";
 
@@ -199,9 +199,20 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
 
               {/* Nearest-neighbor pairs */}
               <div className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
-                  Nearest-neighbor pairs · sorted by closeness
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                    Nearest-neighbor pairs
+                  </p>
+                  <div
+                    className="flex items-center gap-1 shrink-0"
+                    title="For each swatch in A, the closest match in B is shown — sorted by ΔE, lowest first"
+                  >
+                    <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">A</span>
+                    <ArrowRight size={9} className="text-[var(--muted)]" />
+                    <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">B</span>
+                    <span className="text-[9px] text-[var(--muted)] ml-0.5">· by closeness</span>
+                  </div>
+                </div>
                 <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
                   {pairs.map((pair, i) => {
                     const tier = getMatchTier(pair.dE);
