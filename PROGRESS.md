@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-09-06 — Session 225: CompareModal Per-Pair Coverage Icons
+
+### What was done
+- **Per-pair coverage indicator in CompareModal** — each nearest-neighbor pair row now shows a small icon below the ΔE badge:
+  - **Check (emerald)** for ΔE < 10 — "covered", this source color has a good match in the target palette
+  - **X (rose, reduced opacity)** for ΔE ≥ 10 — "not covered", loose or no good match
+  - Icon sits below the ΔE badge in the existing middle column with no grid layout change
+  - Tooltip on each icon explains the binary verdict: "Covered — good match (ΔE < 10)" or "Not covered — loose match (ΔE ≥ 10)"
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Below the ΔE badge, not a 4th column** — keeps the `grid-cols-[1fr_auto_1fr]` layout intact; the icon flows naturally in the existing `flex-col items-center` container already used for the badge.
+- **ΔE < 10 threshold (not < 5)** — consistent with `coverageStats` in the footer, which uses the same threshold for the aggregate coverage %. Icons and aggregate % now agree on the definition of "covered."
+- **`opacity-60` on the X** — full rose red on every uncovered pair would be visually heavy if the palette pair has mostly loose matches. The slightly dimmed X reads as "not ideal" rather than "error."
+- **`Check` from lucide-react, `X` already imported** — `X` was already in the file (close button); using it again in the pair context is fine since the scale (9px vs. 14px) and container distinguish the two usages clearly.
+
+### What's next (Session 226)
+- **Similar strip "show more" animation polish** — staggered fade-in on newly revealed tiles when the grid expands
+- **ExportModal: gradient direction/order mini-controls in the Download row** — inline direction toggle chips under the gradient PNG download row
+
+---
+
 ## 2026-09-05 — Session 224: CompareModal Coverage % Badge
 
 ### What was done
