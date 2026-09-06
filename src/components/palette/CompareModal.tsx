@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { X, ArrowLeftRight, ArrowRight, Check } from "lucide-react";
 import { deltaE } from "@/lib/utils";
 import type { Palette } from "@/types";
 
@@ -239,13 +239,19 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                           </div>
                         </div>
 
-                        {/* ΔE badge */}
+                        {/* ΔE badge + coverage icon */}
                         <div className="flex flex-col items-center shrink-0 w-12">
                           <div
                             className={`w-full text-center px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums ${tier.bg} ${tier.text}`}
                             title={`ΔE ${pair.dE} — ${tier.label}`}
                           >
                             {pair.dE}
+                          </div>
+                          <div
+                            className={`mt-0.5 ${pair.dE < 10 ? "text-emerald-500" : "text-rose-400 opacity-60"}`}
+                            title={pair.dE < 10 ? "Covered — good match (ΔE < 10)" : "Not covered — loose match (ΔE ≥ 10)"}
+                          >
+                            {pair.dE < 10 ? <Check size={9} /> : <X size={9} />}
                           </div>
                         </div>
 
