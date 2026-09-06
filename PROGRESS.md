@@ -6491,3 +6491,28 @@
 - **Collection Sheet: A4/Letter size toggle** — allow exporting the reference sheet in A4 (210×297mm) vs Letter (8.5×11in) sizes
 - **Tone map tooltip consistency** — verify delay attribute is 300ms across all tooltips in the tone map zone (name chip, bin chip, L-range gradient bar)
 - **Compare modal: show effectiveA/B names in the "A → B" badge on hover** — tooltip or popover showing "A = [palette name] · B = [palette name]"
+
+---
+
+## 2026-09-06 — Session 227: Collection Sheet A4/Letter Page Size Toggle
+
+### What was done
+- **A4/Letter size toggle for collection reference sheet export** — the toolbar now shows a compact `LT | A4` chip pair next to the Sheet download button. Clicking a chip sets the export page size; the Sheet button title updates to show "Letter (8.5×11 in) PNG at 150 DPI" or "A4 (210×297 mm) PNG at 150 DPI".
+  - New `CollectionSheetPageSize` type (`"a4" | "letter"`) and `SHEET_PAGE_WIDTHS` constant map exported from `exportPalette.ts`: A4 = 1240px, Letter = 1275px (both at 150 DPI).
+  - `exportCollectionSheet` accepts a third `pageSize` parameter (default `"letter"`) and computes `scale = W / 1200` — all layout constants (header/footer heights, row heights, padding, font sizes, dot radius, legend spacing) multiply by `scale` so the sheet looks identical at any page width.
+  - Logo gradient box, font sizes (20→scaled, 13→scaled, 12→scaled, 10→scaled), risk indicator dot radius, gap after dot, legend dot radius, and legend spacing all scale correctly.
+  - Footer gains a subtle right-aligned page-size label ("A4 · 150 DPI" / "Letter · 150 DPI") in muted gray so the PNG is self-documenting.
+  - Downloaded filename includes size suffix: `[slug]-palette-sheet-a4.png` / `[slug]-palette-sheet-letter.png`.
+  - `page.tsx`: `collectionSheetPageSize` state (default `"letter"`); `collectionSheetPageSize` added to `handleDownloadCollectionSheet` deps array.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **150 DPI as the target resolution** — balances file size (A4 at 150 DPI = 1240×~1000+px) with print clarity. 72 DPI is too soft for printing; 300 DPI produces 2480px+ canvases that can be slow to generate in the browser. 150 DPI renders quickly and looks sharp printed on both home and office printers.
+- **Proportional scaling (scale = W / BASE_W) rather than fixed pixel constants per size** — a single scale factor applied to every dimension ensures the two formats look visually identical, just at different widths. No per-size branching needed; adding future sizes (e.g. A3) is one line in `SHEET_PAGE_WIDTHS`.
+- **"LT" not "Letter" in the chip** — the chip is intentionally compact (9px monospace font) to fit alongside "Copy hex" and "Sheet" in a tight toolbar. "LT" is the ISO standard abbreviation for Letter; "A4" is already two characters so it fits naturally.
+- **Default "letter"** — Cady is US-based; Letter is the correct default for her use case.
+
+### What's next (Session 228)
+- **Tone map tooltip consistency** — verify delay attribute is 300ms across all tooltips in the tone map zone (name chip, bin chip, L-range gradient bar)
+- **Compare modal: show effectiveA/B palette names in "A → B" badge tooltip** — tooltip or popover showing "A = [palette name] · B = [palette name]"
+- **Similar strip "show more" animation polish** — staggered fade-in on newly revealed tiles when the grid expands
