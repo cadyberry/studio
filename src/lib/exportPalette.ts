@@ -259,20 +259,36 @@ export function exportAsPngStrip(palette: Palette): void {
   link.click();
 }
 
-export function exportCollectionSheet(palettes: Palette[], collectionName: string): void {
+export type CollectionSheetPageSize = "a4" | "letter";
+
+// At 150 DPI: A4 = 210mm × 297mm → 1240px wide; Letter = 8.5in × 11in → 1275px wide.
+// Heights are dynamic (grow with # palettes) so only width is meaningful here.
+const SHEET_PAGE_WIDTHS: Record<CollectionSheetPageSize, number> = {
+  a4: 1240,
+  letter: 1275,
+};
+
+export function exportCollectionSheet(
+  palettes: Palette[],
+  collectionName: string,
+  pageSize: CollectionSheetPageSize = "letter"
+): void {
   if (palettes.length === 0) return;
 
   const SANS = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
   const MONO = "'Courier New', Courier, monospace";
 
-  const W = 1200;
-  const HEADER_H = 72;
-  const FOOTER_H = 36;
-  const ROW_SWATCH_H = 52;
-  const ROW_LABEL_H = 30;
+  // Scale all layout constants to the target page width
+  const BASE_W = 1200;
+  const W = SHEET_PAGE_WIDTHS[pageSize];
+  const scale = W / BASE_W;
+  const HEADER_H = Math.round(72 * scale);
+  const FOOTER_H = Math.round(36 * scale);
+  const ROW_SWATCH_H = Math.round(52 * scale);
+  const ROW_LABEL_H = Math.round(30 * scale);
   const ROW_H = ROW_SWATCH_H + ROW_LABEL_H;
-  const ROW_GAP = 1; // separator line between rows
-  const PAD_X = 32;
+  const ROW_GAP = 1;
+  const PAD_X = Math.round(32 * scale);
 
   const totalH = HEADER_H + palettes.length * (ROW_H + ROW_GAP) + FOOTER_H;
 
@@ -286,13 +302,17 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
   ctx.fillStyle = "#fafaf8";
   ctx.fillRect(0, 0, W, totalH);
 
-  // Header
-  const grd = ctx.createLinearGradient(PAD_X, 18, PAD_X + 28, 46);
+  // Header — all dimensions scaled to page width
+  const LOGO_MY = Math.round(18 * scale);
+  const LOGO_MW = Math.round(28 * scale);
+  const LOGO_MH = Math.round(28 * scale);
+  const LOGO_MR = Math.round(6 * scale);
+  const grd = ctx.createLinearGradient(PAD_X, LOGO_MY, PAD_X + LOGO_MW, LOGO_MY + LOGO_MH);
   grd.addColorStop(0, "#fda4af");
   grd.addColorStop(0.5, "#c4b5fd");
   grd.addColorStop(1, "#93c5fd");
   ctx.fillStyle = grd;
-  const [mx, my, mw, mh, mr] = [PAD_X, 18, 28, 28, 6];
+  const [mx, my, mw, mh, mr] = [PAD_X, LOGO_MY, LOGO_MW, LOGO_MH, LOGO_MR];
   ctx.beginPath();
   ctx.moveTo(mx + mr, my);
   ctx.lineTo(mx + mw - mr, my);
@@ -307,14 +327,14 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
   ctx.fill();
 
   ctx.fillStyle = "#1c1c19";
-  ctx.font = `bold 20px ${SANS}`;
+  ctx.font = `bold ${Math.round(20 * scale)}px ${SANS}`;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   const displayName = collectionName.length > 80 ? collectionName.slice(0, 80) + "…" : collectionName;
-  ctx.fillText(displayName, PAD_X + mw + 12, HEADER_H / 2);
+  ctx.fillText(displayName, PAD_X + mw + Math.round(12 * scale), HEADER_H / 2);
 
   ctx.fillStyle = "#9a9a90";
-  ctx.font = `13px ${SANS}`;
+  ctx.font = `${Math.round(13 * scale)}px ${SANS}`;
   ctx.textAlign = "right";
   ctx.fillText(`${palettes.length} palette${palettes.length !== 1 ? "s" : ""}`, W - PAD_X, HEADER_H / 2);
 
@@ -350,10 +370,10 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
     const hasHighRisk = sims.some((s) => s.risk === "high");
     const hasCautionRisk = sims.some((s) => s.risk === "caution");
     const riskLevel = hasHighRisk ? "high" : hasCautionRisk ? "caution" : "safe";
-    const DOT_R = 4;
+    const DOT_R = Math.round(4 * scale);
     const dotCY = labelY + ROW_LABEL_H / 2;
     const dotCX = PAD_X + DOT_R;
-    const nameX = riskLevel !== "safe" ? dotCX + DOT_R + 7 : PAD_X;
+    const nameX = riskLevel !== "safe" ? dotCX + DOT_R + Math.round(7 * scale) : PAD_X;
 
     if (riskLevel !== "safe") {
       ctx.beginPath();
@@ -364,7 +384,7 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
 
     // Palette name
     ctx.fillStyle = "#1c1c19";
-    ctx.font = `500 12px ${SANS}`;
+    ctx.font = `500 ${Math.round(12 * scale)}px ${SANS}`;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     const nameTrunc = palette.name.length > 90 ? palette.name.slice(0, 90) + "…" : palette.name;
@@ -374,7 +394,7 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
     const hexStr = palette.colors.slice(0, 5).map((c) => c.hex.toUpperCase()).join("  ");
     const more = palette.colors.length > 5 ? `  +${palette.colors.length - 5}` : "";
     ctx.fillStyle = "#9a9a90";
-    ctx.font = `10px ${MONO}`;
+    ctx.font = `${Math.round(10 * scale)}px ${MONO}`;
     ctx.textAlign = "right";
     ctx.fillText(`${hexStr}${more}`, W - PAD_X, labelY + ROW_LABEL_H / 2);
 
@@ -393,7 +413,7 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
   ctx.fillStyle = "#e2e2da";
   ctx.fillRect(0, rowY, W, 1);
   ctx.fillStyle = "#aaaaa0";
-  ctx.font = `10px ${SANS}`;
+  ctx.font = `${Math.round(10 * scale)}px ${SANS}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("Made with Palette · color intelligence for creators", W / 2, rowY + FOOTER_H / 2);
@@ -405,25 +425,34 @@ export function exportCollectionSheet(palettes: Palette[], collectionName: strin
       { color: "#e11d48", label: "high CMYK shift" },
       { color: "#d97706", label: "caution" },
     ];
+    const LD = Math.round(4 * scale);
     let lx = PAD_X;
     const ly = rowY + FOOTER_H / 2;
     legendDots.forEach(({ color, label }) => {
       ctx.beginPath();
-      ctx.arc(lx + 4, ly, 4, 0, Math.PI * 2);
+      ctx.arc(lx + LD, ly, LD, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
       ctx.fillStyle = "#aaaaa0";
-      ctx.font = `10px ${SANS}`;
+      ctx.font = `${Math.round(10 * scale)}px ${SANS}`;
       ctx.textAlign = "left";
-      ctx.fillText(label, lx + 11, ly);
+      ctx.fillText(label, lx + LD * 2 + Math.round(3 * scale), ly);
       const textW = ctx.measureText(label).width;
-      lx += 11 + textW + 16;
+      lx += LD * 2 + Math.round(3 * scale) + textW + Math.round(16 * scale);
     });
   }
 
+  // Page size label — bottom-right corner of footer
+  const sizeLabel = pageSize === "a4" ? "A4 · 150 DPI" : "Letter · 150 DPI";
+  ctx.fillStyle = "#c8c8c0";
+  ctx.font = `${Math.round(9 * scale)}px ${SANS}`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillText(sizeLabel, W - PAD_X, rowY + FOOTER_H / 2);
+
   const link = document.createElement("a");
   const slug = collectionName.replace(/\s+/g, "-").toLowerCase().replace(/[^a-z0-9-]/g, "") || "collection";
-  link.download = `${slug}-palette-sheet.png`;
+  link.download = `${slug}-palette-sheet-${pageSize}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }

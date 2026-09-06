@@ -23,7 +23,7 @@ import ColorBrowser from "@/components/palette/ColorBrowser";
 import DuplicatesModal from "@/components/palette/DuplicatesModal";
 import GeneratePaletteModal from "@/components/palette/GeneratePaletteModal";
 import { computeCohesionScore, deltaE, isValidHex, getPaletteMood, getPaletteHueFamily, formatDate, hexToRgb, rgbToHsl, hexToOklch, isOklchOutOfSrgbGamut, getContrastRatio, type PaletteMood } from "@/lib/utils";
-import { batchExportZip, exportCollectionSheet } from "@/lib/exportPalette";
+import { batchExportZip, exportCollectionSheet, type CollectionSheetPageSize } from "@/lib/exportPalette";
 import type { Palette, Collection, ColorSwatch, FilterPreset } from "@/types";
 
 const MOOD_ORDER: PaletteMood[] = ["warm", "cool", "earthy", "vivid", "muted", "dreamy"];
@@ -313,6 +313,7 @@ export default function Home() {
   const [bulkExporting, setBulkExporting] = useState(false);
   const [collectionHexCopied, setCollectionHexCopied] = useState(false);
   const [collectionSheetExporting, setCollectionSheetExporting] = useState(false);
+  const [collectionSheetPageSize, setCollectionSheetPageSize] = useState<CollectionSheetPageSize>("letter");
   const [collectionExporting, setCollectionExporting] = useState<string | null>(null);
   const [colorSearchActive, setColorSearchActive] = useState(false);
   const [colorSearchHex, setColorSearchHex] = useState("");
@@ -922,10 +923,10 @@ export default function Home() {
     setCollectionSheetExporting(true);
     // Run on next tick so the state update renders before the synchronous canvas work
     setTimeout(() => {
-      exportCollectionSheet(collectionPalettes, activeCollectionInfo.name);
+      exportCollectionSheet(collectionPalettes, activeCollectionInfo.name, collectionSheetPageSize);
       setCollectionSheetExporting(false);
     }, 0);
-  }, [activeCollection, activeCollectionInfo, palettes]);
+  }, [activeCollection, activeCollectionInfo, palettes, collectionSheetPageSize]);
 
   const frozenSelectedCount = selectedIds.size > 0
     ? [...selectedIds].filter(id => palettes.find(p => p.id === id)?.frozen).length
@@ -1754,15 +1755,38 @@ export default function Home() {
                         {collectionHexCopied ? <Check size={10} /> : <Copy size={10} />}
                         <span>{collectionHexCopied ? "Copied" : "Copy hex"}</span>
                       </button>
-                      <button
-                        onClick={handleDownloadCollectionSheet}
-                        disabled={collectionSheetExporting}
-                        title="Download collection reference sheet — all palettes as a single PNG"
-                        className="shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors text-[var(--muted)] hover:text-[var(--foreground)] disabled:opacity-40"
-                      >
-                        {collectionSheetExporting ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
-                        <span>Sheet</span>
-                      </button>
+                      <div className="shrink-0 flex items-center gap-0.5">
+                        {/* A4 / Letter page size toggle */}
+                        <div className="flex items-center rounded border border-[var(--border)] overflow-hidden text-[9px] font-mono">
+                          <button
+                            onClick={() => setCollectionSheetPageSize("letter")}
+                            title="Letter (8.5×11 in)"
+                            className={`px-1 py-0.5 transition-colors ${
+                              collectionSheetPageSize === "letter"
+                                ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                                : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                            }`}
+                          >LT</button>
+                          <button
+                            onClick={() => setCollectionSheetPageSize("a4")}
+                            title="A4 (210×297 mm)"
+                            className={`px-1 py-0.5 transition-colors ${
+                              collectionSheetPageSize === "a4"
+                                ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                                : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                            }`}
+                          >A4</button>
+                        </div>
+                        <button
+                          onClick={handleDownloadCollectionSheet}
+                          disabled={collectionSheetExporting}
+                          title={`Download collection reference sheet as ${collectionSheetPageSize === "a4" ? "A4 (210×297 mm)" : "Letter (8.5×11 in)"} PNG at 150 DPI`}
+                          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors text-[var(--muted)] hover:text-[var(--foreground)] disabled:opacity-40"
+                        >
+                          {collectionSheetExporting ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+                          <span>Sheet</span>
+                        </button>
+                      </div>
                     </>
                   )}
                 </>
