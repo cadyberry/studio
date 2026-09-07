@@ -6559,3 +6559,27 @@
 - **Tone map tooltip consistency** — verify delay attribute is 300ms across all tooltips in the tone map zone (name chip, bin chip, L-range gradient bar)
 - **Compare modal: show effectiveA/B palette names in "A → B" badge tooltip** — tooltip or popover showing "A = [palette name] · B = [palette name]"
 - **Similar strip "show more" animation polish** — staggered fade-in on newly revealed tiles when the grid expands
+
+---
+
+## 2026-09-07 — Session 228: Compare Modal Palette Name Popover on A → B Badge
+
+### What was done
+- **Palette name popover on the "A → B" directional badge in CompareModal** — hovering the compact "A · → · B · by closeness" badge in the Nearest-neighbor pairs section header now reveals a small floating chip just below it, showing:
+  - `A = [effective palette A name]`
+  - `B = [effective palette B name]`
+  - Names update live when the palettes are swapped (via the ⇄ button or `S` key).
+  - Implementation: `showDirTip` boolean state toggled by `onMouseEnter`/`onMouseLeave` on a `relative shrink-0` wrapper. Chip is `absolute top-full right-0 mt-2 z-20 pointer-events-none` — floats below the badge within the modal's bounds (no overflow escape). Long names truncate at 150px.
+  - Native `title` on the inner badge div kept for the algorithm description ("For each swatch in A…").
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Custom chip over title-attribute update** — a native `title` tooltip would add the names but would be invisible until an 800ms native browser hover delay. A custom chip is immediately visible (300ms is too long to wait for something this small). The chip also mirrors the styled chip language used in the tone map area.
+- **`pointer-events-none` on the chip** — the chip floats over the pairs list below. Keeping it non-interactive prevents accidental interference with hovering individual pairs while the directional chip is visible.
+- **`top-full` (below badge, not above)** — the palette strip labels (A/B names in bold) are just above the Nearest-neighbor pairs header. Positioning the chip below avoids overlapping the already-visible palette names and makes the popover feel like an extension of the directional badge rather than a duplicate label.
+- **`max-w-[150px] truncate`** — long palette names (e.g. "Dark Academia Vol. 3 — Autumn Edition") won't break layout; they're always full in the `title` attribute on their palette strips above.
+
+### What's next (Session 229)
+- **Tone map tooltip consistency** — add a 300ms appear delay to the sparkline swatch-name chip and histogram bin-label chip (currently they appear instantly on `mouseenter`; a slight delay prevents flash while scanning quickly across the bars)
+- **Compare modal: coverage bar segmented fill** — show a segmented progress bar for the coverage stat (excellent/good/fair/loose segments colored by tier instead of a single-color fill)
+- **Palette card: keyboard shortcut hint on hover** — brief kbd hint for `C` (copy hex), `E` (export), `N` (name swatches) that fades in when the toolbar is hovered
