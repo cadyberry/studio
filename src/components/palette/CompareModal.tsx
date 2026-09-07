@@ -30,6 +30,7 @@ interface CompareModalProps {
 export default function CompareModal({ paletteA, paletteB, onClose }: CompareModalProps) {
   const open = !!(paletteA && paletteB);
   const [swapped, setSwapped] = useState(false);
+  const [showDirTip, setShowDirTip] = useState(false);
 
   // Reset swap direction each time the modal opens with a new pair
   useEffect(() => {
@@ -211,13 +212,33 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     Nearest-neighbor pairs
                   </p>
                   <div
-                    className="flex items-center gap-1 shrink-0"
-                    title="For each swatch in A, the closest match in B is shown — sorted by ΔE, lowest first"
+                    className="relative shrink-0"
+                    onMouseEnter={() => setShowDirTip(true)}
+                    onMouseLeave={() => setShowDirTip(false)}
                   >
-                    <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">A</span>
-                    <ArrowRight size={9} className="text-[var(--muted)]" />
-                    <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">B</span>
-                    <span className="text-[9px] text-[var(--muted)] ml-0.5">· by closeness</span>
+                    {showDirTip && (
+                      <div className="absolute top-full right-0 mt-2 z-20 pointer-events-none bg-[var(--surface)] border border-[var(--border-subtle)] rounded-lg shadow-lg px-3 py-2 min-w-max">
+                        <div className="flex items-center gap-1.5 text-[10px]">
+                          <span className="font-mono font-bold text-[var(--foreground)]">A</span>
+                          <span className="text-[var(--muted)]">=</span>
+                          <span className="text-[var(--foreground)] max-w-[150px] truncate">{effectiveA!.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] mt-1">
+                          <span className="font-mono font-bold text-[var(--foreground)]">B</span>
+                          <span className="text-[var(--muted)]">=</span>
+                          <span className="text-[var(--foreground)] max-w-[150px] truncate">{effectiveB!.name}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div
+                      className="flex items-center gap-1 cursor-default"
+                      title="For each swatch in A, the closest match in B is shown — sorted by ΔE, lowest first"
+                    >
+                      <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">A</span>
+                      <ArrowRight size={9} className="text-[var(--muted)]" />
+                      <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">B</span>
+                      <span className="text-[9px] text-[var(--muted)] ml-0.5">· by closeness</span>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
