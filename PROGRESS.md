@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-09-07 — Session 226: Similar Strip Staggered Fade-in Animation
+
+### What was done
+- **Staggered fade-in for "show more" similar palettes grid** — when the user clicks "+N more" in the similar palettes strip, the expanded grid now animates in with `AnimatePresence` + `motion.button`. Each tile fades in from `opacity: 0, y: 4px` with a staggered delay (`0.08s + 0.04s × index`), giving a crisp cascade effect instead of the previous abrupt appearance.
+- **Separated strip and expanded grid layout regions** — previously both the 40px strip and the expanded grid shared a single `maxHeight` container. Now the strip has its own `maxHeight` clip (clean hover show/hide), and the expanded grid is an independent `AnimatePresence` block that animates height + opacity on enter/exit. This makes both transitions cleaner and independent.
+- **Removed the now-unused `containerMaxH` and `expandedRows` variables** — no dead code.
+- Build: clean Next.js build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **`AnimatePresence initial={false}`** — prevents the expand animation from firing on initial render when `showMoreSimilar` starts as `false` and `isCardHovered` is `false`. Animation only triggers on user interaction.
+- **`height: expandedH` (pixel value) on `motion.div`** — avoids the `height: "auto"` Framer Motion limitation; `expandedH = Math.ceil(moreSimilar.length / 3) * 32` is exact since tiles are `h-8` (32px).
+- **`overflow-hidden` on the animated grid div** — tiles start with `y: 4px` offset; `overflow-hidden` prevents them from peeking below the container before the height animation catches up.
+- **Delay starts at 0.08s** — gives the container height animation a head start before tiles begin appearing, so the grid isn't painting tiles on a collapsed box.
+
+### What's next (Session 227)
+- **PaletteCard: "Freeze" indicator on the similar strip** — when the currently hovered palette is frozen, subtly dim the similar strip or add a lock icon to the label to signal read-only state
+- **ExportModal: copy-to-clipboard toast position fix** — toast currently appears at the bottom of the modal, which overlaps the footer on short viewports; move to a fixed top-center position
+- **ShadeModal: interpolation mode toggle** — add a small chip to switch between LAB and OKLCH interpolation for the tint/shade ramp
+
+---
+
 ## 2026-09-06 — Session 225: CompareModal Per-Pair Coverage Icons
 
 ### What was done
