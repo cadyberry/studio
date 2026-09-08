@@ -6583,3 +6583,27 @@
 - **Tone map tooltip consistency** — add a 300ms appear delay to the sparkline swatch-name chip and histogram bin-label chip (currently they appear instantly on `mouseenter`; a slight delay prevents flash while scanning quickly across the bars)
 - **Compare modal: coverage bar segmented fill** — show a segmented progress bar for the coverage stat (excellent/good/fair/loose segments colored by tier instead of a single-color fill)
 - **Palette card: keyboard shortcut hint on hover** — brief kbd hint for `C` (copy hex), `E` (export), `N` (name swatches) that fades in when the toolbar is hovered
+
+---
+
+## 2026-09-08 — Session 229: Tone Map Chip 300ms Appear Delay
+
+### What was done
+- **300ms appear delay on sparkline swatch-name chip and histogram bin-label chip** — the floating chip in the tone map zone (bottom of each palette card) now waits 300ms before appearing, preventing flicker when the cursor scans quickly across sparkline bars or histogram bins.
+  - Added `chipToneKey` / `chipBinIndex` display states and `chipTimerRef` alongside the existing immediate `hoveredToneKey` / `hoveredBinIndex` states.
+  - `onMouseEnter` on each sparkline bar: immediately sets `hoveredToneKey` (bar brightens instantly) then schedules `setChipToneKey` after 300ms; clears any in-flight timer first so rapid scan never queues up stale chips.
+  - `onMouseEnter` on each histogram bin: same pattern — `hoveredBinIndex` updates immediately (bin brightens), `chipBinIndex` updates after 300ms.
+  - `onMouseLeave` on the tone map container: cancels any pending timer and clears all four states immediately so the chip disappears as soon as the cursor leaves.
+  - Chip render (`(chipBinIndex !== null || chipToneKey) && ...`) now uses the delayed chip states, so the chip only appears after intentional hover.
+  - Bar / bin brightness (isHovered and swatch opacity) still use the immediate states — visual feedback remains crisp.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Separate immediate vs. display states** — keeping `hoveredBinIndex`/`hoveredToneKey` immediate means bar highlight responds without lag (good for scan UX), while `chipBinIndex`/`chipToneKey` are the "intent confirmed" signals that control the expensive floating chip render.
+- **Timer cleared on each new `onMouseEnter`** — if the user moves quickly from bar A → B → C within 300ms, only C's timer fires. No stale chips, no accumulation of queued setStates.
+- **300ms threshold** — matches the delay used for other tooltip-style elements in the app. Long enough to distinguish scanning from intentional hover; short enough to feel responsive once committed.
+
+### What's next (Session 230)
+- **Compare modal: coverage bar segmented fill** — show a segmented progress bar for the coverage stat (excellent/good/fair/loose segments colored by tier instead of a single-color fill)
+- **Palette card: keyboard shortcut hint on hover** — brief kbd hint for `C` (copy hex), `E` (export), `N` (name swatches) that fades in when the toolbar is hovered
+- **Collection Sheet: A4/Letter size toggle UI refinement** — verify chip pair fits all viewport widths in collection view
