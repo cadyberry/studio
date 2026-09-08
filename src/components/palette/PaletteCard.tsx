@@ -259,6 +259,10 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
   const [harmonyAnchorFlash, setHarmonyAnchorFlash] = useState(false);
   const [hoveredToneKey, setHoveredToneKey] = useState<string | null>(null);
   const [hoveredBinIndex, setHoveredBinIndex] = useState<number | null>(null);
+  // Chip display states — delayed 300ms so rapid scanning doesn't flash chips
+  const [chipToneKey, setChipToneKey] = useState<string | null>(null);
+  const [chipBinIndex, setChipBinIndex] = useState<number | null>(null);
+  const chipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const similarComputedRef = useRef(false);
 
   // Reset similar palettes cache when this palette's colors change
@@ -1462,12 +1466,13 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       {/* Tone map — dual view: per-swatch sparkline (default) / 5-bin luminance histogram (hover) */}
       <div className="relative">
         {/* Floating chip — shows bin label when hovering histogram, swatch name when hovering sparkline */}
-        {(hoveredBinIndex !== null || hoveredToneKey) && (() => {
-          if (hoveredBinIndex !== null) {
-            const count = toneMap.bins[hoveredBinIndex];
-            const label = toneMap.binLabels[hoveredBinIndex];
-            const binMidL = hoveredBinIndex * 20 + 10;
-            const rangeStart = hoveredBinIndex * 20;
+        {/* Chip uses 300ms-delayed chip states so rapid scanning doesn't flash chips */}
+        {(chipBinIndex !== null || chipToneKey) && (() => {
+          if (chipBinIndex !== null) {
+            const count = toneMap.bins[chipBinIndex];
+            const label = toneMap.binLabels[chipBinIndex];
+            const binMidL = chipBinIndex * 20 + 10;
+            const rangeStart = chipBinIndex * 20;
             const rangeEnd = rangeStart + 20;
             return (
               <div
@@ -1486,7 +1491,7 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
               </div>
             );
           }
-          const hovColor = orderedColors.find((c) => c._key === hoveredToneKey);
+          const hovColor = orderedColors.find((c) => c._key === chipToneKey);
           if (!hovColor) return null;
           const chipName = hovColor.name || derivedSwatchNames[hovColor._key] || "";
           if (!chipName) return null;
@@ -1507,7 +1512,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
         <div
           className="group/sparkline relative bg-[var(--surface-2)]/30 cursor-default overflow-hidden"
           style={{ height: 14 }}
-          onMouseLeave={() => { setHoveredToneKey(null); setHoveredBinIndex(null); }}
+          onMouseLeave={() => {
+            if (chipTimerRef.current) clearTimeout(chipTimerRef.current);
+            setHoveredToneKey(null); setHoveredBinIndex(null);
+            setChipToneKey(null); setChipBinIndex(null);
+          }}
           title={
             toneMap.isFlatTones
               ? `Tonal spread: ${toneMap.binLabels.map((l, i) => `${l} ${toneMap.bins[i]}`).join(" · ")} · All mid-tone — low contrast potential`
@@ -1524,7 +1533,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   key={color._key}
                   className="flex-1 rounded-t-[2px]"
                   style={{ height: Math.max(2, Math.round((l / 100) * 11)), backgroundColor: color.hex, opacity: 0.72 }}
-                  onMouseEnter={() => setHoveredToneKey(color._key)}
+                  onMouseEnter={() => {
+                    setHoveredToneKey(color._key);
+                    if (chipTimerRef.current) clearTimeout(chipTimerRef.current);
+                    chipTimerRef.current = setTimeout(() => { setChipToneKey(color._key); setChipBinIndex(null); }, 300);
+                  }}
                 />
               );
             })}
@@ -1541,7 +1554,11 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
                   key={i}
                   className="flex-1 flex flex-col items-center justify-end cursor-default"
                   style={{ height: "100%" }}
-                  onMouseEnter={() => setHoveredBinIndex(i)}
+                  onMouseEnter={() => {
+                    setHoveredBinIndex(i);
+                    if (chipTimerRef.current) clearTimeout(chipTimerRef.current);
+                    chipTimerRef.current = setTimeout(() => { setChipBinIndex(i); setChipToneKey(null); }, 300);
+                  }}
                 >
                   <div
                     className="w-full rounded-t-[2px] transition-opacity duration-75"
