@@ -6607,3 +6607,32 @@
 - **Compare modal: coverage bar segmented fill** — show a segmented progress bar for the coverage stat (excellent/good/fair/loose segments colored by tier instead of a single-color fill)
 - **Palette card: keyboard shortcut hint on hover** — brief kbd hint for `C` (copy hex), `E` (export), `N` (name swatches) that fades in when the toolbar is hovered
 - **Collection Sheet: A4/Letter size toggle UI refinement** — verify chip pair fits all viewport widths in collection view
+
+---
+
+## 2026-09-08 — Session 230: Compare Modal Segmented Coverage Bar
+
+### What was done
+- **Segmented fill for the coverage bar in CompareModal** — replaced the single-color progress bar with a 4-tier segmented bar that visually breaks down match quality at a glance:
+  - **Excellent** (ΔE < 5): emerald green
+  - **Good** (ΔE 5–10): sky blue
+  - **Fair** (ΔE 10–15): amber
+  - **Loose** (ΔE ≥ 15): rose
+  - Each segment grows from 0 with a 70ms stagger delay so tiers cascade left-to-right on open.
+  - Empty tiers are omitted (`.filter(t => t.count > 0)`) — a palette of all-excellent matches shows a clean solid emerald bar; mixed palettes show the full gradient of quality.
+  - Tooltips on each bar segment: e.g. "3 excellent — ΔE < 5".
+  - A compact color-coded legend row sits below the bar (dot + label + count), identical tier colors, tooltips matching the segments.
+  - The coverage % headline and "N of M source colors have a good match" caption are unchanged.
+- `coverageStats` now returns a `tiers` array alongside the existing `good`, `total`, and `pct` fields — backward compatible with all other reads.
+- Build: TypeScript zero errors (module-resolution errors are environment-only; pre-existing across all sessions).
+
+### Key decisions
+- **Mutually exclusive tiers, left-to-right quality order** — excellent fills the leftmost space, loose the rightmost. This mirrors the intuition of a "grade" bar where best quality is on the left, so a palette with high coverage shows a bar heavy on the left (green/blue) and a poor-match palette shows heavy rose on the right.
+- **Stagger delay 70ms (not 0ms)** — a zero delay makes all segments grow simultaneously, which obscures the segmented structure. 70ms per tier gives a clear cascade while keeping the whole animation under 270ms total.
+- **Filter empty tiers** — rendering a zero-width segment causes a 1px visual artifact in some browsers at the boundary between segments. Filtering keeps the bar clean.
+- **Legend dots = 2×2 rounded-full, not squares** — matches the visual language of the tone map legend and other dot-based legends in the app.
+
+### What's next (Session 231)
+- **Palette card: keyboard shortcut hint on hover** — brief kbd hint for `C` (copy hex), `E` (export), `N` (name swatches) that fades in when the toolbar is hovered
+- **Collection Sheet: A4/Letter size toggle UI refinement** — verify chip pair fits all viewport widths in collection view
+- **Compare modal: show tier breakdown in the coverage % tooltip** — hover the `XX%` headline number to see "N excellent, N good, N fair, N loose" breakdown
