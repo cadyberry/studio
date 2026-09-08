@@ -85,9 +85,23 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
 
   const coverageStats = useMemo(() => {
     if (pairs.length === 0) return null;
-    const good = pairs.filter((p) => p.dE < 10).length;
-    const total = pairs.length;
-    return { good, total, pct: Math.round((good / total) * 100) };
+    const total     = pairs.length;
+    const excellent = pairs.filter((p) => p.dE < 5).length;
+    const good      = pairs.filter((p) => p.dE >= 5  && p.dE < 10).length;
+    const fair      = pairs.filter((p) => p.dE >= 10 && p.dE < 15).length;
+    const loose     = pairs.filter((p) => p.dE >= 15).length;
+    const covered   = excellent + good;
+    return {
+      good: covered,
+      total,
+      pct: Math.round((covered / total) * 100),
+      tiers: [
+        { label: "excellent", count: excellent, pct: (excellent / total) * 100, color: "bg-emerald-500", textColor: "text-emerald-600 dark:text-emerald-400", barTitle: `${excellent} excellent — ΔE < 5`      },
+        { label: "good",      count: good,      pct: (good      / total) * 100, color: "bg-sky-500",     textColor: "text-sky-600 dark:text-sky-400",         barTitle: `${good} good — ΔE 5–10`             },
+        { label: "fair",      count: fair,      pct: (fair      / total) * 100, color: "bg-amber-500",   textColor: "text-amber-600 dark:text-amber-400",     barTitle: `${fair} fair — ΔE 10–15`            },
+        { label: "loose",     count: loose,     pct: (loose     / total) * 100, color: "bg-rose-500",    textColor: "text-rose-600 dark:text-rose-400",       barTitle: `${loose} loose — ΔE ≥ 15`           },
+      ].filter((t) => t.count > 0),
+    };
   }, [pairs]);
 
   const uniqueColorStats = useMemo(() => {
@@ -337,20 +351,28 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                         {coverageStats.pct}%
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
-                      <motion.div
-                        className={`h-full rounded-full ${
-                          coverageStats.pct >= 80 ? "bg-emerald-500" :
-                          coverageStats.pct >= 50 ? "bg-sky-500" :
-                          coverageStats.pct >= 25 ? "bg-amber-500" :
-                          "bg-rose-500"
-                        }`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${coverageStats.pct}%` }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                      />
+                    <div className="w-full h-2 bg-[var(--surface-2)] rounded-full overflow-hidden flex">
+                      {coverageStats.tiers.map((tier, i) => (
+                        <motion.div
+                          key={tier.label}
+                          className={`h-full ${tier.color}`}
+                          title={tier.barTitle}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${tier.pct}%` }}
+                          transition={{ duration: 0.5, delay: i * 0.07, ease: "easeOut" }}
+                        />
+                      ))}
                     </div>
-                    <p className="text-[10px] text-[var(--muted)] text-center mt-1.5">
+                    <div className="flex gap-3 justify-center mt-2 flex-wrap">
+                      {coverageStats.tiers.map((tier) => (
+                        <div key={tier.label} className={`flex items-center gap-1 text-[9px] ${tier.textColor}`} title={tier.barTitle}>
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${tier.color}`} />
+                          <span className="capitalize">{tier.label}</span>
+                          <span className="opacity-60">({tier.count})</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-[var(--muted)] text-center mt-1">
                       {coverageStats.good} of {coverageStats.total} source{" "}
                       {coverageStats.total === 1 ? "color has" : "colors have"} a good match in B
                     </p>
