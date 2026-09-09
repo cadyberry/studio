@@ -31,6 +31,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const open = !!(paletteA && paletteB);
   const [swapped, setSwapped] = useState(false);
   const [showDirTip, setShowDirTip] = useState(false);
+  const [showCoverageTip, setShowCoverageTip] = useState(false);
 
   // Reset swap direction each time the modal opens with a new pair
   useEffect(() => {
@@ -339,17 +340,48 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
                         Coverage <span className="normal-case tracking-normal font-normal">(ΔE &lt; 10)</span>
                       </p>
-                      <span
-                        className={`text-sm font-bold tabular-nums ${
-                          coverageStats.pct >= 80 ? "text-emerald-600 dark:text-emerald-400" :
-                          coverageStats.pct >= 50 ? "text-sky-600 dark:text-sky-400" :
-                          coverageStats.pct >= 25 ? "text-amber-600 dark:text-amber-400" :
-                          "text-rose-600 dark:text-rose-400"
-                        }`}
-                        title={`${coverageStats.good} of ${coverageStats.total} source colors have a good match (ΔE < 10) in the target palette`}
+                      <div
+                        className="relative"
+                        onMouseEnter={() => setShowCoverageTip(true)}
+                        onMouseLeave={() => setShowCoverageTip(false)}
                       >
-                        {coverageStats.pct}%
-                      </span>
+                        {showCoverageTip && coverageStats.tiers.length > 0 && (
+                          <div className="absolute bottom-full right-0 mb-2 z-20 pointer-events-none bg-[var(--surface)] border border-[var(--border-subtle)] rounded-lg shadow-lg px-3 py-2 min-w-max">
+                            <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">Tier breakdown</p>
+                            <div className="flex flex-col gap-1">
+                              {(["excellent", "good", "fair", "loose"] as const).map((tierLabel) => {
+                                const tier = coverageStats.tiers.find((t) => t.label === tierLabel);
+                                const count = tier?.count ?? 0;
+                                const tierStyles: Record<string, { dot: string; text: string; range: string }> = {
+                                  excellent: { dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", range: "ΔE < 5" },
+                                  good:      { dot: "bg-sky-500",     text: "text-sky-600 dark:text-sky-400",         range: "ΔE 5–10" },
+                                  fair:      { dot: "bg-amber-500",   text: "text-amber-600 dark:text-amber-400",     range: "ΔE 10–15" },
+                                  loose:     { dot: "bg-rose-500",    text: "text-rose-600 dark:text-rose-400",       range: "ΔE ≥ 15" },
+                                };
+                                const s = tierStyles[tierLabel];
+                                return (
+                                  <div key={tierLabel} className="flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot} ${count === 0 ? "opacity-25" : ""}`} />
+                                    <span className={`text-[10px] capitalize min-w-[3.5rem] ${count === 0 ? "text-[var(--muted)] opacity-50" : s.text}`}>{tierLabel}</span>
+                                    <span className={`text-[10px] font-bold tabular-nums min-w-[1rem] text-right ${count === 0 ? "text-[var(--muted)] opacity-50" : "text-[var(--foreground)]"}`}>{count}</span>
+                                    <span className={`text-[9px] ${count === 0 ? "text-[var(--muted)] opacity-40" : "text-[var(--muted)]"}`}>{s.range}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        <span
+                          className={`text-sm font-bold tabular-nums cursor-default ${
+                            coverageStats.pct >= 80 ? "text-emerald-600 dark:text-emerald-400" :
+                            coverageStats.pct >= 50 ? "text-sky-600 dark:text-sky-400" :
+                            coverageStats.pct >= 25 ? "text-amber-600 dark:text-amber-400" :
+                            "text-rose-600 dark:text-rose-400"
+                          }`}
+                        >
+                          {coverageStats.pct}%
+                        </span>
+                      </div>
                     </div>
                     <div className="w-full h-2 bg-[var(--surface-2)] rounded-full overflow-hidden flex">
                       {coverageStats.tiers.map((tier, i) => (
