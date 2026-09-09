@@ -6636,3 +6636,29 @@
 - **Palette card: keyboard shortcut hint on hover** — brief kbd hint for `C` (copy hex), `E` (export), `N` (name swatches) that fades in when the toolbar is hovered
 - **Collection Sheet: A4/Letter size toggle UI refinement** — verify chip pair fits all viewport widths in collection view
 - **Compare modal: show tier breakdown in the coverage % tooltip** — hover the `XX%` headline number to see "N excellent, N good, N fair, N loose" breakdown
+
+---
+
+## 2026-09-09 — Session 231: Compare Modal Coverage % Tier Breakdown Popover
+
+### What was done
+- **Tier breakdown popover on the coverage % headline in CompareModal** — hovering the `XX%` coverage number now reveals a floating chip just above it with a full four-row breakdown:
+  - **Excellent** (ΔE < 5): count + range label in emerald
+  - **Good** (ΔE 5–10): count + range label in sky blue
+  - **Fair** (ΔE 10–15): count + range label in amber
+  - **Loose** (ΔE ≥ 15): count + range label in rose
+  - Tiers with zero matches are shown dimmed (25% opacity on the dot, 50% on text) rather than hidden — the viewer can see the full quality picture without the chip changing height.
+  - Chip is `pointer-events-none`, `bottom-full right-0 mb-2 z-20` — floats above the number without overlapping the segmented bar below.
+  - `showCoverageTip` boolean state toggled by `onMouseEnter`/`onMouseLeave` on a `relative` wrapper div around the `%` span. Pattern mirrors the `showDirTip` implementation for the A → B directional badge (session 228).
+  - Native `title` attribute removed from the `%` span (the chip makes it redundant); `cursor-default` added to signal the number is hoverable but not actionable.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Show all four tiers always, dimmed when empty** — a chip that shows only non-zero tiers would jump between 1–4 rows depending on the match quality, which causes layout jank and forces the reader to mentally tally the missing tiers. Fixed height reads faster.
+- **`bottom-full` (above, not below)** — the segmented bar and legend sit directly below the coverage headline. Positioning the chip upward avoids overlapping that content and gives it a natural "tooltip pointing at the number" feel.
+- **Pattern reuse from showDirTip** — same boolean state + onMouseEnter/onMouseLeave approach used for the A → B badge in session 228; keeps CompareModal's hover interactions consistent.
+
+### What's next (Session 232)
+- **Palette card: keyboard shortcut hint refinement** — the kbd hints strip (already implemented) uses `opacity-0 group-hover:opacity-100`; verify it renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
+- **Collection view: sort-by-mood chip** — a toolbar chip in the collection view that reorders palettes within a collection by detected mood (vivid → muted → warm → earthy → cool → dreamy)
+- **Compare modal: "swap" button tooltip with keyboard hint** — the ⇄ button currently has `title="Swap A ↔ B"` but no mention of the `S` keyboard shortcut
