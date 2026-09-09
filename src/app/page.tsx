@@ -257,7 +257,7 @@ export default function Home() {
   const [showGeneratePalette, setShowGeneratePalette] = useState(false);
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [forkPrompt, setForkPrompt] = useState<{ name: string; colors: ColorSwatch[] } | null>(null);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first" | "random" | "manual">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "most-colors" | "most-notes" | "light-first" | "dark-first" | "most-clipped" | "most-print-risk" | "most-varied" | "print-safe-first" | "ai-first" | "random" | "manual" | "mood">("newest");
   const [randomSortKey, setRandomSortKey] = useState<number>(() => Math.floor(Math.random() * 0x7fffffff));
   const [cvdMode, setCvdMode] = useState<"off" | "deuteranopia" | "protanopia" | "tritanopia">("off");
   const [collectionSortBy, setCollectionSortBy] = useState<"default" | "cohesion-desc" | "name-asc" | "count-desc">("default");
@@ -897,6 +897,13 @@ export default function Home() {
           }
           case "random":
             return paletteRandomHash(a.id, randomSortKey) - paletteRandomHash(b.id, randomSortKey);
+          case "mood": {
+            const MOOD_SORT_ORDER: PaletteMood[] = ["vivid", "muted", "warm", "earthy", "cool", "dreamy"];
+            const ai = MOOD_SORT_ORDER.indexOf(getPaletteMood(a.colors));
+            const bi = MOOD_SORT_ORDER.indexOf(getPaletteMood(b.colors));
+            if (ai !== bi) return ai - bi;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
         }
       });
 
@@ -1881,6 +1888,7 @@ export default function Home() {
                           <option value="most-varied">Most varied</option>
                           <option value="print-safe-first">Print safe first</option>
                           <option value="ai-first">AI-generated first</option>
+                          <option value="mood">By mood</option>
                           <option value="random">Random</option>
                           <option value="manual">Manual order ↕</option>
                         </select>
