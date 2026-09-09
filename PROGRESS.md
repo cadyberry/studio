@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-09-09 — Session 232: Sort-by-Mood Palette Option
+
+### What was done
+- **"By mood" option added to the palette sort dropdown** — a new `"mood"` sort mode groups and orders palettes by detected mood in the sequence: vivid → muted → warm → earthy → cool → dreamy. Within each mood group, palettes sort newest-first.
+  - Added `"mood"` to the `sortBy` type union (line 260 of `page.tsx`).
+  - Added the sort case to the existing switch statement: `MOOD_SORT_ORDER` array drives the comparison, `getPaletteMood` (already imported from `lib/utils`) detects each palette's mood, newest-first tiebreak.
+  - Added `<option value="mood">By mood</option>` between "AI-generated first" and "Random" in the sort select.
+  - Fully compatible with existing filter-preset save/restore, localStorage persistence, and the `isFilterActive` check — no special-casing required because all three reference `sortBy` generically.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Order: vivid → muted → warm → earthy → cool → dreamy** — matches the order called out in the session notes. Vivid and muted first (high/low saturation contrast) as the most visually distinct moods, then the temperature/texture moods (warm, earthy, cool, dreamy).
+- **Newest-first tiebreak** — palettes in the same mood group maintain stable order by recency; no visual jumping when new palettes are added.
+- **Dropdown option, not a separate chip** — integrates with the existing sort infrastructure (localStorage, presets, reset button) without new state or separate UI surface. Consistent with the 15 other sort modes.
+
+### What's next (Session 233)
+- **Palette card: keyboard shortcut hint refinement** — the kbd hints strip uses `opacity-0 group-hover:opacity-100`; verify vertical position and no overlap with the toolbar on narrow cards
+- **Compare modal: swap button tooltip consistency** — verify the ⇄ button title includes `(S)` keyboard shortcut hint in all modal code paths
+- **Collection toolbar: mood sort chip** — a quick-toggle chip (not dropdown) visible only when a specific collection is active, for even faster one-click mood grouping within a collection
+
+---
+
 ## 2026-09-07 — Session 226: Similar Strip Staggered Fade-in Animation
 
 ### What was done
