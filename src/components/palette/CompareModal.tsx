@@ -33,10 +33,11 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [showDirTip, setShowDirTip] = useState(false);
   const [showCoverageTip, setShowCoverageTip] = useState(false);
   const [showSwapTip, setShowSwapTip] = useState(false);
+  const [hoveredPairIdx, setHoveredPairIdx] = useState<number | null>(null);
 
-  // Reset swap direction each time the modal opens with a new pair
+  // Reset swap direction and row highlight each time the modal opens with a new pair
   useEffect(() => {
-    if (open) setSwapped(false);
+    if (open) { setSwapped(false); setHoveredPairIdx(null); }
   }, [open]);
 
   // S = swap A↔B while modal is open
@@ -105,6 +106,9 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
       ].filter((t) => t.count > 0),
     };
   }, [pairs]);
+
+  const highlightedHexA = hoveredPairIdx !== null ? pairs[hoveredPairIdx]?.hexA ?? null : null;
+  const highlightedHexB = hoveredPairIdx !== null ? pairs[hoveredPairIdx]?.hexB ?? null : null;
 
   const uniqueColorStats = useMemo(() => {
     if (!effectiveA || !effectiveB) return null;
@@ -200,9 +204,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     </p>
                   </div>
                   <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
-                    {effectiveA!.colors.map((c, i) => (
-                      <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} title={c.hex} />
-                    ))}
+                    {effectiveA!.colors.map((c, i) => {
+                      const dimmed = highlightedHexA !== null && c.hex.toLowerCase() !== highlightedHexA.toLowerCase();
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 transition-opacity duration-150 ${dimmed ? "opacity-20" : "opacity-100"}`}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.hex}
+                        />
+                      );
+                    })}
                   </div>
                   <p className="text-[10px] text-[var(--muted)]">{effectiveA!.colors.length} swatches · source</p>
                 </div>
@@ -225,9 +237,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">B</span>
                   </div>
                   <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
-                    {effectiveB!.colors.map((c, i) => (
-                      <div key={i} className="flex-1" style={{ backgroundColor: c.hex }} title={c.hex} />
-                    ))}
+                    {effectiveB!.colors.map((c, i) => {
+                      const dimmed = highlightedHexB !== null && c.hex.toLowerCase() !== highlightedHexB.toLowerCase();
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 transition-opacity duration-150 ${dimmed ? "opacity-20" : "opacity-100"}`}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.hex}
+                        />
+                      );
+                    })}
                   </div>
                   <p className="text-[10px] text-[var(--muted)] text-right">{effectiveB!.colors.length} swatches · target</p>
                 </div>
@@ -275,8 +295,16 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
                   {pairs.map((pair, i) => {
                     const tier = getMatchTier(pair.dE);
+                    const isHovered = hoveredPairIdx === i;
                     return (
-                      <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                      <div
+                        key={i}
+                        className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-colors duration-100 cursor-default ${
+                          isHovered ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
+                        }`}
+                        onMouseEnter={() => setHoveredPairIdx(i)}
+                        onMouseLeave={() => setHoveredPairIdx(null)}
+                      >
                         {/* Swatch A */}
                         <div className="flex items-center gap-2 min-w-0">
                           <div
