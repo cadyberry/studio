@@ -32,6 +32,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [swapped, setSwapped] = useState(false);
   const [showDirTip, setShowDirTip] = useState(false);
   const [showCoverageTip, setShowCoverageTip] = useState(false);
+  const [showSwapTip, setShowSwapTip] = useState(false);
 
   // Reset swap direction each time the modal opens with a new pair
   useEffect(() => {
@@ -147,23 +148,38 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 <h2 className="text-sm font-semibold">Compare Palettes</h2>
               </div>
               <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setSwapped((s) => !s)}
-                  title="Swap A ↔ B — re-run nearest-neighbor pairs from the other direction (S)"
-                  className={`flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] font-medium transition-colors ${
-                    swapped
-                      ? "bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                  }`}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setShowSwapTip(true)}
+                  onMouseLeave={() => setShowSwapTip(false)}
                 >
-                  <ArrowLeftRight size={12} />
-                  {swapped && <span>swapped</span>}
-                  {!swapped && (
-                    <kbd className="hidden sm:inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] leading-none opacity-60">
-                      S
-                    </kbd>
+                  {showSwapTip && (
+                    <div className="absolute top-full right-0 mt-1.5 z-20 pointer-events-none bg-[var(--surface)] border border-[var(--border-subtle)] rounded-lg shadow-lg px-2.5 py-1.5 min-w-max">
+                      <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted)]">
+                        <span>{swapped ? "Restore original order" : "Swap A ↔ B"}</span>
+                        <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] leading-none">
+                          S
+                        </kbd>
+                      </div>
+                    </div>
                   )}
-                </button>
+                  <button
+                    onClick={() => setSwapped((s) => !s)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] font-medium transition-colors ${
+                      swapped
+                        ? "bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800"
+                        : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                    }`}
+                  >
+                    <ArrowLeftRight size={12} />
+                    {swapped && <span>swapped</span>}
+                    {!swapped && (
+                      <kbd className="hidden sm:inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] leading-none opacity-60">
+                        S
+                      </kbd>
+                    )}
+                  </button>
+                </div>
                 <button
                   onClick={onClose}
                   className="p-1.5 rounded-[var(--radius-sm)] hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
