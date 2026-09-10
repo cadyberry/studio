@@ -6684,3 +6684,26 @@
 - **Palette card: keyboard shortcut hint refinement** — the kbd hints strip (already implemented) uses `opacity-0 group-hover:opacity-100`; verify it renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
 - **Collection view: sort-by-mood chip** — a toolbar chip in the collection view that reorders palettes within a collection by detected mood (vivid → muted → warm → earthy → cool → dreamy)
 - **Compare modal: "swap" button tooltip with keyboard hint** — the ⇄ button currently has `title="Swap A ↔ B"` but no mention of the `S` keyboard shortcut
+
+---
+
+## 2026-09-10 — Session 232: Compare Modal Swap Button Hover Tooltip
+
+### What was done
+- **Hover tooltip chip on the ⇄ swap button in CompareModal** — hovering the swap button now reveals a small floating chip just below it with:
+  - Context-aware label: "Swap A ↔ B" when unswapped, "Restore original order" when already swapped.
+  - A styled `kbd` chip showing the `S` keyboard shortcut.
+  - Chip is `pointer-events-none`, `top-full right-0 mt-1.5 z-20` — floats below the button within the modal header area.
+  - Implementation: `showSwapTip` boolean state toggled by `onMouseEnter`/`onMouseLeave` on a `relative` wrapper div, matching the `showDirTip` and `showCoverageTip` pattern used elsewhere in the modal.
+  - Removed the native `title` attribute from the button (chip makes it redundant).
+- Build: clean Next.js production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Context-aware label** — when the user has already swapped, "Restore original order" is more accurate than "Swap A ↔ B" (which suggests the action creates a new swap rather than undoing the current one). The `S` hint remains constant since the key always toggles.
+- **Pattern reuse from showDirTip / showCoverageTip** — same boolean state + onMouseEnter/onMouseLeave approach; all three hover chips in CompareModal now behave identically.
+- **`top-full` (below button, not above)** — the swap button is in the modal header; positioning the chip below avoids escaping the modal boundary and places it in the content zone where the user is already reading.
+
+### What's next (Session 233)
+- **Palette card: keyboard shortcut hint refinement** — the kbd hints strip uses `opacity-0 group-hover:opacity-100`; verify rendering at correct vertical position and no overlap with toolbar on narrow cards
+- **Collection view: sort-by-mood chip** — a toolbar chip in the collection view that reorders palettes within a collection by detected mood (vivid → muted → warm → earthy → cool → dreamy)
+- **Compare modal: pair row hover highlight** — hovering a nearest-neighbor pair row highlights the corresponding swatch on both palette strips above (subtle ring or brightness pulse)
