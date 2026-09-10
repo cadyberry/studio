@@ -6707,3 +6707,26 @@
 - **Palette card: keyboard shortcut hint refinement** — the kbd hints strip uses `opacity-0 group-hover:opacity-100`; verify rendering at correct vertical position and no overlap with toolbar on narrow cards
 - **Collection view: sort-by-mood chip** — a toolbar chip in the collection view that reorders palettes within a collection by detected mood (vivid → muted → warm → earthy → cool → dreamy)
 - **Compare modal: pair row hover highlight** — hovering a nearest-neighbor pair row highlights the corresponding swatch on both palette strips above (subtle ring or brightness pulse)
+
+---
+
+## 2026-09-10 — Session 233: Compare Modal Pair Row Hover Highlight
+
+### What was done
+- **Pair row hover highlights matching swatches on both palette strips** — hovering any nearest-neighbor pair row in CompareModal now creates a spotlight effect across both palette strips at the top of the modal:
+  - All non-matching swatches dim to `opacity-20` instantly (150ms `transition-opacity`).
+  - The matching A-swatch and B-swatch remain at full opacity, drawing the eye directly to the paired colors in their original strip positions.
+  - The hovered row itself gets a subtle `bg-surface-2` background fill, making the active row clearly legible.
+  - All effects clear on `onMouseLeave` and when the modal opens (new pair) or when the swap button is toggled.
+- Implementation: `hoveredPairIdx` state tracks the hovered row index; `highlightedHexA` / `highlightedHexB` are derived from `pairs[hoveredPairIdx]`; each swatch div computes `dimmed` and applies the opacity class. No extra refs or timers needed.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Dim non-matched, don't highlight matched** — dimming the majority is visually stronger than adding a ring or glow to one swatch. A ring inside `overflow-hidden` on the strip would be clipped; dimming works within the existing container constraints.
+- **opacity-20 (not opacity-0)** — enough contrast to spotlight the pair while keeping the context of the full palette visible. Opacity-0 would make the strip feel broken; opacity-20 reads as "attention is elsewhere" without losing the shape.
+- **Derived state, not stored state** — `highlightedHexA` and `highlightedHexB` are plain consts derived from `hoveredPairIdx` and `pairs[]`. No `useMemo` needed for two array lookups. Keeps the component lean.
+
+### What's next (Session 234)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
+- **Collection view: sort-by-mood chip** — a toolbar chip in the collection view that reorders palettes within a collection by detected mood
+- **Compare modal: highlight swatch names in pair rows on strip hover** — inverse of this feature: hovering a swatch in the strips could highlight the corresponding pair row below
