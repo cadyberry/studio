@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-09-11 — Session 234: Collection Toolbar Mood Sort Chip
+
+### What was done
+- **Mood sort quick-toggle chip in collection toolbar** — when a specific collection is active, a "Mood ✦" chip now appears in the library toolbar next to the sort controls. Clicking it toggles `sortBy` between `"mood"` (vivid → muted → warm → earthy → cool → dreamy) and `"newest"`, giving one-click mood grouping within a collection without needing to open the dropdown.
+  - Chip renders only when `activeCollection !== "all"` — invisible in the "all palettes" view to avoid clutter.
+  - **Violet accent** when active (matches the existing mood pill color system), muted/ghost when off.
+  - Uses the existing `sortBy === "mood"` sort case entirely — no new state, no new logic, no duplicate sort code.
+  - Placed between the reshuffle button and CVD toggle in the toolbar — grouped with other sort-adjacent controls.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Toggle to "newest" on deactivate** — simpler than storing the pre-mood sort. Users who want a different sort can use the dropdown; the chip is a fast mood-in / newest-out toggle, not a history-restoring undo.
+- **`Sparkles` icon** — already imported and used for AI-generated palette indicators; here it signals "mood" (creative, feeling-based) rather than a literal sort arrow. Keeps the chip compact at 10px icon + text.
+- **Violet color** — consistent with the dreamy/mood pill in the existing `MOOD_PILL_STYLES` palette; violet reads as "aesthetic/creative" in the app's established color language.
+- **19 lines added, zero lines removed** — a pure additive change; the existing sort dropdown still works as before for the full sort menu.
+
+### What's next (Session 235)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
+- **Compare modal: strip hover → highlight pair row** — inverse of session 233: hovering a swatch in the palette strips could highlight the corresponding pair row below
+- **Export modal: toast position fix** — copy-to-clipboard toast appears at the bottom of the modal, overlapping the footer on short viewports; move it to a fixed top-center position
+
+---
+
 ## 2026-09-09 — Session 232: Sort-by-Mood Palette Option
 
 ### What was done
