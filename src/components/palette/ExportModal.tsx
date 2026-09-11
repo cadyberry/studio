@@ -31,7 +31,8 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ palette, onClose, onJumpTo, activeCollectionId }: ExportModalProps) {
-  const [copied, setCopied] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hoveredSwatch, setHoveredSwatch] = useState<number | null>(null);
   const [storyLoading, setStoryLoading] = useState(false);
   const [story, setStory] = useState<ColorStory | null>(null);
@@ -172,6 +173,7 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
     if (!story) return;
     navigator.clipboard.writeText(story.prompt);
     setPromptCopied(true);
+    showToast("Copied!");
     setTimeout(() => setPromptCopied(false), 1500);
   };
 
@@ -185,9 +187,14 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
     setTimeout(() => setTagged(false), 2000);
   };
 
-  const flash = (key: string) => {
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1500);
+  const showToast = (msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastMsg(msg);
+    toastTimer.current = setTimeout(() => setToastMsg(null), 1500);
+  };
+
+  const flash = (_key: string) => {
+    showToast("Copied!");
   };
 
   const riskDesc = hasRisk
@@ -364,9 +371,28 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="bg-[var(--surface)] rounded-[var(--radius-lg)] w-full max-w-sm shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+          className="relative bg-[var(--surface)] rounded-[var(--radius-lg)] w-full max-w-sm shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Copy toast — top-center of modal, never overlaps footer */}
+          <AnimatePresence>
+            {toastMsg && (
+              <motion.div
+                key="export-toast"
+                initial={{ opacity: 0, y: -8, scale: 0.88 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.92 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute top-[88px] left-1/2 -translate-x-1/2 z-20 pointer-events-none"
+              >
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-[var(--foreground)] text-[var(--surface)] shadow-lg whitespace-nowrap select-none">
+                  <Check size={11} />
+                  {toastMsg}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Palette preview with per-swatch risk indicators */}
           <div className="flex h-20 relative">
             {palette.colors.map((color, i) => {
@@ -493,9 +519,7 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
                             }
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium">
-                              {copied === action.key ? "Copied!" : action.label}
-                            </div>
+                            <div className="text-sm font-medium">{action.label}</div>
                             <div className="text-xs text-[var(--muted)] truncate">{action.desc}</div>
                           </div>
                         </button>
@@ -616,12 +640,14 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
               const copyGradient = () => {
                 navigator.clipboard.writeText(`background: ${gradientCss};`);
                 setGradCopied(true);
+                showToast("Copied!");
                 setTimeout(() => setGradCopied(false), 1500);
               };
 
               const copySvg = () => {
                 copyGradientSvg(palette, gradDir, gradOrder);
                 setSvgCopied(true);
+                showToast("Copied!");
                 setTimeout(() => setSvgCopied(false), 1500);
               };
 
