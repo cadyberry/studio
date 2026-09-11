@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-09-11 — Session 235: Export Modal Top-Center Copy Toast
+
+### What was done
+- **Copy-to-clipboard toast fixed in ExportModal** — replaced all per-button inline "Copied!" label swaps with a single animated pill toast that appears at a fixed position (`absolute top-[88px] left-1/2 -translate-x-1/2 z-20`) at the top of the modal panel, well above the scrollable content and the footer. No viewport height can bring the toast into conflict with the footer.
+  - Removed `copied: string | null` state entirely; added `toastMsg: string | null` state + `toastTimer` ref.
+  - `showToast(msg)` helper: clears any pending timer, sets the message, auto-dismisses after 1500ms.
+  - `flash(_key)` now delegates to `showToast("Copied!")` — all existing `flash()` callsites in `copyActions` work with zero change.
+  - `copyGradient`, `copySvg`, and `copyPrompt` each call `showToast("Copied!")` too; icon micro-interactions (`gradCopied`, `svgCopied`, `promptCopied`) are preserved.
+  - Button labels are now stable strings — no text jump on copy.
+  - Modal panel gets `relative` class to contain the absolute-positioned toast.
+  - Toast: spring-animated entry (`stiffness: 500, damping: 30`), `pointer-events-none` so it never blocks scroll.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **`top-[88px]`** — the swatch preview strip is `h-20` (80px); the toast sits 8px below it, floating right at the boundary between the preview and the scrollable body. It's immediately visible without obscuring the palette colors.
+- **`pointer-events-none`** — the toast floats over the list without swallowing clicks; users can continue clicking copy actions while the toast is visible (rapid-fire copying works cleanly).
+- **Keep `gradCopied`/`svgCopied`/`promptCopied`** — the check-icon transitions in those buttons are a satisfying micro-interaction worth preserving; the toast is additive, not a replacement for them.
+- **34 lines added, 8 removed** — almost entirely additive; the removed lines were the `setCopied(key)` state-swap in `flash()` and one ternary in the button label.
+
+### What's next (Session 236)
+- **Compare modal: strip hover → highlight pair row** — hovering a swatch in the palette strips could highlight the corresponding nearest-neighbor pair row below (the inverse of session 233's row-hover → swatch highlight)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position and doesn't overlap toolbar on narrow cards
+- **ShadeModal: interpolation mode toggle** — small chip to switch between LAB and OKLCH interpolation for the tint/shade ramp
+
+---
+
 ## 2026-09-11 — Session 234: Collection Toolbar Mood Sort Chip
 
 ### What was done
