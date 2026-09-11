@@ -1902,6 +1902,25 @@ export default function Home() {
                           <Shuffle size={12} />
                         </button>
                       )}
+                      {/* Mood sort quick-toggle — only when a specific collection is active */}
+                      {activeCollection !== "all" && (
+                        <button
+                          onClick={() => setSortBy(sortBy === "mood" ? "newest" : "mood")}
+                          title={
+                            sortBy === "mood"
+                              ? "Exit mood sort — back to newest"
+                              : "Sort palettes by mood: vivid → muted → warm → earthy → cool → dreamy"
+                          }
+                          className={`shrink-0 flex items-center gap-1 h-7 px-2 rounded-[var(--radius-sm)] border transition-colors text-[10px] font-medium leading-none ${
+                            sortBy === "mood"
+                              ? "border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-700"
+                              : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)]"
+                          }`}
+                        >
+                          <Sparkles size={10} />
+                          <span>Mood</span>
+                        </button>
+                      )}
                       {/* CVD preview toggle — cycles off → deuteranopia → protanopia → tritanopia → off */}
                       {viewMode === "palettes" && (
                         <button
