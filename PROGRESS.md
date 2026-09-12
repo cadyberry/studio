@@ -2,6 +2,33 @@
 
 ---
 
+## 2026-09-12 — Session 237: ShadeModal LAB/OKLCH Interpolation Mode Toggle
+
+### What was done
+- **Perceptual colorspace toggle in the Shade Scale modal** — a compact `LAB | OKLCH` chip in the modal header lets the user switch interpolation space for the tint/shade ramp:
+  - **LAB** (CIE LAB): perceptually uniform, excellent for neutrals and muted palettes. tooltip: "CIE LAB — perceptually uniform"
+  - **OKLCH** (Björn Ottosson): better hue fidelity at high chroma — vivid colors stay saturated longer as they lighten. Default mode. tooltip: "OKLCH — better hue fidelity at high chroma"
+  - The chip sits right-aligned in the header between the source color info and the close button — one line, no layout change to the strip or export area.
+  - Switching mode re-renders the shade strip instantly (shades are derived from `mode` state on every render, no debounce needed).
+- New `utils.ts` exports:
+  - `ShadeMode` type: `'lab' | 'oklch'`
+  - `generateShadeScaleLab` — anchors to source stop, targets SHADE_STOP_L lightness in LAB L* space, scales chroma (a,b) 90% at light end, 35% at dark end. Uses new private `labToHex` (XYZ D65 inverse).
+  - `generateShadeScaleOklch` — same structure but in OKLCH; keeps hue H constant, scales C (chroma) identically. Reuses existing `oklchToHex`.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **OKLCH as default** — OKLCH was developed after LAB specifically to fix hue uniformity issues in OKLab; it outperforms LAB for vivid colors (warm reds, electric blues, saturated greens). Since Cady's POD art tends toward vivid AI-generated palettes, OKLCH is the better default. LAB is still available for users who prefer its more conservative ramp.
+- **Same chroma-scale logic for both modes** — 90% chroma reduction at the light extreme, 35% at the dark extreme. This is the same as the HSL saturation scaling but applied in perceptual space. The result is tints that feel colorful (not washed out) and shades that feel deep (not muddy).
+- **`labToHex` as private helper** — only used internally by `generateShadeScaleLab`; not exported. Keeps the public API surface minimal.
+- **Mode resets are not needed on color change** — the mode state lives in `ShadeModal` which mounts/unmounts per color; each new color opens a fresh modal with the default (oklch) mode.
+
+### What's next (Session 238)
+- **Compare modal: scroll highlighted pair row into view** — when hovering a strip swatch, if the highlighted pair row is outside the scrollable window, smoothly scroll it into view
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip renders at correct vertical position and doesn't overlap toolbar on narrow cards
+- **ShadeModal: export shade names (stop numbers as swatch names when saving as palette)** — already done; verify "Save as Palette" populates swatch names correctly
+
+---
+
 ## 2026-09-12 — Session 236: Compare Modal Strip Hover → Highlight Pair Row
 
 ### What was done
