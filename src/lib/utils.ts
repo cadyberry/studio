@@ -699,6 +699,83 @@ export function generateShadeScale(sourceHex: string): ShadeStop[] {
   });
 }
 
+// ─── Perceptual Shade Scale Variants ─────────────────────────────────────────
+// LAB and OKLCH interpolation alternatives to the HSL-based generateShadeScale.
+// Both modes use the same SHADE_STOP_L lightness targets but traverse a
+// perceptually uniform colorspace, preserving hue better at extremes.
+
+export type ShadeMode = 'lab' | 'oklch';
+
+function labToHex(L: number, a: number, b: number): string {
+  const fy = (L + 16) / 116;
+  const fx = a / 500 + fy;
+  const fz = fy - b / 200;
+  const finv = (t: number) => (t > 0.20690 ? t * t * t : (t - 16 / 116) / 7.787);
+  const x = finv(fx) * 0.95047;
+  const y = finv(fy) * 1.00000;
+  const z = finv(fz) * 1.08883;
+  const rl =  3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+  const gl = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+  const bl =  0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
+  const compress = (v: number) => {
+    const c = Math.max(0, Math.min(1, v));
+    return Math.round((c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055) * 255);
+  };
+  return rgbToHex(compress(rl), compress(gl), compress(bl));
+}
+
+export function generateShadeScaleLab(sourceHex: string): ShadeStop[] {
+  const rgb = hexToRgb(sourceHex);
+  if (!rgb) return [];
+  const { L, a, b } = rgbToLab(rgb.r, rgb.g, rgb.b);
+  const stops = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const anchorStop = stops.reduce((best, stop) =>
+    Math.abs(SHADE_STOP_L[stop] - L) < Math.abs(SHADE_STOP_L[best] - L) ? stop : best
+  , 500);
+  const anchorIdx = stops.indexOf(anchorStop);
+
+  return stops.map((stop, i) => {
+    if (stop === anchorStop) return { stop, hex: sourceHex, isSource: true };
+    const targetL = SHADE_STOP_L[stop];
+    let chromaScale: number;
+    if (i < anchorIdx) {
+      const t = anchorIdx > 0 ? (anchorIdx - i) / anchorIdx : 0;
+      chromaScale = 1 - t * 0.90;
+    } else {
+      const remaining = stops.length - 1 - anchorIdx;
+      const t = remaining > 0 ? (i - anchorIdx) / remaining : 0;
+      chromaScale = 1 - t * 0.35;
+    }
+    return { stop, hex: labToHex(targetL, a * chromaScale, b * chromaScale), isSource: false };
+  });
+}
+
+export function generateShadeScaleOklch(sourceHex: string): ShadeStop[] {
+  const rgb = hexToRgb(sourceHex);
+  if (!rgb) return [];
+  const { l, c, h } = rgbToOklch(rgb.r, rgb.g, rgb.b);
+  const stops = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const anchorStop = stops.reduce((best, stop) =>
+    Math.abs(SHADE_STOP_L[stop] - l) < Math.abs(SHADE_STOP_L[best] - l) ? stop : best
+  , 500);
+  const anchorIdx = stops.indexOf(anchorStop);
+
+  return stops.map((stop, i) => {
+    if (stop === anchorStop) return { stop, hex: sourceHex, isSource: true };
+    const targetL = SHADE_STOP_L[stop];
+    let chromaScale: number;
+    if (i < anchorIdx) {
+      const t = anchorIdx > 0 ? (anchorIdx - i) / anchorIdx : 0;
+      chromaScale = 1 - t * 0.90;
+    } else {
+      const remaining = stops.length - 1 - anchorIdx;
+      const t = remaining > 0 ? (i - anchorIdx) / remaining : 0;
+      chromaScale = 1 - t * 0.35;
+    }
+    return { stop, hex: oklchToHex(targetL, c * chromaScale, h), isSource: false };
+  });
+}
+
 // ─── Color Vision Deficiency Simulation ───────────────────────────────────────
 // Machado 2009 matrices (severity = 1.0), applied in linear-light sRGB space.
 

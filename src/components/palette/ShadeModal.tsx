@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Code2, Check, Braces, BookmarkPlus } from "lucide-react";
-import { generateShadeScale, getContrastColor } from "@/lib/utils";
+import { generateShadeScale, generateShadeScaleLab, generateShadeScaleOklch, getContrastColor, type ShadeMode } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
 interface ShadeModalProps {
@@ -16,10 +16,14 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
   const [copied, setCopied] = useState<string | null>(null);
   const [hoveredStop, setHoveredStop] = useState<number | null>(null);
   const [forked, setForked] = useState(false);
+  const [mode, setMode] = useState<ShadeMode>('oklch');
 
   if (!color) return null;
 
-  const shades = generateShadeScale(color.hex);
+  const shades =
+    mode === 'lab' ? generateShadeScaleLab(color.hex) :
+    mode === 'oklch' ? generateShadeScaleOklch(color.hex) :
+    generateShadeScale(color.hex);
   const sourceStop = shades.find((s) => s.isSource);
 
   const flash = (key: string) => {
@@ -94,9 +98,31 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X size={14} />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Interpolation mode toggle */}
+              <div
+                className="flex items-center rounded-full bg-[var(--surface-2)] p-0.5"
+                title="Interpolation space"
+              >
+                {(["lab", "oklch"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    title={m === "lab" ? "CIE LAB — perceptually uniform" : "OKLCH — better hue fidelity at high chroma"}
+                    className={`px-2.5 py-[3px] rounded-full text-[10px] font-semibold tracking-wide transition-colors ${
+                      mode === m
+                        ? "bg-[var(--surface)] text-[var(--fg)] shadow-sm"
+                        : "text-[var(--muted)] hover:text-[var(--fg)]"
+                    }`}
+                  >
+                    {m.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X size={14} />
+              </Button>
+            </div>
           </div>
 
           {/* Shade strip */}
