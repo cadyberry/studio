@@ -34,11 +34,13 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [showCoverageTip, setShowCoverageTip] = useState(false);
   const [showSwapTip, setShowSwapTip] = useState(false);
   const [hoveredPairIdx, setHoveredPairIdx] = useState<number | null>(null);
+  const [hoveredStripInfo, setHoveredStripInfo] = useState<{ pairIdx: number } | null>(null);
 
-  // Reset swap direction and row highlight each time the modal opens with a new pair
+  // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); }
   }, [open]);
+  useEffect(() => { setHoveredStripInfo(null); }, [swapped]);
 
   // S = swap A↔B while modal is open
   useEffect(() => {
@@ -107,8 +109,22 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     };
   }, [pairs]);
 
-  const highlightedHexA = hoveredPairIdx !== null ? pairs[hoveredPairIdx]?.hexA ?? null : null;
-  const highlightedHexB = hoveredPairIdx !== null ? pairs[hoveredPairIdx]?.hexB ?? null : null;
+  // Build hex→sorted-pair-index maps so strip swatches can drive row highlights
+  const hexAToPairIdx = useMemo(() => {
+    const m = new Map<string, number>();
+    pairs.forEach((p, i) => m.set(p.hexA.toLowerCase(), i));
+    return m;
+  }, [pairs]);
+  const hexBToPairIdx = useMemo(() => {
+    const m = new Map<string, number>();
+    // For each B hex, store the lowest-ΔE pair index (first occurrence, pairs are sorted asc)
+    pairs.forEach((p, i) => { const k = p.hexB.toLowerCase(); if (!m.has(k)) m.set(k, i); });
+    return m;
+  }, [pairs]);
+
+  const effectivePairIdx = hoveredPairIdx ?? hoveredStripInfo?.pairIdx ?? null;
+  const highlightedHexA = effectivePairIdx !== null ? pairs[effectivePairIdx]?.hexA ?? null : null;
+  const highlightedHexB = effectivePairIdx !== null ? pairs[effectivePairIdx]?.hexB ?? null : null;
 
   const uniqueColorStats = useMemo(() => {
     if (!effectiveA || !effectiveB) return null;
@@ -209,9 +225,14 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       return (
                         <div
                           key={i}
-                          className={`flex-1 transition-opacity duration-150 ${dimmed ? "opacity-20" : "opacity-100"}`}
+                          className={`flex-1 transition-opacity duration-150 cursor-pointer ${dimmed ? "opacity-20" : "opacity-100"}`}
                           style={{ backgroundColor: c.hex }}
                           title={c.hex}
+                          onMouseEnter={() => {
+                            const idx = hexAToPairIdx.get(c.hex.toLowerCase());
+                            if (idx !== undefined) setHoveredStripInfo({ pairIdx: idx });
+                          }}
+                          onMouseLeave={() => setHoveredStripInfo(null)}
                         />
                       );
                     })}
@@ -242,9 +263,14 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       return (
                         <div
                           key={i}
-                          className={`flex-1 transition-opacity duration-150 ${dimmed ? "opacity-20" : "opacity-100"}`}
+                          className={`flex-1 transition-opacity duration-150 cursor-pointer ${dimmed ? "opacity-20" : "opacity-100"}`}
                           style={{ backgroundColor: c.hex }}
                           title={c.hex}
+                          onMouseEnter={() => {
+                            const idx = hexBToPairIdx.get(c.hex.toLowerCase());
+                            if (idx !== undefined) setHoveredStripInfo({ pairIdx: idx });
+                          }}
+                          onMouseLeave={() => setHoveredStripInfo(null)}
                         />
                       );
                     })}
@@ -295,13 +321,15 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
                   {pairs.map((pair, i) => {
                     const tier = getMatchTier(pair.dE);
-                    const isHovered = hoveredPairIdx === i;
+                    const isRowHovered = hoveredPairIdx === i;
+                    const isStripHighlighted = hoveredStripInfo?.pairIdx === i;
+                    const isActive = isRowHovered || isStripHighlighted;
                     return (
                       <div
                         key={i}
                         className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-colors duration-100 cursor-default ${
-                          isHovered ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
-                        }`}
+                          isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
+                        }${isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
                         onMouseEnter={() => setHoveredPairIdx(i)}
                         onMouseLeave={() => setHoveredPairIdx(null)}
                       >
