@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-09-12 — Session 236: Compare Modal Strip Hover → Highlight Pair Row
+
+### What was done
+- **Strip swatch hover highlights corresponding pair row** — hovering any swatch in either palette strip (A or B) now spotlights the nearest-neighbor pair row that contains that swatch:
+  - The pair row gets `bg-[var(--surface-2)]` fill + a subtle `ring-1 ring-inset ring-[var(--border)]` — visually distinguishable from direct row hover (which has the same bg fill but no ring).
+  - The strip's own dimming behavior is preserved: the matched A and B swatches stay at full opacity while non-paired swatches dim to `opacity-20`. Strip hover and row hover now share the same spotlight logic via `effectivePairIdx = hoveredPairIdx ?? hoveredStripInfo?.pairIdx ?? null`.
+  - Both strips gain `cursor-pointer` to signal interactivity.
+- Implementation: `hoveredStripInfo` state (`{ pairIdx: number } | null`); `hexAToPairIdx` and `hexBToPairIdx` memos built from the sorted `pairs` array for O(1) lookup; `effectivePairIdx` unifies both hover sources for `highlightedHexA/B` and row highlight class; `hoveredStripInfo` resets on modal open and on A↔B swap.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **`effectivePairIdx` unification** — both row hover and strip hover drive the same visual outcome (spotlight a pair + dim non-paired swatches). A single derived value keeps the two sources consistent with zero duplication.
+- **Ring on strip-triggered highlight, not on row-hover highlight** — the ring provides a subtle cue that the highlight was triggered externally (from the strip above), not by hovering the row itself. Ring-inset keeps it within the rounded-lg border.
+- **`hexBToPairIdx` uses first-wins strategy** — when multiple A swatches map to the same B swatch (many-to-one nearest-neighbor), the first pair in the sorted array (lowest ΔE) wins. Hovering that B swatch highlights its closest-match pairing, which is the most meaningful one.
+
+### What's next (Session 237)
+- **ShadeModal: interpolation mode toggle** — chip to switch between LAB and OKLCH interpolation for the tint/shade ramp
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip renders at correct vertical position and doesn't overlap toolbar on narrow cards
+- **Compare modal: scroll highlighted pair row into view** — when hovering a strip swatch, if the highlighted pair row is outside the scrollable window, smoothly scroll it into view
+
+---
+
 ## 2026-09-11 — Session 235: Export Modal Top-Center Copy Toast
 
 ### What was done
