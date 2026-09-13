@@ -6828,3 +6828,28 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
 - **Collection view: sort-by-mood chip** — a toolbar chip in the collection view that reorders palettes within a collection by detected mood
 - **Compare modal: highlight swatch names in pair rows on strip hover** — inverse of this feature: hovering a swatch in the strips could highlight the corresponding pair row below
+
+---
+
+## 2026-09-13 — Session 234: Collection Stats Banner
+
+### What was done
+- **Collection stats banner** — a compact one-line data strip that appears between the main toolbar and the filter chips whenever a specific collection is active (hidden on "All" and during color search mode):
+  - **Mood distribution dots** — each mood present in the collection gets a colored dot (using `MOOD_PILL_STYLES` dot colors) + palette count: e.g. "● 3 warm · ● 2 vivid · ● 1 muted". Moods are shown in `MOOD_ORDER` sequence; missing moods are simply absent.
+  - **Total swatch count** — sum of all swatches across every palette in the collection ("18 swatches").
+  - **Print-safe ratio** — "X/Y print-safe" colored emerald when the whole collection is print-safe, rose when none are, muted for mixed. Tooltip explains the CMYK-risk threshold. Hidden for single-palette collections (ratio of 1/1 adds no signal).
+  - **Avg colors/palette** — e.g. "avg 5.3 colors/palette".
+  - Animated with Framer Motion (`key=activeCollection`) so switching collections produces a subtle fade+slide rather than a hard swap.
+- Implementation: `collectionStats` useMemo re-computes on `palettes`/`activeCollection` change. Reuses existing `palettePrintRiskAny` callback and `MOOD_PILL_STYLES` constants. Zero extra store reads.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Placed below toolbar, above filter chips** — the toolbar row is already dense; a separate compact row gives collection context without competing with search/sort controls. The `space-y-4` wrapper provides natural 16px breathing room.
+- **`-mt-2` negative margin** — pulls the stats strip visually tighter to the toolbar row (net 8px gap vs. the 16px the `space-y-4` would add), making it feel attached to the collection context rather than floating independently.
+- **Hidden during color search mode** — when color search is active the inline mood filter appears in this position; showing both would be visually noisy. The stats banner hides gracefully (no animation needed since color search mode has its own visual shift).
+- **Emerald/rose coloring on print-safe ratio** — makes the print health signal scannable without reading the number. A collection of all print-safe palettes turns the ratio emerald-green immediately; a risky collection shows rose at a glance.
+
+### What's next (Session 235)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip at line 2287 renders at the correct vertical position relative to the toolbar on narrow (2-col) card widths; possible overlap with the variations/color-story buttons
+- **Collection stats banner: click-to-filter on mood dots** — clicking a mood dot in the banner should set `activeMood` to that mood (filtering the collection view to show only that mood), mirroring the behavior of the full mood pill strip in color search mode
+- **Compare modal: strip swatch name label in pair rows on strip-hover** — when a strip swatch is hovered, emphasize the swatch name in the corresponding pair row (bold or accent color on the name text, not just background highlight)
