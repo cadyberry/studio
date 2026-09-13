@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeftRight, ArrowRight, Check } from "lucide-react";
 import { deltaE } from "@/lib/utils";
@@ -35,6 +35,26 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [showSwapTip, setShowSwapTip] = useState(false);
   const [hoveredPairIdx, setHoveredPairIdx] = useState<number | null>(null);
   const [hoveredStripInfo, setHoveredStripInfo] = useState<{ pairIdx: number } | null>(null);
+
+  const pairsScrollRef = useRef<HTMLDivElement | null>(null);
+  const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // When a strip swatch is hovered, scroll its pair row into view within the pairs container
+  useEffect(() => {
+    if (hoveredStripInfo === null) return;
+    const container = pairsScrollRef.current;
+    const row = pairRowRefs.current[hoveredStripInfo.pairIdx];
+    if (!container || !row) return;
+    const containerTop = container.scrollTop;
+    const containerBottom = containerTop + container.clientHeight;
+    const rowTop = row.offsetTop;
+    const rowBottom = rowTop + row.offsetHeight;
+    if (rowTop < containerTop) {
+      container.scrollTo({ top: rowTop - 8, behavior: "smooth" });
+    } else if (rowBottom > containerBottom) {
+      container.scrollTo({ top: rowBottom - container.clientHeight + 8, behavior: "smooth" });
+    }
+  }, [hoveredStripInfo]);
 
   // Reset on open and on swap
   useEffect(() => {
@@ -318,7 +338,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     </div>
                   </div>
                 </div>
-                <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
+                <div ref={pairsScrollRef} className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
                   {pairs.map((pair, i) => {
                     const tier = getMatchTier(pair.dE);
                     const isRowHovered = hoveredPairIdx === i;
@@ -327,6 +347,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     return (
                       <div
                         key={i}
+                        ref={(el) => { pairRowRefs.current[i] = el; }}
                         className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-colors duration-100 cursor-default ${
                           isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
                         }${isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
