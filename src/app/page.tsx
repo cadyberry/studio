@@ -867,6 +867,22 @@ export default function Home() {
   const printSafeCount = hueFiltered.filter((p) => !palettePrintRiskAny(p)).length;
   const filtered = printReadyOnly ? hueFiltered.filter((p) => !palettePrintRiskAny(p)) : hueFiltered;
 
+  // Collection stats — shown in the banner when a specific collection is active
+  const collectionStats = useMemo(() => {
+    if (activeCollection === "all") return null;
+    const collPalettes = palettes.filter((p) => p.collectionId === activeCollection);
+    if (collPalettes.length === 0) return null;
+    const moodMap = new Map<PaletteMood, number>();
+    for (const p of collPalettes) {
+      const mood = getPaletteMood(p.colors);
+      moodMap.set(mood, (moodMap.get(mood) ?? 0) + 1);
+    }
+    const totalSwatches = collPalettes.reduce((s, p) => s + p.colors.length, 0);
+    const printSafe = collPalettes.filter((p) => !palettePrintRiskAny(p)).length;
+    const avgColors = Math.round((totalSwatches / collPalettes.length) * 10) / 10;
+    return { moodMap, totalSwatches, printSafe, total: collPalettes.length, avgColors };
+  }, [palettes, activeCollection, palettePrintRiskAny]);
+
   const sorted = validColorSearch
     ? [...filtered].sort((a, b) => {
         const aMin = Math.min(...a.colors.map((c) => deltaE(c.hex, validColorSearch)));
@@ -2130,6 +2146,59 @@ export default function Home() {
                 </>
               )}
             </div>
+
+            {/* Collection stats banner — compact data strip when a specific collection is active */}
+            {collectionStats && !colorSearchActive && (
+              <motion.div
+                key={activeCollection}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-x-2.5 gap-y-1 flex-wrap -mt-2"
+              >
+                {MOOD_ORDER.filter((m) => collectionStats.moodMap.has(m)).map((mood) => {
+                  const count = collectionStats.moodMap.get(mood)!;
+                  const style = MOOD_PILL_STYLES[mood];
+                  return (
+                    <span key={mood} className="flex items-center gap-1 text-[10px] text-[var(--muted)] shrink-0">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: style.dot }}
+                      />
+                      <span>
+                        {count}&thinsp;{mood}
+                      </span>
+                    </span>
+                  );
+                })}
+                <span className="text-[var(--border)] select-none text-[10px]" aria-hidden>·</span>
+                <span className="text-[10px] text-[var(--muted)] shrink-0">
+                  {collectionStats.totalSwatches} swatch{collectionStats.totalSwatches !== 1 ? "es" : ""}
+                </span>
+                {collectionStats.total > 1 && (
+                  <>
+                    <span className="text-[var(--border)] select-none text-[10px]" aria-hidden>·</span>
+                    <span
+                      className={`text-[10px] shrink-0 ${
+                        collectionStats.printSafe === collectionStats.total
+                          ? "text-emerald-600 dark:text-emerald-500"
+                          : collectionStats.printSafe === 0
+                          ? "text-rose-500 dark:text-rose-400"
+                          : "text-[var(--muted)]"
+                      }`}
+                      title={`${collectionStats.printSafe} of ${collectionStats.total} palettes have no CMYK-risk swatches`}
+                    >
+                      {collectionStats.printSafe}/{collectionStats.total} print-safe
+                    </span>
+                  </>
+                )}
+                <span className="text-[var(--border)] select-none text-[10px]" aria-hidden>·</span>
+                <span className="text-[10px] text-[var(--muted)] shrink-0">
+                  avg {collectionStats.avgColors} colors/palette
+                </span>
+              </motion.div>
+            )}
 
             {/* Inline mood filter — only shown when color search is active */}
             <AnimatePresence>
