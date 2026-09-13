@@ -6853,3 +6853,27 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip at line 2287 renders at the correct vertical position relative to the toolbar on narrow (2-col) card widths; possible overlap with the variations/color-story buttons
 - **Collection stats banner: click-to-filter on mood dots** — clicking a mood dot in the banner should set `activeMood` to that mood (filtering the collection view to show only that mood), mirroring the behavior of the full mood pill strip in color search mode
 - **Compare modal: strip swatch name label in pair rows on strip-hover** — when a strip swatch is hovered, emphasize the swatch name in the corresponding pair row (bold or accent color on the name text, not just background highlight)
+
+---
+
+## 2026-09-13 — Session 238: Compare Modal Strip Hover Scrolls Pair Row Into View
+
+### What was done
+- **Strip swatch hover now scrolls the highlighted pair row into view** — the bidirectional highlight feature from sessions 233 and 236 is now fully usable even when the pairs list is scrolled:
+  - Added `pairsScrollRef` (a `useRef<HTMLDivElement | null>`) attached to the `max-h-60 overflow-y-auto` pairs container.
+  - Added `pairRowRefs` (a `useRef<(HTMLDivElement | null)[]>`) with `ref={(el) => { pairRowRefs.current[i] = el; }}` on each pair row.
+  - `useEffect` watching `hoveredStripInfo`: when a strip swatch is hovered and sets a pair index, the effect checks whether the row is in the visible scroll window (`rowTop < containerTop` or `rowBottom > containerBottom`) and calls `container.scrollTo({ top: ..., behavior: "smooth" })` to bring it into view with an 8px inset margin on each side.
+  - No scroll fires if the row is already visible (neither condition true) — no unnecessary jank for near-by rows.
+  - Row hover behavior (`hoveredPairIdx`) is completely unaffected — its scroll-into-view is not needed since you can only hover a row you can already see.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Manual container scroll vs. `scrollIntoView()`** — `el.scrollIntoView()` propagates up the scroll chain and would scroll the modal or page in addition to the pairs container. Computing `offsetTop` relative to the container and using `container.scrollTo()` limits the scroll to exactly the pairs list, which is what you want inside a modal.
+- **8px inset margin** — `top: rowTop - 8` (scroll up) / `top: rowBottom - container.clientHeight + 8` (scroll down) keeps the row from landing flush with the container edge, matching the visual breathing room of `py-0.5` on the rows.
+- **Effect deps: `[hoveredStripInfo]`** — the scroll only fires when a strip swatch is hovered (not on row hover), which is the case where the row might not be visible. Row hover is only possible when the row is already on screen.
+- **23 lines added, 2 changed** — almost entirely additive; `useRef` was the only import addition.
+
+### What's next (Session 239)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers populate as swatch names when the scale is saved
+- **Collection stats banner: click-to-filter on mood dots** — clicking a mood dot in the stats banner sets `activeMood` to filter the collection
