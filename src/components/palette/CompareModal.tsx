@@ -363,7 +363,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                           <div className="min-w-0">
                             <p className="text-[11px] font-mono text-[var(--foreground)] leading-none">{pair.hexA}</p>
                             {pair.nameA && (
-                              <p className="text-[9px] text-[var(--muted)] truncate mt-0.5">{pair.nameA}</p>
+                              <p className={`text-[9px] truncate mt-0.5 transition-colors duration-100 ${isStripHighlighted ? "text-[var(--foreground)] font-semibold" : "text-[var(--muted)]"}`}>{pair.nameA}</p>
                             )}
                           </div>
                         </div>
@@ -389,7 +389,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                           <div className="min-w-0 text-right">
                             <p className="text-[11px] font-mono text-[var(--foreground)] leading-none">{pair.hexB}</p>
                             {pair.nameB && (
-                              <p className="text-[9px] text-[var(--muted)] truncate mt-0.5">{pair.nameB}</p>
+                              <p className={`text-[9px] truncate mt-0.5 transition-colors duration-100 ${isStripHighlighted ? "text-[var(--foreground)] font-semibold" : "text-[var(--muted)]"}`}>{pair.nameB}</p>
                             )}
                           </div>
                           <div
