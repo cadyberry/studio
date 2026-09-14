@@ -2160,16 +2160,26 @@ export default function Home() {
                 {MOOD_ORDER.filter((m) => collectionStats.moodMap.has(m)).map((mood) => {
                   const count = collectionStats.moodMap.get(mood)!;
                   const style = MOOD_PILL_STYLES[mood];
+                  const isActive = activeMood === mood;
                   return (
-                    <span key={mood} className="flex items-center gap-1 text-[10px] text-[var(--muted)] shrink-0">
+                    <button
+                      key={mood}
+                      onClick={() => setActiveMood(isActive ? "all" : mood)}
+                      title={isActive ? `Clear ${mood} filter` : `Show only ${mood} palettes`}
+                      className={`flex items-center gap-1 text-[10px] shrink-0 rounded transition-all ${
+                        isActive
+                          ? "font-medium"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
                       <span
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: style.dot }}
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 transition-shadow ${isActive ? "ring-1 ring-offset-1 ring-offset-[var(--surface-1)]" : ""}`}
+                        style={{ backgroundColor: style.dot, ...(isActive ? { boxShadow: `0 0 0 1px ${style.dot}` } : {}) }}
                       />
-                      <span>
+                      <span style={isActive ? { color: style.dot } : undefined}>
                         {count}&thinsp;{mood}
                       </span>
-                    </span>
+                    </button>
                   );
                 })}
                 <span className="text-[var(--border)] select-none text-[10px]" aria-hidden>·</span>
