@@ -6877,3 +6877,27 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position and doesn't overlap the toolbar on narrow cards
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers populate as swatch names when the scale is saved
 - **Collection stats banner: click-to-filter on mood dots** — clicking a mood dot in the stats banner sets `activeMood` to filter the collection
+
+---
+
+## 2026-09-14 — Session 239: Collection Stats Banner Click-to-Filter Mood Dots
+
+### What was done
+- **Mood dots in the collection stats banner are now clickable filter buttons** — each tiny mood dot in the compact stats strip below the toolbar is now a `<button>` that toggles `activeMood`, matching the same pattern used by the full mood pill strip in color-search mode:
+  - Clicking a mood dot sets `activeMood` to that mood, filtering the palette grid to show only palettes of that mood within the active collection.
+  - Clicking the same mood dot again resets `activeMood` to `"all"`, clearing the filter.
+  - **Active state**: the active mood dot gets a `box-shadow` ring in its own mood color and its text label switches from `var(--muted)` to the mood dot color — making the active filter visible at a glance without disturbing the compact layout.
+  - **Hover state**: inactive mood dots restore to `var(--foreground)` on hover, giving a clear interactive signal at cursor position.
+  - **Title tooltip**: "Show only warm palettes" when inactive, "Clear warm filter" when active.
+- Implementation: converted `<span>` wrapper to `<button>`, added `isActive` const, conditional className and inline `style` props. 15 insertions, 5 deletions — minimal diff.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Color the text in the mood's own dot color (not a generic accent)** — the stats banner uses the dot colors as a color-coding system (warm = orange, cool = blue, etc.); using the same color for the active text label keeps the visual language consistent and immediately communicates "this filter matches that dot."
+- **box-shadow ring instead of Tailwind ring** — the Tailwind `ring-1` utility added 1px to the dot's box model and pushed adjacent text slightly; `box-shadow: 0 0 0 1px <color>` provides the same ring without layout impact at 6px dot size.
+- **No separator dot removed** — the `·` separators between stats are rendered between groups, not before each mood; adding/removing mood dots as the filter changes doesn't break the separator cadence.
+
+### What's next (Session 240)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: strip swatch name label in pair rows on strip-hover** — when a strip swatch is hovered, emphasize the swatch name in the corresponding pair row (bold or accent color on the name text)
