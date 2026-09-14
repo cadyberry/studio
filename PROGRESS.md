@@ -6901,3 +6901,26 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: strip swatch name label in pair rows on strip-hover** — when a strip swatch is hovered, emphasize the swatch name in the corresponding pair row (bold or accent color on the name text)
+
+---
+
+## 2026-09-14 — Session 240: Compare Modal Strip-Hover Swatch Name Emphasis
+
+### What was done
+- **Swatch name text emphasis on strip-hover in CompareModal** — when a palette strip swatch is hovered (driving the bidirectional highlight from session 233/238), the corresponding pair row's swatch name labels now visually upgrade to reinforce the connection:
+  - `nameA` and `nameB` text transitions from `text-[var(--muted)]` to `text-[var(--foreground)] font-semibold` when the row is strip-highlighted (`isStripHighlighted === true`).
+  - Both name labels carry `transition-colors duration-100` matching the pair row's own `transition-colors duration-100`, so the upgrade animates in sync with the row background fill.
+  - When hovering the strip swatch clears (back to `null`), the name text returns to muted with the same 100ms fade.
+  - Direct row hover (`isRowHovered`) does not trigger name emphasis — the distinction is intentional: strip hover is about exploring the palette mapping (where does this swatch end up?), while row hover is about reading a specific pair. The background highlight alone is sufficient for row hover.
+- Implementation: 2 lines changed, 0 new state, 0 new refs — a pure conditional className swap using the already-computed `isStripHighlighted` bool.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Foreground + semibold instead of accent color** — `text-[var(--accent)]` would be more visually distinctive but competes with the colored ΔE badge in the center column, which already uses accent-adjacent colors. Foreground + semibold lifts the name text into "important" weight without introducing color noise.
+- **Row hover excluded** — if both `isRowHovered` and `isStripHighlighted` triggered the emphasis, hovering directly over a row (the common interaction) would also make names bold, which could feel heavy for casual browsing. Reserve the emphasis for the strip-driven case where the name is the primary new information — you already see the hex and swatch, so the name upgrade is the value.
+- **`duration-100` not `duration-150`** — 100ms matches the row background transition used throughout the modal since session 233; 150ms felt slightly lagging on a fast cursor scan.
+
+### What's next (Session 241)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: pair row swatch color copy** — clicking a swatch square in a pair row copies the hex to clipboard (with a brief checkmark flash), consistent with swatch copy behavior in the palette strips above
