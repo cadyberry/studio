@@ -6924,3 +6924,31 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: pair row swatch color copy** — clicking a swatch square in a pair row copies the hex to clipboard (with a brief checkmark flash), consistent with swatch copy behavior in the palette strips above
+
+---
+
+## 2026-09-15 — Session 241: Compare Modal Pair Row Swatch Click-to-Copy
+
+### What was done
+- **Swatch squares in pair rows are now clickable to copy hex** — each 32×32px color swatch in the nearest-neighbor pair list responds to click with:
+  - `navigator.clipboard.writeText(hex)` to copy the exact hex value to the user's clipboard
+  - A checkmark icon overlaid on the swatch for 1.5s using `bg-black/30` glass overlay + white `Check` icon (12px), then auto-clears
+  - `cursor-pointer` on hover to communicate clickability
+  - `title` tooltip (`"Click to copy #a1b2c3"`) to confirm what will be copied before clicking
+  - Works for both Swatch A (left column) and Swatch B (right column) independently
+- State: `copiedInfo: { pairIdx: number; side: "A" | "B" } | null` tracks which swatch was most recently copied, disambiguating pairs that share the same hex across A and B columns
+- `copyHex(hex, pairIdx, side)` helper centralizes the clipboard write + state update + 1.5s timer
+- State cleared on modal open alongside `hoveredPairIdx`, `hoveredStripInfo`, and `swapped`
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors
+
+### Key decisions
+- **`{ pairIdx, side }` instead of `{ hex }`** — two pair rows can legitimately have the same hex (when the same B swatch is the nearest neighbor for multiple A swatches), so using the hex alone as the identifier would flash the checkmark on the wrong swatch. The pair index + side tuple is always unambiguous.
+- **`bg-black/30` overlay instead of `bg-white/30`** — the swatch color is unknown; dark swatches need a dark overlay to see the white check, but light swatches with a light overlay would lose the check visibility. Black at 30% opacity is dark enough to anchor the white icon while leaving the swatch color visible beneath it.
+- **1.5s reset** — matches the copy toast duration used in the export modal (top-center toast, session 234) for consistent feedback timing across the app.
+- **No hover copy-icon preview** — the `cursor-pointer` + title tooltip provide sufficient hover affordance without adding UI chrome (an icon appearing on hover) that would clutter the already-dense pair row at 32px swatch height.
+- **28 insertions, 5 deletions** — the diff is almost entirely additive (two overlay div blocks + two title/onClick attributes), with the only deletions being the closing `/>` self-closing tags replaced by open+close block form.
+
+### What's next (Session 242)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: hex text click-to-copy** — extend the same copy-on-click pattern to the mono hex text labels in pair rows (`pair.hexA` / `pair.hexB`), so users can copy from text as well as from the swatch square
