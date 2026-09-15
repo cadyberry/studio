@@ -35,6 +35,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [showSwapTip, setShowSwapTip] = useState(false);
   const [hoveredPairIdx, setHoveredPairIdx] = useState<number | null>(null);
   const [hoveredStripInfo, setHoveredStripInfo] = useState<{ pairIdx: number } | null>(null);
+  const [copiedInfo, setCopiedInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -56,9 +57,15 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     }
   }, [hoveredStripInfo]);
 
+  const copyHex = (hex: string, pairIdx: number, side: "A" | "B") => {
+    navigator.clipboard.writeText(hex).catch(() => {});
+    setCopiedInfo({ pairIdx, side });
+    setTimeout(() => setCopiedInfo(null), 1500);
+  };
+
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); }
   }, [open]);
   useEffect(() => { setHoveredStripInfo(null); }, [swapped]);
 
@@ -357,9 +364,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                         {/* Swatch A */}
                         <div className="flex items-center gap-2 min-w-0">
                           <div
-                            className="w-8 h-8 rounded-md flex-shrink-0 border border-black/10 dark:border-white/10"
+                            className="w-8 h-8 rounded-md flex-shrink-0 border border-black/10 dark:border-white/10 relative cursor-pointer"
                             style={{ backgroundColor: pair.hexA }}
-                          />
+                            onClick={() => copyHex(pair.hexA, i, "A")}
+                            title={`Click to copy ${pair.hexA}`}
+                          >
+                            {copiedInfo?.pairIdx === i && copiedInfo?.side === "A" && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-md">
+                                <Check size={12} className="text-white" />
+                              </div>
+                            )}
+                          </div>
                           <div className="min-w-0">
                             <p className="text-[11px] font-mono text-[var(--foreground)] leading-none">{pair.hexA}</p>
                             {pair.nameA && (
@@ -393,9 +408,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                             )}
                           </div>
                           <div
-                            className="w-8 h-8 rounded-md flex-shrink-0 border border-black/10 dark:border-white/10"
+                            className="w-8 h-8 rounded-md flex-shrink-0 border border-black/10 dark:border-white/10 relative cursor-pointer"
                             style={{ backgroundColor: pair.hexB }}
-                          />
+                            onClick={() => copyHex(pair.hexB, i, "B")}
+                            title={`Click to copy ${pair.hexB}`}
+                          >
+                            {copiedInfo?.pairIdx === i && copiedInfo?.side === "B" && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-md">
+                                <Check size={12} className="text-white" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
