@@ -36,6 +36,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [hoveredPairIdx, setHoveredPairIdx] = useState<number | null>(null);
   const [hoveredStripInfo, setHoveredStripInfo] = useState<{ pairIdx: number } | null>(null);
   const [copiedInfo, setCopiedInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
+  const [copiedTextInfo, setCopiedTextInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -63,9 +64,15 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     setTimeout(() => setCopiedInfo(null), 1500);
   };
 
+  const copyHexText = (hex: string, pairIdx: number, side: "A" | "B") => {
+    navigator.clipboard.writeText(hex).catch(() => {});
+    setCopiedTextInfo({ pairIdx, side });
+    setTimeout(() => setCopiedTextInfo(null), 1500);
+  };
+
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); }
   }, [open]);
   useEffect(() => { setHoveredStripInfo(null); }, [swapped]);
 
@@ -376,7 +383,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[11px] font-mono text-[var(--foreground)] leading-none">{pair.hexA}</p>
+                            <p
+                              className={`text-[11px] font-mono leading-none cursor-pointer select-none transition-colors duration-150 ${
+                                copiedTextInfo?.pairIdx === i && copiedTextInfo?.side === "A"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-[var(--foreground)]"
+                              }`}
+                              onClick={() => copyHexText(pair.hexA, i, "A")}
+                              title={`Click to copy ${pair.hexA}`}
+                            >
+                              {pair.hexA}
+                            </p>
                             {pair.nameA && (
                               <p className={`text-[9px] truncate mt-0.5 transition-colors duration-100 ${isStripHighlighted ? "text-[var(--foreground)] font-semibold" : "text-[var(--muted)]"}`}>{pair.nameA}</p>
                             )}
@@ -402,7 +419,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                         {/* Swatch B */}
                         <div className="flex items-center gap-2 min-w-0 justify-end">
                           <div className="min-w-0 text-right">
-                            <p className="text-[11px] font-mono text-[var(--foreground)] leading-none">{pair.hexB}</p>
+                            <p
+                              className={`text-[11px] font-mono leading-none cursor-pointer select-none transition-colors duration-150 ${
+                                copiedTextInfo?.pairIdx === i && copiedTextInfo?.side === "B"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-[var(--foreground)]"
+                              }`}
+                              onClick={() => copyHexText(pair.hexB, i, "B")}
+                              title={`Click to copy ${pair.hexB}`}
+                            >
+                              {pair.hexB}
+                            </p>
                             {pair.nameB && (
                               <p className={`text-[9px] truncate mt-0.5 transition-colors duration-100 ${isStripHighlighted ? "text-[var(--foreground)] font-semibold" : "text-[var(--muted)]"}`}>{pair.nameB}</p>
                             )}
