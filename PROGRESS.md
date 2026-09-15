@@ -6952,3 +6952,26 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: hex text click-to-copy** — extend the same copy-on-click pattern to the mono hex text labels in pair rows (`pair.hexA` / `pair.hexB`), so users can copy from text as well as from the swatch square
+
+---
+
+## 2026-09-15 — Session 242: Compare Modal Hex Text Click-to-Copy
+
+### What was done
+- **Hex text labels in pair rows are now clickable to copy** — the mono hex `<p>` elements next to each swatch square in the nearest-neighbor pair list now respond to click with `navigator.clipboard.writeText(hex)`. Visual feedback: the hex text transitions from `text-[var(--foreground)]` to `text-emerald-600 dark:text-emerald-400` for 1.5s, then reanimates back — clean and instant, no modal, no toast.
+- **Separate `copiedTextInfo` state** — uses a new `{ pairIdx: number; side: "A" | "B" } | null` state distinct from the existing `copiedInfo` (which drives the swatch square checkmark overlay). Clicking the swatch shows the checkmark; clicking the hex text shows the green text. The two signals don't cross-fire, so each affordance has clear, independent feedback.
+- **`copyHexText` helper** — mirrors the existing `copyHex` function (same clipboard write + setState + 1.5s setTimeout pattern), keeping the two copy paths consistent and symmetric.
+- **Reset on modal open** — `copiedTextInfo` cleared alongside `copiedInfo` in the existing open-reset `useEffect`.
+- **`cursor-pointer select-none`** on hex text — `cursor-pointer` communicates clickability; `select-none` prevents accidental text selection on fast double-click, matching swatch square behavior.
+- Build: zero TypeScript errors expected — additions follow existing patterns exactly, no new imports needed.
+
+### Key decisions
+- **Separate state, not extending `copiedInfo`** — if a single state drove both visual channels, clicking a swatch would also turn the hex text green (and vice versa), producing two simultaneous feedbacks that could confuse which element was actually clicked. Keeping states separate means the feedback is precisely located at the clicked target.
+- **Color feedback vs. text swap** — considered replacing the hex text with "Copied!" for 1.5s, but the user likely clicked to get the value on their clipboard, not to confirm it by reading the text again. A subtle color transition is enough; the clipboard write is the real confirmation.
+- **1.5s matches swatch copy** — consistent timeout across both copy paths keeps the feedback rhythm predictable.
+- **`duration-150` not `duration-100`** — the name emphasis uses 100ms (very fast); the copy feedback color transition at 150ms is slightly softer so it reads as a state change rather than a pure animation.
+
+### What's next (Session 243)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: pair row copy all** — a small "Copy all" button at the top of the pairs list that copies every hex A and hex B as a JSON array or newline-separated list to clipboard
