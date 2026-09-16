@@ -6999,3 +6999,26 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: copy-all format toggle** — a small dropdown or chip next to "Copy all" to choose between the current human-readable format and a JSON array `[{ hexA, hexB, dE }, …]` for programmatic use
+
+---
+
+## 2026-09-16 — Session 244: Compare Modal Copy-All Format Toggle
+
+### What was done
+- **Two-chip format toggle in the pairs header** — a compact `text | json` chip pair now sits immediately left of the "Copy all" button in the nearest-neighbor pairs header. Clicking a chip switches the active copy format; the selected chip gets `bg-[var(--surface-2)] text-[var(--foreground)]` while the inactive chip is muted.
+  - **text** (default): human-readable newline-separated `#hexA → #hexB (ΔE x.x)` — unchanged from session 243 behavior.
+  - **json**: pretty-printed JSON array `[{ "hexA": "...", "hexB": "...", "dE": ... }]` for programmatic use — scripts, Notion formulas, design tooling, or API inputs.
+- **Copy all button title updates** to "Copy all pairs as JSON array" or "Copy all pairs as hex text list" to reflect the active format.
+- **`copyAllFormat` not reset on modal open** — intentional. The format is a session-level preference (the user picked it once and expects it to persist across palettes), unlike `copiedAll` which represents transient feedback state and is reset.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 25 insertions, 2 deletions.
+
+### Key decisions
+- **`text | json` chips over a `<select>` dropdown** — a native `<select>` at 9px text looks out of place in the existing button/chip design language; two explicit chip buttons are scannable, click-target clear, and require zero popup/overlay.
+- **Bordered pill container** — wrapping both chips in a shared `rounded overflow-hidden border border-[var(--border-subtle)]` box visually groups them as a toggle set without needing extra JS or ARIA `role="radiogroup"`. The border is the affordance.
+- **Intentionally not "Copy as text" / "Copy as JSON" on the button** — verbose button labels would push the A→B indicator off-screen on narrow modal widths. The format toggle is the declaration; the button remains terse "Copy all" in both modes.
+- **`null, 2` JSON stringify** — pretty-printed output (not minified) so it's readable when pasted into a terminal, a design brief, or a Notion block without further formatting.
+
+### What's next (Session 245)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: export pairs as CSV** — a third format option `csv` with header row `hexA,hexB,dE` for direct import into spreadsheets or data tools
