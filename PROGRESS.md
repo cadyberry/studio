@@ -6975,3 +6975,27 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: pair row copy all** — a small "Copy all" button at the top of the pairs list that copies every hex A and hex B as a JSON array or newline-separated list to clipboard
+
+---
+
+## 2026-09-16 — Session 243: Compare Modal Copy-All Pairs Button
+
+### What was done
+- **"Copy all" button in the Nearest-neighbor pairs header** — a compact `Copy all` button now lives in the right side of the pairs section header, between the existing A→B direction indicator and "Nearest-neighbor pairs" label:
+  - Clicking copies the complete pair list to clipboard as a human-readable newline-separated hex map: each line is `#hexA → #hexB (ΔE x.x)`, ordered by ΔE ascending (same as the visual list).
+  - **Visual feedback**: the `Copy` icon and "Copy all" label swap to a green `Check` icon and emerald "Copied!" text for 1.5s, then restore — consistent with the per-row swatch and hex copy feedback pattern.
+  - **Disabled state**: when `pairs` is empty the button is `opacity-30 cursor-not-allowed` (defensive; in practice pairs are always present when the modal is open).
+  - `copiedAll` state is reset in the existing open-reset `useEffect` alongside `copiedInfo` and `copiedTextInfo`.
+  - **New import**: `Copy` from lucide-react. No other new imports or refs.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Newline-separated `hexA → hexB (ΔE x.x)` format** — designed for paste into notes, a Notion doc, or a design brief. JSON is more parseable but requires extra characters that make it hard to read at a glance; the arrow format is immediately human-readable and still structured enough to be parsed with a simple split.
+- **Button placed in the header row, not above the scroll container** — putting it outside the scroll area means it stays visible even when the user has scrolled down into a long pair list; it also doesn't compete with the per-row copy affordances inside the list.
+- **Right side of the header, before the A→B indicator** — wraps the button and direction indicator in a `flex items-center gap-2 shrink-0` container; the direction indicator stays rightmost (it's the primary contextual control), the "Copy all" button slots in to its left as a secondary action.
+- **26 insertions, 3 deletions** — almost entirely additive. The 3 deletions are the original `className="relative shrink-0"` and the closing `</div>` of the direction wrapper, restructured by adding the outer flex container.
+
+### What's next (Session 244)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: copy-all format toggle** — a small dropdown or chip next to "Copy all" to choose between the current human-readable format and a JSON array `[{ hexA, hexB, dE }, …]` for programmatic use
