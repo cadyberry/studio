@@ -38,6 +38,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [copiedInfo, setCopiedInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedTextInfo, setCopiedTextInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [copyAllFormat, setCopyAllFormat] = useState<"text" | "json">("text");
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -72,7 +73,12 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   };
 
   const copyAll = () => {
-    const text = pairs.map((p) => `${p.hexA} → ${p.hexB} (ΔE ${p.dE})`).join("\n");
+    let text: string;
+    if (copyAllFormat === "json") {
+      text = JSON.stringify(pairs.map((p) => ({ hexA: p.hexA, hexB: p.hexB, dE: p.dE })), null, 2);
+    } else {
+      text = pairs.map((p) => `${p.hexA} → ${p.hexB} (ΔE ${p.dE})`).join("\n");
+    }
     navigator.clipboard.writeText(text).catch(() => {});
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 1500);
@@ -331,11 +337,28 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     Nearest-neighbor pairs
                   </p>
                   <div className="flex items-center gap-2 shrink-0">
+                    {/* Format toggle */}
+                    <div className="flex items-center rounded overflow-hidden border border-[var(--border-subtle)] text-[9px]">
+                      {(["text", "json"] as const).map((fmt) => (
+                        <button
+                          key={fmt}
+                          onClick={() => setCopyAllFormat(fmt)}
+                          className={`px-1.5 py-0.5 transition-colors ${
+                            copyAllFormat === fmt
+                              ? "bg-[var(--surface-2)] text-[var(--foreground)]"
+                              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                          }`}
+                          title={fmt === "text" ? "Copy as readable text (hexA → hexB)" : "Copy as JSON array"}
+                        >
+                          {fmt}
+                        </button>
+                      ))}
+                    </div>
                     <button
                       onClick={copyAll}
                       disabled={pairs.length === 0}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                      title="Copy all pairs as hex list"
+                      title={`Copy all pairs as ${copyAllFormat === "json" ? "JSON array" : "hex text list"}`}
                     >
                       {copiedAll
                         ? <Check size={9} className="text-emerald-500" />
