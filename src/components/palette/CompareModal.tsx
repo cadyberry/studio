@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeftRight, ArrowRight, Check } from "lucide-react";
+import { X, ArrowLeftRight, ArrowRight, Check, Copy } from "lucide-react";
 import { deltaE } from "@/lib/utils";
 import type { Palette } from "@/types";
 
@@ -37,6 +37,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [hoveredStripInfo, setHoveredStripInfo] = useState<{ pairIdx: number } | null>(null);
   const [copiedInfo, setCopiedInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedTextInfo, setCopiedTextInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -70,9 +71,16 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     setTimeout(() => setCopiedTextInfo(null), 1500);
   };
 
+  const copyAll = () => {
+    const text = pairs.map((p) => `${p.hexA} → ${p.hexB} (ΔE ${p.dE})`).join("\n");
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 1500);
+  };
+
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); }
   }, [open]);
   useEffect(() => { setHoveredStripInfo(null); }, [swapped]);
 
@@ -322,8 +330,22 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
                     Nearest-neighbor pairs
                   </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={copyAll}
+                      disabled={pairs.length === 0}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                      title="Copy all pairs as hex list"
+                    >
+                      {copiedAll
+                        ? <Check size={9} className="text-emerald-500" />
+                        : <Copy size={9} />}
+                      <span className={copiedAll ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                        {copiedAll ? "Copied!" : "Copy all"}
+                      </span>
+                    </button>
                   <div
-                    className="relative shrink-0"
+                    className="relative"
                     onMouseEnter={() => setShowDirTip(true)}
                     onMouseLeave={() => setShowDirTip(false)}
                   >
@@ -350,6 +372,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">B</span>
                       <span className="text-[9px] text-[var(--muted)] ml-0.5">· by closeness</span>
                     </div>
+                  </div>
                   </div>
                 </div>
                 <div ref={pairsScrollRef} className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
