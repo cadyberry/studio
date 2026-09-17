@@ -7044,3 +7044,30 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when saved
 - **Compare modal: download pairs as file** — a download button that saves the pairs in the active format (`text` → `.txt`, `json` → `.json`, `csv` → `.csv`) as a named file rather than a clipboard paste
+
+---
+
+## 2026-09-17 — Session 246: Compare Modal Download Pairs as File
+
+### What was done
+- **Download button added to the nearest-neighbor pairs header** — a `Download` button sits immediately right of the existing `Copy all` button in the pairs header. Clicking it saves the full pair list as a file using the browser's native download mechanism (no server, no upload).
+- **Format-aware output** — the download honors the active `text | json | csv` chip:
+  - **text** → `.txt`, one line per pair: `#hexA → #hexB (ΔE x.x)`
+  - **json** → `.json`, pretty-printed array of `{hexA, hexB, dE}` objects
+  - **csv** → `.csv`, header row `hexA,hexB,dE` + one data row per pair
+- **Descriptive filename** — derived from palette names: `{palettea_name}_vs_{paletteb_name}.{ext}`, with non-alphanumeric chars replaced by underscores, lowercased.
+- **"Saved!" feedback flash** — the Download button shows a green Check + "Saved!" for 1.5s on click, matching the Copy all button's "Copied!" pattern. `downloaded` state is cleared on modal open (transient feedback only).
+- **`downloadAll` function** — builds the content string (same logic as `copyAll`), wraps in a `Blob`, creates a temporary `<a>` with `.download` and `.href`, clicks it, then immediately revokes the object URL. No memory leak.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 41 insertions, 2 deletions.
+
+### Key decisions
+- **Blob + object URL over data URIs** — object URLs are more memory-efficient for larger files and avoid the URI-length limits that can truncate data URIs in some browsers.
+- **Immediate URL revoke** — `URL.revokeObjectURL` is called synchronously after `a.click()`. The browser queues the download before the revoke takes effect (the spec guarantees it), so the file is always complete.
+- **Separate `downloaded` state, not reusing `copiedAll`** — copy and download are distinct actions; a single state would cause both buttons to flash if the user clicks one right after the other. Keeping them separate also allows both buttons to be used in the same session without one state masking the other.
+- **Format-aware title attribute** — the button's `title` updates with the active format (e.g., "Download pairs as .csv file"), so keyboard/screenreader users see the exact output type before clicking.
+- **`copyAllFormat` not reset on modal open** — consistent with the existing behavior; the format is a session-level preference (same rationale as the copy format toggle).
+
+### What's next (Session 247)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: sticky pairs header** — make the "Nearest-neighbor pairs" header row (format toggle + Copy all + Download + A→B) sticky at the top of the pairs scroll container so it stays visible when scrolling long pair lists
