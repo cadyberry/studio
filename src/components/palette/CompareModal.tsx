@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeftRight, ArrowRight, Check, Copy } from "lucide-react";
+import { X, ArrowLeftRight, ArrowRight, Check, Copy, Download } from "lucide-react";
 import { deltaE } from "@/lib/utils";
 import type { Palette } from "@/types";
 
@@ -38,6 +38,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [copiedInfo, setCopiedInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedTextInfo, setCopiedTextInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
   const [copyAllFormat, setCopyAllFormat] = useState<"text" | "json" | "csv">("text");
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
@@ -87,9 +88,34 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     setTimeout(() => setCopiedAll(false), 1500);
   };
 
+  const downloadAll = () => {
+    let content: string;
+    let ext: string;
+    let mime: string;
+    if (copyAllFormat === "json") {
+      content = JSON.stringify(pairs.map((p) => ({ hexA: p.hexA, hexB: p.hexB, dE: p.dE })), null, 2);
+      ext = "json"; mime = "application/json";
+    } else if (copyAllFormat === "csv") {
+      content = ["hexA,hexB,dE", ...pairs.map((p) => `${p.hexA},${p.hexB},${p.dE}`)].join("\n");
+      ext = "csv"; mime = "text/csv";
+    } else {
+      content = pairs.map((p) => `${p.hexA} → ${p.hexB} (ΔE ${p.dE})`).join("\n");
+      ext = "txt"; mime = "text/plain";
+    }
+    const safe = (s: string) => s.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+    const filename = `${safe(effectiveA!.name)}_vs_${safe(effectiveB!.name)}.${ext}`;
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 1500);
+  };
+
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); }
   }, [open]);
   useEffect(() => { setHoveredStripInfo(null); }, [swapped]);
 
@@ -372,6 +398,19 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                         : <Copy size={9} />}
                       <span className={copiedAll ? "text-emerald-600 dark:text-emerald-400" : ""}>
                         {copiedAll ? "Copied!" : "Copy all"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={downloadAll}
+                      disabled={pairs.length === 0}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                      title={`Download pairs as .${copyAllFormat === "json" ? "json" : copyAllFormat === "csv" ? "csv" : "txt"} file`}
+                    >
+                      {downloaded
+                        ? <Check size={9} className="text-emerald-500" />
+                        : <Download size={9} />}
+                      <span className={downloaded ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                        {downloaded ? "Saved!" : "Download"}
                       </span>
                     </button>
                   <div
