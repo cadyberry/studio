@@ -38,7 +38,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [copiedInfo, setCopiedInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedTextInfo, setCopiedTextInfo] = useState<{ pairIdx: number; side: "A" | "B" } | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
-  const [copyAllFormat, setCopyAllFormat] = useState<"text" | "json">("text");
+  const [copyAllFormat, setCopyAllFormat] = useState<"text" | "json" | "csv">("text");
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -76,6 +76,9 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     let text: string;
     if (copyAllFormat === "json") {
       text = JSON.stringify(pairs.map((p) => ({ hexA: p.hexA, hexB: p.hexB, dE: p.dE })), null, 2);
+    } else if (copyAllFormat === "csv") {
+      const rows = pairs.map((p) => `${p.hexA},${p.hexB},${p.dE}`);
+      text = ["hexA,hexB,dE", ...rows].join("\n");
     } else {
       text = pairs.map((p) => `${p.hexA} → ${p.hexB} (ΔE ${p.dE})`).join("\n");
     }
@@ -339,7 +342,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Format toggle */}
                     <div className="flex items-center rounded overflow-hidden border border-[var(--border-subtle)] text-[9px]">
-                      {(["text", "json"] as const).map((fmt) => (
+                      {(["text", "json", "csv"] as const).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => setCopyAllFormat(fmt)}
@@ -348,7 +351,11 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                               ? "bg-[var(--surface-2)] text-[var(--foreground)]"
                               : "text-[var(--muted)] hover:text-[var(--foreground)]"
                           }`}
-                          title={fmt === "text" ? "Copy as readable text (hexA → hexB)" : "Copy as JSON array"}
+                          title={
+                            fmt === "text" ? "Copy as readable text (hexA → hexB)" :
+                            fmt === "json" ? "Copy as JSON array" :
+                            "Copy as CSV (hexA,hexB,dE) for spreadsheets"
+                          }
                         >
                           {fmt}
                         </button>
@@ -358,7 +365,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       onClick={copyAll}
                       disabled={pairs.length === 0}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                      title={`Copy all pairs as ${copyAllFormat === "json" ? "JSON array" : "hex text list"}`}
+                      title={`Copy all pairs as ${copyAllFormat === "json" ? "JSON array" : copyAllFormat === "csv" ? "CSV" : "hex text list"}`}
                     >
                       {copiedAll
                         ? <Check size={9} className="text-emerald-500" />
