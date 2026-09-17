@@ -7022,3 +7022,25 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: export pairs as CSV** — a third format option `csv` with header row `hexA,hexB,dE` for direct import into spreadsheets or data tools
+
+---
+
+## 2026-09-17 — Session 245: Compare Modal Copy-All CSV Format
+
+### What was done
+- **CSV format chip added to the pairs format toggle** — the `text | json` chip set in the nearest-neighbor pairs header is now `text | json | csv`. Selecting `csv` makes "Copy all" write a two-section text to the clipboard: a header row `hexA,hexB,dE` followed by one row per pair (`#hex,#hex,x.x`), ready for direct paste into Excel, Google Sheets, Notion tables, or any CSV-aware tool.
+- Format logic: a `"csv"` branch in `copyAll()` builds `["hexA,hexB,dE", ...pairs.map(p => `${p.hexA},${p.hexB},${p.dE}`)].join("\n")`.
+- Button title updates to "Copy all pairs as CSV" when `csv` is active, consistent with existing text/JSON title variants.
+- Chip tooltip: `"Copy as CSV (hexA,hexB,dE) for spreadsheets"` — distinguishes CSV from text on hover.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 11 insertions, 4 deletions.
+
+### Key decisions
+- **Header row included** — a CSV without a header row pastes ambiguously; `hexA,hexB,dE` is unambiguous and allows column-header-aware paste (Google Sheets auto-detects it).
+- **No quoting of hex values** — hex codes never contain commas or quotes, so plain unquoted values are valid RFC 4180 CSV and marginally cleaner in spreadsheet cells (no extra `"` chars to strip).
+- **`dE` as a number, not a string** — the value is already `Math.round(...* 10) / 10` so it's always a valid numeric literal; spreadsheet formula tools treat it as a number immediately without a text-to-number conversion step.
+- **Same state lifecycle as `json`** — `copyAllFormat` persists across palette comparisons (session-level preference, not reset on modal open), so the user can switch once and keep using CSV for their session.
+
+### What's next (Session 246)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when saved
+- **Compare modal: download pairs as file** — a download button that saves the pairs in the active format (`text` → `.txt`, `json` → `.json`, `csv` → `.csv`) as a named file rather than a clipboard paste
