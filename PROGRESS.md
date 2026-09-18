@@ -7093,3 +7093,28 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: keyboard navigation for pair rows** — arrow up/down keys to move the highlighted pair row, with the scroll container auto-scrolling to keep the highlighted row visible; `Enter` or `C` to copy the highlighted pair's hex values
+
+---
+
+## 2026-09-18 — Session 248: Compare Modal Keyboard Navigation for Pair Rows
+
+### What was done
+- **Arrow ↑↓ navigation for pair rows** — pressing ArrowDown or ArrowUp while the Compare modal is open moves a keyboard-focused highlight (violet ring) through the sorted pair rows. First press of ↓ focuses row 0 (best match), first press of ↑ focuses the last row (worst match). Navigation clamps at the ends (no wrapping).
+- **Auto-scroll on keyboard navigation** — the pairs scroll container (`pairsScrollRef`) scrolls to keep the focused row visible using the same `getBoundingClientRect`/sticky-header-aware logic as the existing hover-driven strip swatch scroll.
+- **Enter / C to copy focused pair** — pressing Enter or C while a pair row is keyboard-focused copies `hexA → hexB` to the clipboard. The focused row flashes a green ring (`ring-2 ring-emerald-400/70`) for 1.5s as copy feedback. This is a row-level copy (both hex values at once), distinct from the existing per-swatch click-to-copy.
+- **Keyboard hint** — a subtle hint line below the pairs scroll area reads `↑↓ navigate · Enter or C copy pair` using the same `<kbd>` chip style as other hints in the app. Shown only when there are multiple pairs.
+- **State hygiene** — `keyboardPairIdx` and `copiedKeyboardPairIdx` reset on modal open and on palette swap, keeping them consistent with all other transient UI state.
+- **Interaction layering** — `effectivePairIdx` priority: mouse hover → keyboard focus → strip swatch hover. Visual ring priority: copy-flash (green) → keyboard focus (violet) → strip highlight (border).
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 73 insertions, 21 deletions.
+
+### Key decisions
+- **Clamping, not wrapping** — at the end of the list, ↓ stays on the last row rather than wrapping to the first. This matches spreadsheet-style navigation and avoids accidental jumps from bottom-of-list past the first row.
+- **`pairs` declared before keyboard effect** — the keyboard `useEffect` references `pairs.length` and `pairs[keyboardPairIdx]`, so it was placed after the `pairs` useMemo to satisfy TypeScript's block-scoped variable ordering rules. The swap and open-reset effects can stay before since they don't reference `pairs`.
+- **Violet ring for keyboard focus** — visually distinct from the existing strip-hover gray ring (`ring-[var(--border)]`), so it's unambiguous that this row is keyboard-controlled, not just hovered by the mouse.
+- **Green ring for copy (not the swatch check overlay)** — the existing per-swatch copy already uses an inset check-mark overlay. A row-level green ring reads as "entire row copied" rather than a single hex, consistent with the row-level copy action.
+- **`transition-all` on row** — changed from `transition-colors` to `transition-all` so the ring width transition (1px → 2px) animates smoothly when keyboard focus or copy state changes.
+
+### What's next (Session 249)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: pair row copy format toggle** — when Enter/C is pressed, use the active `copyAllFormat` (text/json/csv) to determine what's copied for the single pair, for consistency with Copy all
