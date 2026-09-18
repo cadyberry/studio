@@ -41,6 +41,9 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [downloaded, setDownloaded] = useState(false);
   const [copyAllFormat, setCopyAllFormat] = useState<"text" | "json" | "csv">("text");
 
+  const [keyboardPairIdx, setKeyboardPairIdx] = useState<number | null>(null);
+  const [copiedKeyboardPairIdx, setCopiedKeyboardPairIdx] = useState<number | null>(null);
+
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -115,24 +118,9 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
 
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); setKeyboardPairIdx(null); setCopiedKeyboardPairIdx(null); }
   }, [open]);
-  useEffect(() => { setHoveredStripInfo(null); }, [swapped]);
-
-  // S = swap A↔B while modal is open
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      const inInput = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
-      if ((e.key === "s" || e.key === "S") && !inInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        setSwapped((s) => !s);
-      }
-    };
-    document.addEventListener("keydown", handler, { capture: true });
-    return () => document.removeEventListener("keydown", handler, { capture: true });
-  }, [open]);
+  useEffect(() => { setHoveredStripInfo(null); setKeyboardPairIdx(null); }, [swapped]);
 
   const effectiveA = swapped ? paletteB : paletteA;
   const effectiveB = swapped ? paletteA : paletteB;
@@ -156,6 +144,57 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
       };
     }).sort((a, b) => a.dE - b.dE);
   }, [effectiveA, effectiveB]);
+
+  // S = swap A↔B; ↑↓ navigate pairs; Enter/C copy focused pair
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      const inInput = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA";
+      if (inInput || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        e.stopPropagation();
+        setSwapped((s) => !s);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        setKeyboardPairIdx((prev) => {
+          if (pairs.length === 0) return null;
+          if (prev === null) return e.key === "ArrowDown" ? 0 : pairs.length - 1;
+          return e.key === "ArrowDown"
+            ? Math.min(prev + 1, pairs.length - 1)
+            : Math.max(prev - 1, 0);
+        });
+      } else if ((e.key === "Enter" || e.key === "c" || e.key === "C") && keyboardPairIdx !== null) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pair = pairs[keyboardPairIdx];
+        if (pair) {
+          navigator.clipboard.writeText(`${pair.hexA} → ${pair.hexB}`).catch(() => {});
+          setCopiedKeyboardPairIdx(keyboardPairIdx);
+          setTimeout(() => setCopiedKeyboardPairIdx(null), 1500);
+        }
+      }
+    };
+    document.addEventListener("keydown", handler, { capture: true });
+    return () => document.removeEventListener("keydown", handler, { capture: true });
+  }, [open, pairs, keyboardPairIdx]);
+
+  // Auto-scroll when keyboard navigation moves the focused row
+  useEffect(() => {
+    if (keyboardPairIdx === null) return;
+    const container = pairsScrollRef.current;
+    const row = pairRowRefs.current[keyboardPairIdx];
+    if (!container || !row) return;
+    const containerRect = container.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const STICKY_H = 38;
+    if (rowRect.top < containerRect.top + STICKY_H) {
+      container.scrollBy({ top: rowRect.top - containerRect.top - STICKY_H - 8, behavior: "smooth" });
+    } else if (rowRect.bottom > containerRect.bottom) {
+      container.scrollBy({ top: rowRect.bottom - containerRect.bottom + 8, behavior: "smooth" });
+    }
+  }, [keyboardPairIdx]);
 
   const avgDelta = useMemo(() => {
     if (pairs.length === 0) return 0;
@@ -199,7 +238,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     return m;
   }, [pairs]);
 
-  const effectivePairIdx = hoveredPairIdx ?? hoveredStripInfo?.pairIdx ?? null;
+  const effectivePairIdx = hoveredPairIdx ?? keyboardPairIdx ?? hoveredStripInfo?.pairIdx ?? null;
   const highlightedHexA = effectivePairIdx !== null ? pairs[effectivePairIdx]?.hexA ?? null : null;
   const highlightedHexB = effectivePairIdx !== null ? pairs[effectivePairIdx]?.hexB ?? null : null;
 
@@ -451,14 +490,16 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     const tier = getMatchTier(pair.dE);
                     const isRowHovered = hoveredPairIdx === i;
                     const isStripHighlighted = hoveredStripInfo?.pairIdx === i;
-                    const isActive = isRowHovered || isStripHighlighted;
+                    const isKeyboardFocused = keyboardPairIdx === i;
+                    const isKeyCopied = copiedKeyboardPairIdx === i;
+                    const isActive = isRowHovered || isStripHighlighted || isKeyboardFocused;
                     return (
                       <div
                         key={i}
                         ref={(el) => { pairRowRefs.current[i] = el; }}
-                        className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-colors duration-100 cursor-default ${
+                        className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-all duration-100 cursor-default ${
                           isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
-                        }${isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
+                        }${isKeyCopied ? " ring-2 ring-inset ring-emerald-400/70" : isKeyboardFocused && !isRowHovered ? " ring-2 ring-inset ring-violet-400/60" : isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
                         onMouseEnter={() => setHoveredPairIdx(i)}
                         onMouseLeave={() => setHoveredPairIdx(null)}
                       >
@@ -546,6 +587,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                   })}
                 </div>
                 </div>
+                {pairs.length > 1 && (
+                  <p className="flex items-center gap-1.5 mt-1 text-[9px] text-[var(--muted)] select-none">
+                    <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">↑↓</kbd>
+                    <span>navigate</span>
+                    <span className="opacity-40">·</span>
+                    <kbd className="inline-flex items-center justify-center h-3.5 px-1.5 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">Enter</kbd>
+                    <span>or</span>
+                    <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">C</kbd>
+                    <span>copy pair</span>
+                  </p>
+                )}
               </div>
 
               {/* Summary stats footer */}
