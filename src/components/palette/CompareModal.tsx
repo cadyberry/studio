@@ -44,20 +44,20 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // When a strip swatch is hovered, scroll its pair row into view within the pairs container
+  // When a strip swatch is hovered, scroll its pair row into view within the pairs container.
+  // Uses getBoundingClientRect so the sticky header height (~38px) is automatically accounted for.
   useEffect(() => {
     if (hoveredStripInfo === null) return;
     const container = pairsScrollRef.current;
     const row = pairRowRefs.current[hoveredStripInfo.pairIdx];
     if (!container || !row) return;
-    const containerTop = container.scrollTop;
-    const containerBottom = containerTop + container.clientHeight;
-    const rowTop = row.offsetTop;
-    const rowBottom = rowTop + row.offsetHeight;
-    if (rowTop < containerTop) {
-      container.scrollTo({ top: rowTop - 8, behavior: "smooth" });
-    } else if (rowBottom > containerBottom) {
-      container.scrollTo({ top: rowBottom - container.clientHeight + 8, behavior: "smooth" });
+    const containerRect = container.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const STICKY_H = 38;
+    if (rowRect.top < containerRect.top + STICKY_H) {
+      container.scrollBy({ top: rowRect.top - containerRect.top - STICKY_H - 8, behavior: "smooth" });
+    } else if (rowRect.bottom > containerRect.bottom) {
+      container.scrollBy({ top: rowRect.bottom - containerRect.bottom + 8, behavior: "smooth" });
     }
   }, [hoveredStripInfo]);
 
@@ -360,91 +360,93 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
               <div className="border-t border-[var(--border-subtle)]" />
 
               {/* Nearest-neighbor pairs */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
-                    Nearest-neighbor pairs
-                  </p>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Format toggle */}
-                    <div className="flex items-center rounded overflow-hidden border border-[var(--border-subtle)] text-[9px]">
-                      {(["text", "json", "csv"] as const).map((fmt) => (
-                        <button
-                          key={fmt}
-                          onClick={() => setCopyAllFormat(fmt)}
-                          className={`px-1.5 py-0.5 transition-colors ${
-                            copyAllFormat === fmt
-                              ? "bg-[var(--surface-2)] text-[var(--foreground)]"
-                              : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                          }`}
-                          title={
-                            fmt === "text" ? "Copy as readable text (hexA → hexB)" :
-                            fmt === "json" ? "Copy as JSON array" :
-                            "Copy as CSV (hexA,hexB,dE) for spreadsheets"
-                          }
+              <div>
+                <div ref={pairsScrollRef} className="max-h-72 overflow-y-auto">
+                  {/* Sticky header — stays anchored to the top of the scroll container */}
+                  <div className="sticky top-0 z-10 bg-[var(--surface)] border-b border-[var(--border-subtle)] flex items-center justify-between gap-2 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] flex-shrink-0">
+                      Nearest-neighbor pairs
+                    </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Format toggle */}
+                      <div className="flex items-center rounded overflow-hidden border border-[var(--border-subtle)] text-[9px]">
+                        {(["text", "json", "csv"] as const).map((fmt) => (
+                          <button
+                            key={fmt}
+                            onClick={() => setCopyAllFormat(fmt)}
+                            className={`px-1.5 py-0.5 transition-colors ${
+                              copyAllFormat === fmt
+                                ? "bg-[var(--surface-2)] text-[var(--foreground)]"
+                                : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                            }`}
+                            title={
+                              fmt === "text" ? "Copy as readable text (hexA → hexB)" :
+                              fmt === "json" ? "Copy as JSON array" :
+                              "Copy as CSV (hexA,hexB,dE) for spreadsheets"
+                            }
+                          >
+                            {fmt}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={copyAll}
+                        disabled={pairs.length === 0}
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                        title={`Copy all pairs as ${copyAllFormat === "json" ? "JSON array" : copyAllFormat === "csv" ? "CSV" : "hex text list"}`}
+                      >
+                        {copiedAll
+                          ? <Check size={9} className="text-emerald-500" />
+                          : <Copy size={9} />}
+                        <span className={copiedAll ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                          {copiedAll ? "Copied!" : "Copy all"}
+                        </span>
+                      </button>
+                      <button
+                        onClick={downloadAll}
+                        disabled={pairs.length === 0}
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                        title={`Download pairs as .${copyAllFormat === "json" ? "json" : copyAllFormat === "csv" ? "csv" : "txt"} file`}
+                      >
+                        {downloaded
+                          ? <Check size={9} className="text-emerald-500" />
+                          : <Download size={9} />}
+                        <span className={downloaded ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                          {downloaded ? "Saved!" : "Download"}
+                        </span>
+                      </button>
+                      <div
+                        className="relative"
+                        onMouseEnter={() => setShowDirTip(true)}
+                        onMouseLeave={() => setShowDirTip(false)}
+                      >
+                        {showDirTip && (
+                          <div className="absolute top-full right-0 mt-2 z-20 pointer-events-none bg-[var(--surface)] border border-[var(--border-subtle)] rounded-lg shadow-lg px-3 py-2 min-w-max">
+                            <div className="flex items-center gap-1.5 text-[10px]">
+                              <span className="font-mono font-bold text-[var(--foreground)]">A</span>
+                              <span className="text-[var(--muted)]">=</span>
+                              <span className="text-[var(--foreground)] max-w-[150px] truncate">{effectiveA!.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] mt-1">
+                              <span className="font-mono font-bold text-[var(--foreground)]">B</span>
+                              <span className="text-[var(--muted)]">=</span>
+                              <span className="text-[var(--foreground)] max-w-[150px] truncate">{effectiveB!.name}</span>
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          className="flex items-center gap-1 cursor-default"
+                          title="For each swatch in A, the closest match in B is shown — sorted by ΔE, lowest first"
                         >
-                          {fmt}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={copyAll}
-                      disabled={pairs.length === 0}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                      title={`Copy all pairs as ${copyAllFormat === "json" ? "JSON array" : copyAllFormat === "csv" ? "CSV" : "hex text list"}`}
-                    >
-                      {copiedAll
-                        ? <Check size={9} className="text-emerald-500" />
-                        : <Copy size={9} />}
-                      <span className={copiedAll ? "text-emerald-600 dark:text-emerald-400" : ""}>
-                        {copiedAll ? "Copied!" : "Copy all"}
-                      </span>
-                    </button>
-                    <button
-                      onClick={downloadAll}
-                      disabled={pairs.length === 0}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
-                      title={`Download pairs as .${copyAllFormat === "json" ? "json" : copyAllFormat === "csv" ? "csv" : "txt"} file`}
-                    >
-                      {downloaded
-                        ? <Check size={9} className="text-emerald-500" />
-                        : <Download size={9} />}
-                      <span className={downloaded ? "text-emerald-600 dark:text-emerald-400" : ""}>
-                        {downloaded ? "Saved!" : "Download"}
-                      </span>
-                    </button>
-                  <div
-                    className="relative"
-                    onMouseEnter={() => setShowDirTip(true)}
-                    onMouseLeave={() => setShowDirTip(false)}
-                  >
-                    {showDirTip && (
-                      <div className="absolute top-full right-0 mt-2 z-20 pointer-events-none bg-[var(--surface)] border border-[var(--border-subtle)] rounded-lg shadow-lg px-3 py-2 min-w-max">
-                        <div className="flex items-center gap-1.5 text-[10px]">
-                          <span className="font-mono font-bold text-[var(--foreground)]">A</span>
-                          <span className="text-[var(--muted)]">=</span>
-                          <span className="text-[var(--foreground)] max-w-[150px] truncate">{effectiveA!.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] mt-1">
-                          <span className="font-mono font-bold text-[var(--foreground)]">B</span>
-                          <span className="text-[var(--muted)]">=</span>
-                          <span className="text-[var(--foreground)] max-w-[150px] truncate">{effectiveB!.name}</span>
+                          <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">A</span>
+                          <ArrowRight size={9} className="text-[var(--muted)]" />
+                          <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">B</span>
+                          <span className="text-[9px] text-[var(--muted)] ml-0.5">· by closeness</span>
                         </div>
                       </div>
-                    )}
-                    <div
-                      className="flex items-center gap-1 cursor-default"
-                      title="For each swatch in A, the closest match in B is shown — sorted by ΔE, lowest first"
-                    >
-                      <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">A</span>
-                      <ArrowRight size={9} className="text-[var(--muted)]" />
-                      <span className="text-[9px] font-bold text-[var(--foreground)] font-mono">B</span>
-                      <span className="text-[9px] text-[var(--muted)] ml-0.5">· by closeness</span>
                     </div>
                   </div>
-                  </div>
-                </div>
-                <div ref={pairsScrollRef} className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
+                  <div className="space-y-1.5 pt-2 pr-0.5">
                   {pairs.map((pair, i) => {
                     const tier = getMatchTier(pair.dE);
                     const isRowHovered = hoveredPairIdx === i;
@@ -542,6 +544,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       </div>
                     );
                   })}
+                </div>
                 </div>
               </div>
 
