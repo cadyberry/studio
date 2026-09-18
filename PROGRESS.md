@@ -7071,3 +7071,25 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: sticky pairs header** — make the "Nearest-neighbor pairs" header row (format toggle + Copy all + Download + A→B) sticky at the top of the pairs scroll container so it stays visible when scrolling long pair lists
+
+---
+
+## 2026-09-18 — Session 247: Compare Modal Sticky Pairs Header
+
+### What was done
+- **Sticky "Nearest-neighbor pairs" header** — the full header row (label + format toggle + Copy all + Download + A→B indicator) is now `position: sticky` at the top of the pairs scroll container. As you scroll through a long pair list, the header stays anchored at the top of the scroll area with a clear `border-b` separator line.
+- **Structural restructure** — replaced the old two-div layout (`space-y-2` wrapper containing a separate header + separate scroll container) with a single unified scroll container (`max-h-72 overflow-y-auto`) that holds the sticky header and the pairs list as siblings. `pairsScrollRef` moved to this outer container.
+- **Pairs list** drops the redundant `max-h-60 overflow-y-auto` and becomes a plain `space-y-1.5 pt-2 pr-0.5` div; the outer container's `max-h-72` (288px = ~38px header + ~250px pairs) preserves approximately the same visible area as before.
+- **Scroll-into-view fix** — the `hoveredStripInfo` effect now uses `getBoundingClientRect()` instead of `offsetTop` so the sticky header height (~38px) is correctly offset when auto-scrolling a hovered strip swatch's pair row into view.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 92 insertions, 89 deletions.
+
+### Key decisions
+- **`position: sticky` inside `overflow-y: auto` is valid CSS** — modern browsers (Chrome, Firefox, Safari) support this; the sticky element anchors to the top of the nearest scrolling ancestor, which is exactly the unified scroll container. No JS scroll listeners needed.
+- **`z-10` + `bg-[var(--surface)]`** — ensures the header visually overlaps the scrolling pair rows without letting them show through. The `border-b` gives a clean separator line that communicates the sticky boundary.
+- **`getBoundingClientRect()` for scroll offsets** — more reliable than `offsetTop` when the scroll container has internal structure; the sticky header height is automatically factored in by comparing the row's viewport position against the container's viewport position.
+- **Direction tip tooltip opens downward into pairs area** — the `top-full mt-2 z-20` tooltip is still positioned correctly; it appears below the sticky header into the visible scroll area (not clipped), since `overflow-y: auto` only clips content that exits the container's bounding box, and the tooltip is within that box when pairs are present.
+
+### What's next (Session 248)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: keyboard navigation for pair rows** — arrow up/down keys to move the highlighted pair row, with the scroll container auto-scrolling to keep the highlighted row visible; `Enter` or `C` to copy the highlighted pair's hex values
