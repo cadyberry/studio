@@ -2284,24 +2284,6 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
           })()}
         </div>
 
-        {/* Keyboard shortcut hints — fade in on card hover to surface the keyboard API */}
-        <div className="flex items-center gap-2 px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none select-none">
-          {([
-            { key: "E", label: "export" },
-            { key: "H", label: "harmony" },
-            { key: "D", label: "dup" },
-            { key: "C", label: "compare" },
-            { key: "L", label: "lock" },
-            { key: "⇧S", label: "snapshot" },
-            { key: "?", label: "all" },
-          ] as const).map(({ key, label }) => (
-            <span key={key} className="flex items-center gap-0.5">
-              <kbd className="inline-flex items-center justify-center min-w-[14px] h-[13px] px-[3px] rounded text-[7px] font-mono font-bold bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] shadow-[0_1px_0_0_var(--border)] leading-none">{key}</kbd>
-              <span className="text-[7px] text-[var(--muted)]/55 leading-none">{label}</span>
-            </span>
-          ))}
-        </div>
-
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
@@ -2694,11 +2676,24 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
             ? `Edited ${formatRelativeAge(palette.updatedAt)}`
             : `Created ${formatRelativeAge(palette.createdAt)}`}
         </span>
-        <span className="text-[9px] text-[var(--muted)]/60 font-mono tracking-tight shrink-0 select-none whitespace-nowrap">
-          {palette.frozen
-            ? "L unlock"
-            : "D dup · C cmp · E export · H view · S story · F2 name · L lock · P pin · Del · ? help"}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0 select-none pointer-events-none">
+          {(palette.frozen
+            ? [{ key: "L", label: "unlock" }]
+            : [
+                { key: "E", label: "export" },
+                { key: "H", label: "view" },
+                { key: "D", label: "dup" },
+                { key: "C", label: "cmp" },
+                { key: "L", label: "lock" },
+                { key: "?", label: "all" },
+              ]
+          ).map(({ key, label }) => (
+            <span key={key} className="flex items-center gap-0.5">
+              <kbd className="inline-flex items-center justify-center min-w-[13px] h-[12px] px-[3px] rounded text-[7px] font-mono font-bold bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)] shadow-[0_1px_0_0_var(--border)] leading-none">{key}</kbd>
+              <span className="text-[7px] text-[var(--muted)]/50 leading-none">{label}</span>
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* AI naming overlay */}
