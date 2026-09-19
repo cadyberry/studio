@@ -7118,3 +7118,27 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: pair row copy format toggle** — when Enter/C is pressed, use the active `copyAllFormat` (text/json/csv) to determine what's copied for the single pair, for consistency with Copy all
+
+---
+
+## 2026-09-19 — Session 249: Compare Modal Keyboard Copy Format Toggle
+
+### What was done
+- **Keyboard copy (Enter/C) now respects the active format toggle** — pressing Enter or C on a keyboard-focused pair row previously always copied `hexA → hexB` (bare, no ΔE, hardcoded text). It now honors the active `copyAllFormat` chip:
+  - **text** → `#hexA → #hexB (ΔE x.x)` — matches the `Copy all` text output for a single pair
+  - **json** → pretty-printed `{"hexA": "#...", "hexB": "#...", "dE": x.x}` single object — consistent with the json array format
+  - **csv** → `#hexA,#hexB,x.x` single data row — no header (header would only be useful for multi-row CSV; a one-pair copy is unambiguous without it)
+- **`copyAllFormat` added to keyboard effect dependency array** — the previous implementation closed over the initial (stale) value of `copyAllFormat`. Adding it to `[open, pairs, keyboardPairIdx, copyAllFormat]` ensures the handler always sees the current format.
+- **Keyboard hint updated** — the hint line below the pairs scroll area now reads `copy pair as <fmt>` where `<fmt>` reflects the active format chip in monospace, giving the user visual confirmation of what Enter/C will copy before pressing it.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 12 insertions, 3 deletions.
+
+### Key decisions
+- **No header row for csv single-pair copy** — `Copy all` includes a `hexA,hexB,dE` header because it's a multi-row document; a single-pair copy goes into a formula or a cell, where a header row would just be noise to delete.
+- **Include ΔE in text format** — the previous hardcoded text omitted ΔE (`hexA → hexB`). Now it matches `copyAll`'s text output (`hexA → hexB (ΔE x.x)`), making single-pair and bulk copies consistent and including the quality signal users care about.
+- **Single JSON object, not single-element array** — `[{...}]` is technically more consistent with the array format, but when you're copying one pair to paste into code or an object literal, a bare object is more useful. The extra `[]` wrapping just adds noise.
+- **`copyAllFormat` as the shared toggle** — rather than a separate "keyboard copy format" state, the existing format chip is the single source of truth for all copy/download actions. This is one preference, not three.
+
+### What's next (Session 250)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
+- **Compare modal: pair row individual copy also format-aware** — clicking a hex swatch in a pair row currently copies just the bare hex; a variant where clicking the row background (not the swatch) copies the full pair in the active format
