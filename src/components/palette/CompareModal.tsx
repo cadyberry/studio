@@ -170,7 +170,15 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
         e.stopPropagation();
         const pair = pairs[keyboardPairIdx];
         if (pair) {
-          navigator.clipboard.writeText(`${pair.hexA} → ${pair.hexB}`).catch(() => {});
+          let pairText: string;
+          if (copyAllFormat === "json") {
+            pairText = JSON.stringify({ hexA: pair.hexA, hexB: pair.hexB, dE: pair.dE }, null, 2);
+          } else if (copyAllFormat === "csv") {
+            pairText = `${pair.hexA},${pair.hexB},${pair.dE}`;
+          } else {
+            pairText = `${pair.hexA} → ${pair.hexB} (ΔE ${pair.dE})`;
+          }
+          navigator.clipboard.writeText(pairText).catch(() => {});
           setCopiedKeyboardPairIdx(keyboardPairIdx);
           setTimeout(() => setCopiedKeyboardPairIdx(null), 1500);
         }
@@ -178,7 +186,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     };
     document.addEventListener("keydown", handler, { capture: true });
     return () => document.removeEventListener("keydown", handler, { capture: true });
-  }, [open, pairs, keyboardPairIdx]);
+  }, [open, pairs, keyboardPairIdx, copyAllFormat]);
 
   // Auto-scroll when keyboard navigation moves the focused row
   useEffect(() => {
@@ -595,7 +603,8 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     <kbd className="inline-flex items-center justify-center h-3.5 px-1.5 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">Enter</kbd>
                     <span>or</span>
                     <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">C</kbd>
-                    <span>copy pair</span>
+                    <span>copy pair as</span>
+                    <span className="font-mono text-[var(--foreground)] opacity-70">{copyAllFormat}</span>
                   </p>
                 )}
               </div>
