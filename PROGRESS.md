@@ -2,6 +2,28 @@
 
 ---
 
+## 2026-09-19 — Session 238: Palette Card Keyboard Hints Consolidation
+
+### What was done
+- **Keyboard shortcut hints consolidated into the card footer** — removed the separate inline kbd strip that was positioned between the metadata/tags section and the toolbar in normal document flow. That positioning caused vertical clutter: on cards with dense metadata (notes, tags, print-risk badges, search match highlights), the hints strip pushed the toolbar further down, and on narrow cards with wrapping content it could appear at an unexpected vertical position.
+  - The footer now shows keyboard shortcuts as proper `<kbd>` chips (matching the design language: `text-[7px] font-mono font-bold`, bottom-shadow border) instead of plain monospace text.
+  - Frozen-palette branch: only `L unlock` chip — unchanged.
+  - Normal branch: `E export · H view · D dup · C cmp · L lock · ? all` — 6 chips, covers the most common actions.
+  - Removed 16-line inline strip; net delta: 18 added, 23 removed.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Footer as the single hint location** — two separate hint displays (inline strip + footer text) were redundant and inconsistent. The footer is the natural place: it appears below the toolbar on hover, doesn't affect card body layout, and is already the established location for supplementary card metadata (age timestamp).
+- **Dropped "⇧S snapshot" and "F2 name / S story / P pin / Del" from footer chip set** — the footer row is space-constrained; kept the 6 most common shortcut actions. The `? all` chip signals that a full shortcut reference exists (KeyboardHelpModal). Power users who want the complete list press `?`.
+- **`bg-[var(--surface)]` on kbd chips in footer** — slightly lighter than `bg-[var(--surface-2)]` used in the now-removed inline strip, because the footer background is already `bg-[var(--surface-2)]/60`; using `--surface` keeps the chip visually distinct.
+
+### What's next (Session 239)
+- **Harmony modal: palette complementary pair highlight** — when hovering a swatch in the harmony wheel, highlight the swatch(es) in the palette strip that are its complement (180° hue shift)
+- **Library toolbar: collection badge count** — show the number of palettes in each collection directly on the collection chip in the library toolbar
+- **Export modal: prompt template selector** — allow user to choose between 2–3 prompt templates (e.g. "Midjourney", "DALL·E", "Generic") before copying the AI art prompt
+
+---
+
 ## 2026-09-12 — Session 237: ShadeModal LAB/OKLCH Interpolation Mode Toggle
 
 ### What was done
