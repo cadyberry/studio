@@ -561,7 +561,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                           </div>
                         </div>
 
-                        {/* ΔE badge + coverage icon */}
+                        {/* ΔE badge + coverage icon + direction indicator */}
                         <div className="flex flex-col items-center shrink-0 w-12">
                           <div
                             className={`w-full text-center px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums ${tier.bg} ${tier.text}`}
@@ -574,6 +574,18 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                             title={pair.dE < 10 ? "Covered — good match (ΔE < 10)" : "Not covered — loose match (ΔE ≥ 10)"}
                           >
                             {pair.dE < 10 ? <Check size={9} /> : <X size={9} />}
+                          </div>
+                          <div
+                            className={`mt-0.5 text-[9px] font-mono leading-none select-none transition-colors duration-150 ${
+                              swapped
+                                ? "text-violet-400 dark:text-violet-400"
+                                : "text-[var(--muted)] opacity-40"
+                            }`}
+                            title={swapped
+                              ? `Swapped: mapping from ${paletteB!.name} → ${paletteA!.name}`
+                              : `Mapping from ${paletteA!.name} (A) → ${paletteB!.name} (B)`}
+                          >
+                            →
                           </div>
                         </div>
 
