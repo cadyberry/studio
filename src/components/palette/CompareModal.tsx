@@ -40,6 +40,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
   const [copiedAll, setCopiedAll] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [copyAllFormat, setCopyAllFormat] = useState<"text" | "json" | "csv">("text");
+  const [copiedRowPairIdx, setCopiedRowPairIdx] = useState<number | null>(null);
 
   const [keyboardPairIdx, setKeyboardPairIdx] = useState<number | null>(null);
   const [copiedKeyboardPairIdx, setCopiedKeyboardPairIdx] = useState<number | null>(null);
@@ -74,6 +75,20 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     navigator.clipboard.writeText(hex).catch(() => {});
     setCopiedTextInfo({ pairIdx, side });
     setTimeout(() => setCopiedTextInfo(null), 1500);
+  };
+
+  const copyRow = (pair: ComparePair, i: number) => {
+    let text: string;
+    if (copyAllFormat === "json") {
+      text = JSON.stringify({ hexA: pair.hexA, hexB: pair.hexB, dE: pair.dE }, null, 2);
+    } else if (copyAllFormat === "csv") {
+      text = `${pair.hexA},${pair.hexB},${pair.dE}`;
+    } else {
+      text = `${pair.hexA} → ${pair.hexB} (ΔE ${pair.dE})`;
+    }
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedRowPairIdx(i);
+    setTimeout(() => setCopiedRowPairIdx(null), 1500);
   };
 
   const copyAll = () => {
@@ -118,7 +133,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
 
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); setKeyboardPairIdx(null); setCopiedKeyboardPairIdx(null); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); setKeyboardPairIdx(null); setCopiedKeyboardPairIdx(null); setCopiedRowPairIdx(null); }
   }, [open]);
   useEffect(() => { setHoveredStripInfo(null); setKeyboardPairIdx(null); }, [swapped]);
 
@@ -500,14 +515,17 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     const isStripHighlighted = hoveredStripInfo?.pairIdx === i;
                     const isKeyboardFocused = keyboardPairIdx === i;
                     const isKeyCopied = copiedKeyboardPairIdx === i;
+                    const isRowCopied = copiedRowPairIdx === i;
                     const isActive = isRowHovered || isStripHighlighted || isKeyboardFocused;
                     return (
                       <div
                         key={i}
                         ref={(el) => { pairRowRefs.current[i] = el; }}
-                        className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-all duration-100 cursor-default ${
+                        className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-all duration-100 cursor-pointer ${
                           isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
-                        }${isKeyCopied ? " ring-2 ring-inset ring-emerald-400/70" : isKeyboardFocused && !isRowHovered ? " ring-2 ring-inset ring-violet-400/60" : isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
+                        }${isKeyCopied ? " ring-2 ring-inset ring-emerald-400/70" : isRowCopied ? " ring-2 ring-inset ring-sky-400/70" : isKeyboardFocused && !isRowHovered ? " ring-2 ring-inset ring-violet-400/60" : isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
+                        title={`Click to copy pair as ${copyAllFormat} — click swatch or hex to copy individual color`}
+                        onClick={() => copyRow(pair, i)}
                         onMouseEnter={() => setHoveredPairIdx(i)}
                         onMouseLeave={() => setHoveredPairIdx(null)}
                       >
@@ -516,7 +534,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                           <div
                             className="w-8 h-8 rounded-md flex-shrink-0 border border-black/10 dark:border-white/10 relative cursor-pointer"
                             style={{ backgroundColor: pair.hexA }}
-                            onClick={() => copyHex(pair.hexA, i, "A")}
+                            onClick={(e) => { e.stopPropagation(); copyHex(pair.hexA, i, "A"); }}
                             title={`Click to copy ${pair.hexA}`}
                           >
                             {copiedInfo?.pairIdx === i && copiedInfo?.side === "A" && (
@@ -532,7 +550,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                                   ? "text-emerald-600 dark:text-emerald-400"
                                   : "text-[var(--foreground)]"
                               }`}
-                              onClick={() => copyHexText(pair.hexA, i, "A")}
+                              onClick={(e) => { e.stopPropagation(); copyHexText(pair.hexA, i, "A"); }}
                               title={`Click to copy ${pair.hexA}`}
                             >
                               {pair.hexA}
@@ -568,7 +586,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                                   ? "text-emerald-600 dark:text-emerald-400"
                                   : "text-[var(--foreground)]"
                               }`}
-                              onClick={() => copyHexText(pair.hexB, i, "B")}
+                              onClick={(e) => { e.stopPropagation(); copyHexText(pair.hexB, i, "B"); }}
                               title={`Click to copy ${pair.hexB}`}
                             >
                               {pair.hexB}
@@ -580,7 +598,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                           <div
                             className="w-8 h-8 rounded-md flex-shrink-0 border border-black/10 dark:border-white/10 relative cursor-pointer"
                             style={{ backgroundColor: pair.hexB }}
-                            onClick={() => copyHex(pair.hexB, i, "B")}
+                            onClick={(e) => { e.stopPropagation(); copyHex(pair.hexB, i, "B"); }}
                             title={`Click to copy ${pair.hexB}`}
                           >
                             {copiedInfo?.pairIdx === i && copiedInfo?.side === "B" && (
@@ -595,16 +613,22 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                   })}
                 </div>
                 </div>
-                {pairs.length > 1 && (
-                  <p className="flex items-center gap-1.5 mt-1 text-[9px] text-[var(--muted)] select-none">
-                    <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">↑↓</kbd>
-                    <span>navigate</span>
+                {pairs.length > 0 && (
+                  <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-1 text-[9px] text-[var(--muted)] select-none">
+                    <span>click row</span>
                     <span className="opacity-40">·</span>
-                    <kbd className="inline-flex items-center justify-center h-3.5 px-1.5 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">Enter</kbd>
-                    <span>or</span>
-                    <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">C</kbd>
+                    {pairs.length > 1 && (
+                      <>
+                        <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">↑↓</kbd>
+                        <kbd className="inline-flex items-center justify-center h-3.5 px-1.5 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">Enter</kbd>
+                        <kbd className="inline-flex items-center justify-center h-3.5 px-1 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--border)] leading-none">C</kbd>
+                        <span className="opacity-40">·</span>
+                      </>
+                    )}
                     <span>copy pair as</span>
                     <span className="font-mono text-[var(--foreground)] opacity-70">{copyAllFormat}</span>
+                    <span className="opacity-40">·</span>
+                    <span>swatch / hex copies color</span>
                   </p>
                 )}
               </div>
