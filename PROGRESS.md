@@ -7164,3 +7164,32 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — confirm shade stop numbers ("50", "100", …, "900") populate as swatch names when the shade scale is saved as a palette
 - **Compare modal: pair row individual copy also format-aware** — clicking a hex swatch in a pair row currently copies just the bare hex; a variant where clicking the row background (not the swatch) copies the full pair in the active format
+
+---
+
+## 2026-09-20 — Session 250: Compare Modal Row-Click Copy (Format-Aware)
+
+### What was done
+- **Row-click copies the full pair in the active format** — clicking anywhere on a pair row's background (the name labels, ΔE badge, coverage icon, or gap areas) now copies the full pair using the same `text | json | csv` format chip as the keyboard copy and Copy all. This completes the trio: keyboard (Enter/C), Copy all button, and row click are all format-aware.
+- **Format logic** — identical to keyboard copy:
+  - **text** → `#hexA → #hexB (ΔE x.x)`
+  - **json** → pretty-printed single `{"hexA": "#...", "hexB": "#...", "dE": x.x}` object
+  - **csv** → `#hexA,#hexB,x.x` single data row (no header; follows keyboard-copy precedent)
+- **Interaction isolation** — swatch squares (`.w-8.h-8` div) and hex text `<p>` elements call `e.stopPropagation()` so clicking them continues to copy only the individual hex value. No existing behavior changed.
+- **Sky-blue ring feedback** — `ring-sky-400/70` flashes on the row for 1.5s on click, visually distinct from keyboard copy (emerald) and keyboard focus (violet), making the source of copy feedback unambiguous.
+- **`cursor-pointer` on row** — signals the click affordance; previously `cursor-default`. Swatch targets (already `cursor-pointer`) are unchanged.
+- **Title tooltip on each row** — reads "Click to copy pair as {format} — click swatch or hex to copy individual color", discoverable via hover.
+- **Hint line updated** — shows "click row · ↑↓ Enter C · copy pair as {fmt} · swatch / hex copies color". Now shown for `pairs.length > 0` (was `> 1`), since the row-click tip applies even to a single pair. Uses `flex-wrap` for narrow widths.
+- `copiedRowPairIdx` state reset on modal open (alongside all other transient state).
+- Build: clean Next.js production build, 11 routes, TypeScript zero errors. 38 insertions, 14 deletions.
+
+### Key decisions
+- **Sky ring, not emerald** — emerald is already used for keyboard copy flash; a distinct color prevents the user from confusing "I clicked Enter" with "I clicked the row." Violet is keyboard focus. Sky is row-click. Three distinct copy channels, three distinct colors.
+- **`e.stopPropagation()` over `e.target` check** — calling `e.stopPropagation()` on the inner handlers is more reliable than checking `e.currentTarget === e.target` on the outer row div, which would miss click targets like the ring/check overlays inside the swatch divs.
+- **No header in CSV row-click** — follows the same "no header for single-pair copy" decision as keyboard copy (Session 249). A one-row paste into a cell or formula doesn't benefit from a header.
+- **Hint shows for ≥ 1 pairs** — the row-click affordance works even with a single pair, so the condition was relaxed from `> 1`.
+
+### What's next (Session 251)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette swatch name verification** — the code already passes `name: String(s.stop)` correctly (verified this session); consider showing the swatch names in a preview within the ShadeModal before saving
+- **Compare modal: direction indicator per-pair** — a subtle A→B or B→A label on each pair row when the mapping direction is non-obvious (e.g., if swap is active)
