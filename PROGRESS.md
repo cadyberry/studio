@@ -7193,3 +7193,26 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette swatch name verification** — the code already passes `name: String(s.stop)` correctly (verified this session); consider showing the swatch names in a preview within the ShadeModal before saving
 - **Compare modal: direction indicator per-pair** — a subtle A→B or B→A label on each pair row when the mapping direction is non-obvious (e.g., if swap is active)
+
+---
+
+## 2026-09-20 — Session 251: Compare Modal Per-Row Direction Indicator
+
+### What was done
+- **Per-row `→` direction indicator** — added a small `→` arrow below the coverage icon (✓/✗) in the center column of every pair row in the Compare modal.
+- **Muted when unswapped** — when the comparison is in its default A→B direction, the arrow renders at low opacity in the muted color, giving a subtle positional cue without competing with the ΔE badge.
+- **Violet when swapped** — pressing S (or clicking Swap) causes the arrows on every row to turn violet (`text-violet-400`), matching the swap badge in the header and making the inverted-direction state unmissable at the row level.
+- **Tooltip on hover** — each arrow shows a tooltip naming the actual source and target palettes: `"Mapping from PaletteA (A) → PaletteB (B)"` normally, and `"Swapped: mapping from PaletteB → PaletteA"` when swap is active.
+- **`transition-colors`** — the color transitions smoothly when swap is toggled, consistent with other animated state in the modal.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 13 insertions, 1 deletion.
+
+### Key decisions
+- **Arrow below the coverage icon, not a text label** — adding an "A→B" text chip would crowd the center column; a single `→` glyph carries the same meaning with far less visual weight.
+- **Low opacity when unswapped** — the header already labels "A → B · by closeness", so the per-row arrow doesn't need to shout. It only becomes salient when swapped (violet state), exactly when direction is non-obvious.
+- **Violet for swapped** — the swap button in the header uses violet when active; using the same hue for the per-row arrows creates a consistent visual language: "anything violet = swapped direction."
+- **`paletteA!.name` / `paletteB!.name` in tooltip** — uses the original (unswapped) palette names rather than effectiveA/effectiveB, so the tooltip always communicates the direction relative to how the palettes were originally loaded.
+
+### What's next (Session 252)
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: Save as Palette preview** — show swatch name preview (the stop numbers: 50, 100, …, 900) inside the ShadeModal before committing the save, so users can confirm naming before writing to the library
+- **Compare modal: swap transition animation** — a brief cross-fade or slide on the palette strip labels (A/B names) when swap is toggled, to make the direction reversal visually obvious as it happens
