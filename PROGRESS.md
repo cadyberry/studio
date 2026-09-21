@@ -2,6 +2,32 @@
 
 ---
 
+## 2026-09-21 — Session 239: Export Modal AI Prompt Template Selector
+
+### What was done
+- **Prompt template selector in Export Modal** — the AI Color Story section now has three chip buttons (Generic | Midjourney | DALL·E 3) above the AI art prompt display:
+  - **Generic** (default): raw modifier as generated — paste directly into any tool, Stable Diffusion, social caption, etc.
+  - **Midjourney**: wraps in `/imagine prompt: ... --v 6.1 --ar 1:1 --stylize 750` — ready to paste into Discord
+  - **DALL·E 3**: sentence-form prompt — `Create artwork inspired by the "${paletteName}" palette: ... Highly detailed, vibrant, professional digital art.`
+  - Selected template is highlighted in accent color; switching chips resets the "Copied" state so the button accurately reflects the new text
+  - The formatted prompt is live-previewed in the mono text block (select-all works for manual copy)
+  - `copyPrompt()` writes the formatted version to clipboard
+- All transforms are pure client-side — no extra API calls; `formatPrompt()` is a pure function outside the component
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors.
+
+### Key decisions
+- **Client-side template expansion** — the AI generates a single compact base modifier; templates wrap it at copy time. This keeps the API call fast (one generation, three uses) and lets Cady switch formats without re-generating.
+- **Generic as default** — the raw modifier is the most versatile; Midjourney and DALL·E are opt-in for users who know the tool. Cady often uses multiple platforms, so a clean default that works everywhere is the right starting point.
+- **Palette name in the DALL·E template** — DALL·E 3 responds well to semantic framing ("inspired by the 'Dusk Haze' palette") rather than raw color descriptors alone; including the name grounds the prompt.
+- **`break-all` on the prompt text** — Midjourney prompts with `--` flags can be long; `break-all` prevents overflow on narrow modal widths.
+
+### What's next (Session 240)
+- **Harmony modal: palette complementary pair highlight** — when hovering a swatch in the swatch header, highlight the swatch(es) in the strip that are its complement (180° hue shift) with a subtle ring; deselect on mouse-leave
+- **Library toolbar: collection badge count** — show the number of palettes in each collection directly on the collection chip in the library toolbar
+- **Export modal: Story Mood Board template field** — pass the active promptTemplate into the story moodboard PNG so the embedded prompt matches the selected format
+
+---
+
 ## 2026-09-19 — Session 238: Palette Card Keyboard Hints Consolidation
 
 ### What was done
