@@ -17,6 +17,7 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
   const [hoveredStop, setHoveredStop] = useState<number | null>(null);
   const [forked, setForked] = useState(false);
   const [mode, setMode] = useState<ShadeMode>('oklch');
+  const [showSavePreview, setShowSavePreview] = useState(false);
 
   if (!color) return null;
 
@@ -52,9 +53,12 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
     flash("tailwind");
   };
 
+  const predictedName = `${color.name || color.hex.toUpperCase()} · Shades`;
+
   const handleSaveAsPalette = () => {
     if (!onSaveAsPalette || forked) return;
     onSaveAsPalette(shades.map((s) => ({ hex: s.hex, name: String(s.stop) })));
+    setShowSavePreview(false);
     setForked(true);
     setTimeout(() => setForked(false), 1800);
   };
@@ -264,9 +268,9 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
               Click any swatch in the strip to copy individual hex values
             </p>
 
-            {onSaveAsPalette && (
+            {onSaveAsPalette && !showSavePreview && (
               <button
-                onClick={handleSaveAsPalette}
+                onClick={() => setShowSavePreview(true)}
                 disabled={forked}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius-sm)] bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90 transition-opacity text-sm font-medium disabled:opacity-80"
               >
@@ -282,6 +286,75 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
                   </>
                 )}
               </button>
+            )}
+
+            {onSaveAsPalette && showSavePreview && (
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.15 }}
+                  className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-2)] p-3 flex flex-col gap-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-[var(--fg)]">Preview: saves as</p>
+                    <button
+                      onClick={() => setShowSavePreview(false)}
+                      className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
+                      title="Cancel"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] font-mono text-[var(--accent)] truncate" title={predictedName}>
+                    {predictedName}
+                  </p>
+
+                  {/* Mini swatch preview with names */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex rounded overflow-hidden ring-1 ring-[var(--border)]">
+                      {shades.map((shade) => (
+                        <div
+                          key={shade.stop}
+                          className="flex-1 h-8"
+                          style={{ backgroundColor: shade.hex }}
+                          title={`${shade.stop}: ${shade.hex}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex">
+                      {shades.map((shade) => (
+                        <div key={shade.stop} className="flex-1 text-center">
+                          <span className={`text-[8px] tabular-nums leading-none ${shade.isSource ? "font-bold text-[var(--fg)]" : "text-[var(--muted)]"}`}>
+                            {shade.stop}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-[var(--muted)] text-center">
+                      {shades.length} swatches · names are stop numbers
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowSavePreview(false)}
+                      className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] border border-[var(--border)] text-[11px] font-medium text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--fg)] transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleSaveAsPalette}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90 transition-opacity text-[11px] font-semibold"
+                    >
+                      <BookmarkPlus size={12} />
+                      Confirm & Save
+                    </button>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             )}
           </div>
         </motion.div>
