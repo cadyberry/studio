@@ -7242,3 +7242,29 @@
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: Save as Palette preview** — show swatch name preview (the stop numbers: 50, 100, …, 900) inside the ShadeModal before committing the save, so users can confirm naming before writing to the library
 - **Compare modal: swap transition animation** — a brief cross-fade or slide on the palette strip labels (A/B names) when swap is toggled, to make the direction reversal visually obvious as it happens
+
+---
+
+## 2026-09-21 — Session 252: ShadeModal Save-Preview Confirmation Panel
+
+### What was done
+- **Two-step save flow in ShadeModal** — "Save as Palette" no longer writes to the library immediately. Clicking it reveals a confirmation panel (animated fade + slide, consistent with modal style) that shows:
+  - The **predicted palette name** (`ColorName · Shades`) in accent monospace, so the user knows what the palette will be called before committing.
+  - A **mini swatch strip** (h-8, same color scale) with stop-number labels (50, 100, 200, …, 900) beneath each swatch — identical stop formatting to the main strip but compact, giving a clear preview of the swatch names that will appear in the library.
+  - A **"X swatches · names are stop numbers"** caption so it's unambiguous that swatch names come from the scale stops.
+  - **"Back"** button dismisses the panel without saving.
+  - **"Confirm & Save"** button (accent color, BookmarkPlus icon) executes the save and closes the preview.
+- The original "Saved to Library" success state still fires after Confirm.
+- `showSavePreview` resets to `false` on save, so reopening the modal starts fresh.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 75 insertions, 2 deletions.
+
+### Key decisions
+- **Reveal-then-confirm over immediate save** — the palette name (`ColorName · Shades`) and swatch names (stop numbers) weren't visible before saving. The preview gives the user a chance to verify both before committing. This is especially useful when opening ShadeModal from an unnamed swatch where the hex becomes the palette name.
+- **AnimatePresence for the panel** — matches the rest of the modal's animation idiom; the panel slides in with `y: 6 → 0` at `duration: 0.15`, fast enough to not feel heavy.
+- **Reuse `predictedName` string** — computed once from `color.name || color.hex.toUpperCase()` and shown in the panel header and in the title tooltip on the name text. The parent's `onSaveAsPalette` callback derives the same name independently, so no props change needed.
+- **Mini strip h-8** — shorter than the main strip's `h-16` to keep the panel compact; the color information is still fully legible at half height.
+
+### What's next (Session 253)
+- **Compare modal: swap transition animation** — a brief cross-fade or slide on the palette strip labels (A/B names in the header) when swap is toggled, making the direction reversal visually obvious as it happens
+- **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
+- **ShadeModal: custom palette name input** — let the user override the default `ColorName · Shades` name inside the preview panel before saving (text input pre-filled with the predicted name)
