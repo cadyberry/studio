@@ -9,6 +9,25 @@ import type { Palette, ColorStory } from "@/types";
 import { getContrastColor, simulateCmykPrint, simulateColorBlind, deltaE, type ColorBlindType } from "@/lib/utils";
 import { usePaletteStore } from "@/store/paletteStore";
 
+type PromptTemplate = "generic" | "midjourney" | "dalle";
+
+const PROMPT_TEMPLATES: { value: PromptTemplate; label: string; desc: string }[] = [
+  { value: "generic",    label: "Generic",    desc: "Raw modifier — paste anywhere" },
+  { value: "midjourney", label: "Midjourney", desc: "/imagine ready · v6.1" },
+  { value: "dalle",      label: "DALL·E 3",   desc: "Sentence prompt format" },
+];
+
+function formatPrompt(base: string, template: PromptTemplate, paletteName: string): string {
+  switch (template) {
+    case "midjourney":
+      return `/imagine prompt: ${base} --v 6.1 --ar 1:1 --stylize 750`;
+    case "dalle":
+      return `Create artwork inspired by the "${paletteName}" palette: ${base}. Highly detailed, vibrant, professional digital art.`;
+    default:
+      return base;
+  }
+}
+
 const DIRS: { value: GradientDirection; label: string; title: string }[] = [
   { value: "to right",  label: "→", title: "Left to right" },
   { value: "135deg",    label: "↘", title: "Diagonal (135°)" },
@@ -38,6 +57,7 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
   const [story, setStory] = useState<ColorStory | null>(null);
   const [storyError, setStoryError] = useState(false);
   const [promptCopied, setPromptCopied] = useState(false);
+  const [promptTemplate, setPromptTemplate] = useState<PromptTemplate>("generic");
   const [tagged, setTagged] = useState(false);
   const [taggedNewCount, setTaggedNewCount] = useState(0);
   const [gradDir, setGradDir] = useState<GradientDirection>("to right");
@@ -171,7 +191,8 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
 
   const copyPrompt = () => {
     if (!story) return;
-    navigator.clipboard.writeText(story.prompt);
+    const text = formatPrompt(story.prompt, promptTemplate, palette.name);
+    navigator.clipboard.writeText(text);
     setPromptCopied(true);
     showToast("Copied!");
     setTimeout(() => setPromptCopied(false), 1500);
@@ -1156,24 +1177,44 @@ export default function ExportModal({ palette, onClose, onJumpTo, activeCollecti
                       })()}
                     </div>
 
-                    {/* AI prompt — copyable */}
-                    <div className="border-t border-[var(--border)] px-3 py-2.5 flex items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-[var(--muted)] mb-0.5 uppercase tracking-wider font-semibold">AI Prompt</p>
-                        <p className="text-xs font-mono text-[var(--foreground)] leading-snug select-all">{story.prompt}</p>
+                    {/* AI prompt — copyable with template selector */}
+                    <div className="border-t border-[var(--border)] px-3 py-2.5">
+                      {/* Template chip row */}
+                      <div className="flex items-center gap-1 mb-2 flex-wrap">
+                        <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-semibold mr-0.5 shrink-0">AI Prompt</span>
+                        {PROMPT_TEMPLATES.map(({ value, label, desc }) => (
+                          <button
+                            key={value}
+                            onClick={() => { setPromptTemplate(value); setPromptCopied(false); }}
+                            title={desc}
+                            className={`px-2 py-0.5 rounded text-[9px] font-semibold transition-colors border ${
+                              promptTemplate === value
+                                ? "bg-[var(--accent)] text-[var(--accent-fg,#fff)] border-transparent"
+                                : "bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--foreground)]/20"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
                       </div>
-                      <button
-                        onClick={copyPrompt}
-                        className={`shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md border transition-all mt-px ${
-                          promptCopied
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
-                            : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]"
-                        }`}
-                        title="Copy prompt to clipboard"
-                      >
-                        {promptCopied ? <Check size={11} /> : <Copy size={11} />}
-                        {promptCopied ? "Copied" : "Copy"}
-                      </button>
+                      {/* Formatted prompt + copy */}
+                      <div className="flex items-start gap-2">
+                        <p className="flex-1 min-w-0 text-xs font-mono text-[var(--foreground)] leading-snug select-all break-all">
+                          {formatPrompt(story.prompt, promptTemplate, palette.name)}
+                        </p>
+                        <button
+                          onClick={copyPrompt}
+                          className={`shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md border transition-all mt-px ${
+                            promptCopied
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400"
+                              : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]"
+                          }`}
+                          title={`Copy ${PROMPT_TEMPLATES.find(t => t.value === promptTemplate)?.desc ?? "prompt"} to clipboard`}
+                        >
+                          {promptCopied ? <Check size={11} /> : <Copy size={11} />}
+                          {promptCopied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Regenerate */}
