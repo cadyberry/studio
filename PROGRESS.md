@@ -7268,3 +7268,27 @@
 - **Compare modal: swap transition animation** — a brief cross-fade or slide on the palette strip labels (A/B names in the header) when swap is toggled, making the direction reversal visually obvious as it happens
 - **Palette card: keyboard shortcut hint refinement** — verify the kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at the correct vertical position on narrow (2-col) card widths; check for overlap with the toolbar on small screens
 - **ShadeModal: custom palette name input** — let the user override the default `ColorName · Shades` name inside the preview panel before saving (text input pre-filled with the predicted name)
+
+---
+
+## 2026-09-22 — Session 253: ShadeModal Custom Palette Name Input
+
+### What was done
+- **Editable palette name in the save-preview panel** — the `predictedName` label in the ShadeModal confirmation panel is now a fully editable `<input>` pre-filled with the default name (`ColorName · Shades`). Users can rename before committing to the library without an extra modal step.
+- **Auto-focus on preview open** — the input receives focus the moment the preview panel slides in, so the user can type immediately without clicking.
+- **Keyboard shortcuts** — Enter confirms and saves (same as clicking "Confirm & Save"); Escape cancels and returns to the main view (same as Back).
+- **Fallback to predicted name** — an empty or whitespace-only name falls back to `predictedName` so the save is never accidentally nameless.
+- **Prop signature updated** — `onSaveAsPalette` now passes `(colors, paletteName)` as its two arguments. `page.tsx` updated to use the passed name directly instead of re-deriving it from `shadeTarget` — the modal is now the single source of truth for the palette name.
+- **Section header updated** — "Preview: saves as" → "Palette name" to signal the section is editable.
+- **Input style** — `font-mono text-[var(--accent)]` with `focus:ring-1 focus:ring-[var(--accent)]`, matching the monospace accent aesthetic of the rest of the modal. Placeholder text shows the `predictedName` so even a blank input communicates the default.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 18 insertions, 10 deletions.
+
+### Key decisions
+- **Input over inline-edit** — rather than a click-to-edit pattern on the name text, a visible text input immediately signals mutability. Auto-focus removes friction.
+- **Fallback, not validation** — no error state for empty input; just fall back silently to `predictedName`. There's no bad name for a shade scale, only a custom one.
+- **Pass name up through callback** — the parent (`page.tsx`) was re-deriving the name from `shadeTarget` in its own closure, which was a second source of truth that could drift. Moving the name into the callback keeps it DRY and lets the modal be the authority.
+
+### What's next (Session 254)
+- **Compare modal: swap transition animation** — a brief cross-fade or slide on the palette strip labels (A/B names in the header) when swap is toggled, making the direction reversal visually obvious
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **ShadeModal: variable prefix reflects custom name** — when the user changes the palette name in the preview panel, also update the `--varName` CSS variable prefix shown in "Variable prefix:" hint (currently always derived from `color.name`)
