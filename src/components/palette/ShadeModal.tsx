@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 interface ShadeModalProps {
   color: { hex: string; name?: string } | null;
   onClose: () => void;
-  onSaveAsPalette?: (colors: { hex: string; name: string }[]) => void;
+  onSaveAsPalette?: (colors: { hex: string; name: string }[], paletteName: string) => void;
 }
 
 export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeModalProps) {
@@ -18,6 +18,7 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
   const [forked, setForked] = useState(false);
   const [mode, setMode] = useState<ShadeMode>('oklch');
   const [showSavePreview, setShowSavePreview] = useState(false);
+  const [customName, setCustomName] = useState("");
 
   if (!color) return null;
 
@@ -57,7 +58,8 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
 
   const handleSaveAsPalette = () => {
     if (!onSaveAsPalette || forked) return;
-    onSaveAsPalette(shades.map((s) => ({ hex: s.hex, name: String(s.stop) })));
+    const finalName = customName.trim() || predictedName;
+    onSaveAsPalette(shades.map((s) => ({ hex: s.hex, name: String(s.stop) })), finalName);
     setShowSavePreview(false);
     setForked(true);
     setTimeout(() => setForked(false), 1800);
@@ -270,7 +272,7 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
 
             {onSaveAsPalette && !showSavePreview && (
               <button
-                onClick={() => setShowSavePreview(true)}
+                onClick={() => { setCustomName(predictedName); setShowSavePreview(true); }}
                 disabled={forked}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius-sm)] bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90 transition-opacity text-sm font-medium disabled:opacity-80"
               >
@@ -298,7 +300,7 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
                   className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-2)] p-3 flex flex-col gap-2.5"
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold text-[var(--fg)]">Preview: saves as</p>
+                    <p className="text-[11px] font-semibold text-[var(--fg)]">Palette name</p>
                     <button
                       onClick={() => setShowSavePreview(false)}
                       className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
@@ -308,9 +310,16 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
                     </button>
                   </div>
 
-                  <p className="text-[11px] font-mono text-[var(--accent)] truncate" title={predictedName}>
-                    {predictedName}
-                  </p>
+                  <input
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
+                    autoFocus
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSaveAsPalette(); } if (e.key === "Escape") { e.preventDefault(); setShowSavePreview(false); } }}
+                    placeholder={predictedName}
+                    className="w-full px-2.5 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] text-[11px] font-mono text-[var(--accent)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors"
+                  />
 
                   {/* Mini swatch preview with names */}
                   <div className="flex flex-col gap-1">

@@ -3274,9 +3274,8 @@ export default function Home() {
       <ShadeModal
         color={shadeTarget}
         onClose={() => setShadeTarget(null)}
-        onSaveAsPalette={(colors) => {
-          const baseName = shadeTarget?.name || shadeTarget?.hex?.toUpperCase() || "Color";
-          addPalette({ name: `${baseName} · Shades`, colors, tags: ["shades"] });
+        onSaveAsPalette={(colors, paletteName) => {
+          addPalette({ name: paletteName, colors, tags: ["shades"] });
         }}
       />
       <CompareModal
