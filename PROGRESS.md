@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-09-22 — Session 254: CompareModal Swap Transition Animation
+
+### What was done
+- **Animated name labels on palette swap** — pressing S (or clicking the Swap button) in the Compare modal now triggers a cross-fade + subtle y-shift animation on both column name labels and swatch-count captions. The old palette names fade out (opacity 1→0, y 0→+3px) while the new names fade in (opacity 0→1, y -3px→0), making the A↔B identity swap visually obvious.
+- Implementation: `AnimatePresence mode="popLayout" initial={false}` wraps `motion.div` (header row) and `motion.p` (swatch count caption) in both the A and B columns. Keys are `effectiveA!.id + "-header"` / `effectiveA!.id + "-cap"` (and -B equivalents) so the key changes when `swapped` toggles, triggering enter/exit animations.
+- Animation spec: headers 0.14s, captions 0.12s. `initial={false}` suppresses the animation on first mount. `mode="popLayout"` lets old and new elements overlap briefly for a clean cross-fade.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 54 insertions, 14 deletions.
+
+### Key decisions
+- **`mode="popLayout"` over `mode="wait"`** — `mode="wait"` serializes exit then enter (brief gap), while `popLayout` lets them overlap, giving a smoother cross-fade. For short text labels at 0.12–0.14s duration, the slight overlap reads as one smooth transition.
+- **Keying on palette id + suffix** — using `effectiveA!.id` (not `swapped` boolean) means the animation is driven by the actual palette identity change. If the same palette somehow ended up in both slots, no spurious animation would fire.
+- **`initial={false}`** — prevents the enter animation from playing when the modal first opens, when there is no "previous" label to replace.
+- **y -3 enter / y +3 exit** — a 3px shift is subtle enough not to distract from the color strips, but provides enough directional cue to reinforce that the labels changed.
+
+### What's next (Session 255)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **ShadeModal: variable prefix reflects custom name** — when the user changes the palette name in the preview panel, also update the `--varName` CSS variable prefix shown in "Variable prefix:" hint
+- **CompareModal: animated color strips on swap** — extend the transition to the actual swatch strips (subtle opacity cross-fade) for full visual polish on swap
+
+---
+
 ## 2026-09-21 — Session 239: Export Modal AI Prompt Template Selector
 
 ### What was done
