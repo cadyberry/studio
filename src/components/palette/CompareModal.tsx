@@ -352,12 +352,21 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
               {/* Palette strips + overall ΔE */}
               <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start">
                 <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">A</span>
-                    <p className="text-xs font-semibold text-[var(--foreground)] truncate" title={effectiveA!.name}>
-                      {effectiveA!.name}
-                    </p>
-                  </div>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.div
+                      key={effectiveA!.id + "-header"}
+                      initial={{ opacity: 0, y: -3 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 3 }}
+                      transition={{ duration: 0.14 }}
+                      className="flex items-center gap-1"
+                    >
+                      <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">A</span>
+                      <p className="text-xs font-semibold text-[var(--foreground)] truncate" title={effectiveA!.name}>
+                        {effectiveA!.name}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
                   <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
                     {effectiveA!.colors.map((c, i) => {
                       const dimmed = highlightedHexA !== null && c.hex.toLowerCase() !== highlightedHexA.toLowerCase();
@@ -376,7 +385,18 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       );
                     })}
                   </div>
-                  <p className="text-[10px] text-[var(--muted)]">{effectiveA!.colors.length} swatches · source</p>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.p
+                      key={effectiveA!.id + "-cap"}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12 }}
+                      className="text-[10px] text-[var(--muted)]"
+                    >
+                      {effectiveA!.colors.length} swatches · source
+                    </motion.p>
+                  </AnimatePresence>
                 </div>
 
                 <div className="flex flex-col items-center gap-0.5 pt-1 shrink-0">
@@ -390,12 +410,21 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                 </div>
 
                 <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-1 justify-end">
-                    <p className="text-xs font-semibold text-[var(--foreground)] truncate text-right" title={effectiveB!.name}>
-                      {effectiveB!.name}
-                    </p>
-                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">B</span>
-                  </div>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.div
+                      key={effectiveB!.id + "-header"}
+                      initial={{ opacity: 0, y: -3 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 3 }}
+                      transition={{ duration: 0.14 }}
+                      className="flex items-center gap-1 justify-end"
+                    >
+                      <p className="text-xs font-semibold text-[var(--foreground)] truncate text-right" title={effectiveB!.name}>
+                        {effectiveB!.name}
+                      </p>
+                      <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">B</span>
+                    </motion.div>
+                  </AnimatePresence>
                   <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
                     {effectiveB!.colors.map((c, i) => {
                       const dimmed = highlightedHexB !== null && c.hex.toLowerCase() !== highlightedHexB.toLowerCase();
@@ -414,7 +443,18 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       );
                     })}
                   </div>
-                  <p className="text-[10px] text-[var(--muted)] text-right">{effectiveB!.colors.length} swatches · target</p>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.p
+                      key={effectiveB!.id + "-cap"}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12 }}
+                      className="text-[10px] text-[var(--muted)] text-right"
+                    >
+                      {effectiveB!.colors.length} swatches · target
+                    </motion.p>
+                  </AnimatePresence>
                 </div>
               </div>
 
