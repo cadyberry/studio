@@ -7313,3 +7313,24 @@
 - **Compare modal: swap transition animation** — a brief cross-fade or slide on the palette strip labels (A/B names in the header) when swap is toggled, making the direction reversal visually obvious
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **ShadeModal: variable prefix reflects custom name** — when the user changes the palette name in the preview panel, also update the `--varName` CSS variable prefix shown in "Variable prefix:" hint (currently always derived from `color.name`)
+
+---
+
+## 2026-09-23 — Session 255: ShadeModal Variable Prefix Tracks Custom Palette Name
+
+### What was done
+- **Variable prefix hint updates live with palette name edits** — when the save-preview panel is open in ShadeModal, the "Variable prefix: `--{varName}`" hint now derives its value from the user's editable `customName` input rather than always from `color.name`.
+- **`effectiveName` logic** — `(showSavePreview && customName.trim()) ? customName.trim() : (color.name || "")`. When the preview is closed (or customName is cleared), behavior reverts to `color.name` exactly as before.
+- **CSS Vars and Tailwind exports use the same varName** — because `varName` is derived from `effectiveName` which closes over `customName`, both export actions copy variable names that match what's shown in the prefix hint. No separate state needed.
+- **Caption updated** — shows "derived from palette name" when the preview panel is active (reflecting the editable name), vs "derived from swatch name" when using `color.name` as the source.
+- Build: clean Next.js production build, 11 routes, TypeScript zero errors. 9 insertions, 4 deletions.
+
+### Key decisions
+- **Live update, not just on save** — updating `varName` reactively on every keystroke means the user sees the CSS prefix they'll get before committing. No surprise after save.
+- **`effectiveName` fallback order** — if `customName` is blank inside the preview (user cleared it), we fall through to `color.name` rather than "color". This matches the fallback-to-predictedName pattern on actual save: an empty custom name reuses the predicted name, so the hint stays consistent with what will actually be saved.
+- **Caption text change ("palette name" vs "swatch name")** — the distinction signals to the user that the prefix is now tracking their custom name, not the original swatch metadata.
+
+### What's next (Session 256)
+- **CompareModal: animated color strips on swap** — extend the swap transition to the actual swatch strips (subtle opacity cross-fade on the color rows when A↔B is toggled)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **ShadeModal: export preview** — show a small live preview of the first CSS var line (e.g. `--ocean-blues-50: #e8f4f8;`) inline in the hint section as the user types
