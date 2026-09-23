@@ -7334,3 +7334,22 @@
 - **CompareModal: animated color strips on swap** — extend the swap transition to the actual swatch strips (subtle opacity cross-fade on the color rows when A↔B is toggled)
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **ShadeModal: export preview** — show a small live preview of the first CSS var line (e.g. `--ocean-blues-50: #e8f4f8;`) inline in the hint section as the user types
+
+---
+
+## 2026-09-23 — Session 256: CompareModal Color Strips Fade on Swap
+
+### What was done
+- **Animated color strips on A↔B swap** — each palette swatch strip (A and B) is now wrapped in `AnimatePresence + motion.div` keyed on the effective palette's ID. When the user presses S (or clicks Swap), both strips opacity-fade out (old) and fade in (new) at `duration: 0.16`, matching the existing header and caption animations. The whole palette slot now transitions together as a unified element on swap, making the direction reversal visually obvious across the full strip — not just the name labels.
+- The dimming logic (highlight-on-hover) is fully preserved inside the new animated wrapper; the transition is purely cosmetic.
+- Build: clean Next.js 16.2.6 production build, 11 routes, TypeScript zero errors. 54 insertions, 36 deletions.
+
+### Key decisions
+- **`mode="popLayout" initial={false}`** — matches the header/caption AnimatePresence setup; `initial={false}` suppresses the entrance animation on first render (no flicker when the modal opens), and `mode="popLayout"` keeps the A and B strips from fighting for layout space during the cross-fade.
+- **Opacity-only, no translate or scale** — the strip is bounded inside the modal layout; a translate would cause clipping against the outer container. Pure opacity keeps it clean and matches the caption's existing `opacity: 0/1` pattern.
+- **Same key pattern as headers** — `effectiveA!.id + "-strip"` / `effectiveB!.id + "-strip"`, mirroring `-header` and `-cap` keys. When swapped, the effective palette's ID flips, the key changes, and AnimatePresence detects the old element leaving and the new one entering simultaneously.
+
+### What's next (Session 257)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **ShadeModal: export preview** — show a small live preview of the first CSS var line (e.g. `--ocean-blues-50: #e8f4f8;`) inline in the hint section as the user types the custom palette name
+- **CompareModal: per-pair row entrance stagger** — when the modal opens (or pairs re-compute on swap), stagger the pair rows in with a brief cascade delay rather than all appearing at once
