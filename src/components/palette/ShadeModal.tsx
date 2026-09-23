@@ -33,8 +33,11 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
     setTimeout(() => setCopied(null), 1600);
   };
 
-  const varName = color.name
-    ? color.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "") || "color"
+  // When the save-preview panel is open, derive varName from the user's editable customName
+  // so the "Variable prefix:" hint (and CSS/Tailwind exports) reflect what they're about to save.
+  const effectiveName = (showSavePreview && customName.trim()) ? customName.trim() : (color.name || "");
+  const varName = effectiveName
+    ? effectiveName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "") || "color"
     : "color";
 
   const copyCssVars = () => {
@@ -223,9 +226,11 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
               <code className="font-mono bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[var(--fg)] text-[10px]">
                 --{varName}
               </code>
-              {color.name && (
+              {showSavePreview && customName.trim() ? (
+                <span className="text-[var(--muted)]/60">derived from palette name</span>
+              ) : color.name ? (
                 <span className="text-[var(--muted)]/60">derived from swatch name</span>
-              )}
+              ) : null}
             </div>
           </div>
 
