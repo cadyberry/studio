@@ -367,24 +367,33 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       </p>
                     </motion.div>
                   </AnimatePresence>
-                  <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
-                    {effectiveA!.colors.map((c, i) => {
-                      const dimmed = highlightedHexA !== null && c.hex.toLowerCase() !== highlightedHexA.toLowerCase();
-                      return (
-                        <div
-                          key={i}
-                          className={`flex-1 transition-opacity duration-150 cursor-pointer ${dimmed ? "opacity-20" : "opacity-100"}`}
-                          style={{ backgroundColor: c.hex }}
-                          title={c.hex}
-                          onMouseEnter={() => {
-                            const idx = hexAToPairIdx.get(c.hex.toLowerCase());
-                            if (idx !== undefined) setHoveredStripInfo({ pairIdx: idx });
-                          }}
-                          onMouseLeave={() => setHoveredStripInfo(null)}
-                        />
-                      );
-                    })}
-                  </div>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.div
+                      key={effectiveA!.id + "-strip"}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.16 }}
+                      className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]"
+                    >
+                      {effectiveA!.colors.map((c, i) => {
+                        const dimmed = highlightedHexA !== null && c.hex.toLowerCase() !== highlightedHexA.toLowerCase();
+                        return (
+                          <div
+                            key={i}
+                            className={`flex-1 transition-opacity duration-150 cursor-pointer ${dimmed ? "opacity-20" : "opacity-100"}`}
+                            style={{ backgroundColor: c.hex }}
+                            title={c.hex}
+                            onMouseEnter={() => {
+                              const idx = hexAToPairIdx.get(c.hex.toLowerCase());
+                              if (idx !== undefined) setHoveredStripInfo({ pairIdx: idx });
+                            }}
+                            onMouseLeave={() => setHoveredStripInfo(null)}
+                          />
+                        );
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
                   <AnimatePresence mode="popLayout" initial={false}>
                     <motion.p
                       key={effectiveA!.id + "-cap"}
@@ -425,24 +434,33 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">B</span>
                     </motion.div>
                   </AnimatePresence>
-                  <div className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]">
-                    {effectiveB!.colors.map((c, i) => {
-                      const dimmed = highlightedHexB !== null && c.hex.toLowerCase() !== highlightedHexB.toLowerCase();
-                      return (
-                        <div
-                          key={i}
-                          className={`flex-1 transition-opacity duration-150 cursor-pointer ${dimmed ? "opacity-20" : "opacity-100"}`}
-                          style={{ backgroundColor: c.hex }}
-                          title={c.hex}
-                          onMouseEnter={() => {
-                            const idx = hexBToPairIdx.get(c.hex.toLowerCase());
-                            if (idx !== undefined) setHoveredStripInfo({ pairIdx: idx });
-                          }}
-                          onMouseLeave={() => setHoveredStripInfo(null)}
-                        />
-                      );
-                    })}
-                  </div>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.div
+                      key={effectiveB!.id + "-strip"}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.16 }}
+                      className="flex rounded-md overflow-hidden h-10 border border-[var(--border-subtle)]"
+                    >
+                      {effectiveB!.colors.map((c, i) => {
+                        const dimmed = highlightedHexB !== null && c.hex.toLowerCase() !== highlightedHexB.toLowerCase();
+                        return (
+                          <div
+                            key={i}
+                            className={`flex-1 transition-opacity duration-150 cursor-pointer ${dimmed ? "opacity-20" : "opacity-100"}`}
+                            style={{ backgroundColor: c.hex }}
+                            title={c.hex}
+                            onMouseEnter={() => {
+                              const idx = hexBToPairIdx.get(c.hex.toLowerCase());
+                              if (idx !== undefined) setHoveredStripInfo({ pairIdx: idx });
+                            }}
+                            onMouseLeave={() => setHoveredStripInfo(null)}
+                          />
+                        );
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
                   <AnimatePresence mode="popLayout" initial={false}>
                     <motion.p
                       key={effectiveB!.id + "-cap"}
