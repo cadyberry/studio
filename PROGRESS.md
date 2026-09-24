@@ -7372,3 +7372,24 @@
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **CompareModal: per-pair row entrance stagger** — when the modal opens (or pairs re-compute on swap), stagger the pair rows in with a brief cascade delay rather than all appearing at once
 - **ShadeModal: Tailwind preview** — similar live preview for the Tailwind config block format (`50: '#hex',`) next to or below the CSS vars preview
+
+---
+
+## 2026-09-24 — Session 258: ShadeModal Tailwind Config Live Preview
+
+### What was done
+- **Tailwind config preview line in hint section** — added a "tw" preview line beneath the existing "css" preview in ShadeModal's hint section. Both are now labelled with a 4-char prefix tag (`css` / `tw`) for instant identification. The Tailwind preview shows the first stop entry in color-config format: `varName: { 50: '#hex', … N more }`. Like the CSS preview, it tracks the user's editable `customName` in real time via `varName`.
+- **Syntax tinting** — same color language as the CSS preview: accent for the palette name key, muted for structural punctuation (`{ }`, `:`, `,`), foreground for the hex value. The single-quote string delimiters are separately tinted (muted + lower opacity) to read as syntax scaffolding rather than content.
+- **`select-all` on both lines** — the same interaction as the CSS preview; click to select the whole snippet for quick copy as a reference.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 27 insertions, 7 deletions.
+
+### Key decisions
+- **Labelled `css` / `tw` tags** — wrapping both previews in a labelled row (`flex items-center gap-1.5`) makes the format of each line immediately obvious without needing a section header. The `w-4 shrink-0` fixed width keeps both code blocks left-aligned with each other.
+- **Single entry, not full block** — showing `varName: { 50: '#hex', … N more }` on one line mirrors the CSS preview's one-line format and avoids expanding the hint section to a multi-line code block. The full block is what the export button copies; the preview is purely informational.
+- **`overflow-hidden` on the flex-1 containers** — prevents the code line from overflowing the modal on narrow widths (if a very long color name is used as the palette name).
+- **No animation** — the `varName` changes on every keystroke; animating would be noisy. Static update matches the CSS preview's existing behavior.
+
+### What's next (Session 259)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **CompareModal: per-pair row entrance stagger** — stagger pair rows in with a brief cascade delay when the modal opens or pairs re-compute on swap
+- **ShadeModal: hex list preview** — add a third "hex" preview line showing the hex-list format (`50: #hex`) to complete the trio of export format previews
