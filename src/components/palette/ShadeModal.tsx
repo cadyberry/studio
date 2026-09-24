@@ -220,7 +220,7 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
           </div>
 
           {/* Variable name hint */}
-          <div className="px-5 pb-3">
+          <div className="px-5 pb-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted)]">
               <span>Variable prefix:</span>
               <code className="font-mono bg-[var(--surface-2)] px-1.5 py-0.5 rounded text-[var(--fg)] text-[10px]">
@@ -231,6 +231,14 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
               ) : color.name ? (
                 <span className="text-[var(--muted)]/60">derived from swatch name</span>
               ) : null}
+            </div>
+            {/* Live preview of first CSS var line */}
+            <div className="font-mono text-[9px] bg-[var(--surface-2)] px-2.5 py-1.5 rounded-[var(--radius-sm)] leading-tight select-all">
+              <span className="text-[var(--accent)] opacity-80">--{varName}-{shades[0].stop}</span>
+              <span className="text-[var(--muted)]">: </span>
+              <span className="text-[var(--fg)] opacity-70">{shades[0].hex.toUpperCase()}</span>
+              <span className="text-[var(--muted)]">;</span>
+              <span className="text-[var(--muted)] opacity-50 ml-2">… {shades.length - 1} more</span>
             </div>
           </div>
 
