@@ -7353,3 +7353,22 @@
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **ShadeModal: export preview** — show a small live preview of the first CSS var line (e.g. `--ocean-blues-50: #e8f4f8;`) inline in the hint section as the user types the custom palette name
 - **CompareModal: per-pair row entrance stagger** — when the modal opens (or pairs re-compute on swap), stagger the pair rows in with a brief cascade delay rather than all appearing at once
+
+---
+
+## 2026-09-24 — Session 257: ShadeModal Live CSS Var Preview
+
+### What was done
+- **Live CSS var preview line in hint section** — a selectable code snippet now appears below the "Variable prefix:" hint in ShadeModal, showing the first generated CSS variable line (e.g. `--ocean-blues-50: #e8f4f8; … 10 more`). It updates reactively as the user types in the custom palette name, because `varName` already derives from `effectiveName` which tracks `customName`. No new state was needed.
+- **Syntax tinting** — the var name is tinted in `var(--accent)`, punctuation in muted, the hex value in foreground. The snippet has `select-all` so it's easy to copy as a reference.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 9 insertions, 1 deletion.
+
+### Key decisions
+- **`select-all` over a copy button** — the preview is informational first, actionable second. A click-to-select interaction is lighter than another icon button in an already-compact hint area. The full export buttons above handle actual copying.
+- **`… N more` counter** — showing the count of remaining lines (e.g. "… 10 more") communicates the full export scale without expanding the component height.
+- **No animation on the preview** — the `varName` changes fast on every keystroke; animating each change would be noisy. Static update matches the input's own immediate feedback pattern.
+
+### What's next (Session 258)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **CompareModal: per-pair row entrance stagger** — when the modal opens (or pairs re-compute on swap), stagger the pair rows in with a brief cascade delay rather than all appearing at once
+- **ShadeModal: Tailwind preview** — similar live preview for the Tailwind config block format (`50: '#hex',`) next to or below the CSS vars preview
