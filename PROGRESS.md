@@ -7413,3 +7413,24 @@
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **CompareModal: per-pair row entrance stagger** — stagger pair rows in with a brief cascade delay when the modal opens or pairs re-compute on swap
 - **ShadeModal: hex list preview** — add a third "hex" preview line showing the hex-list format (`50: #hex`) to complete the trio of export format previews
+
+---
+
+## 2026-09-25 — Session 259: ShadeModal Hex List Preview Completes Export Trio
+
+### What was done
+- **Hex list preview line in hint section** — added a third preview row labelled `hex` below the existing `css` and `tw` rows in ShadeModal's hint section. Shows the first stop entry in plain hex-list format: `50: #hex … N more`. The trio now mirrors all three export actions (CSS Vars, Tailwind config, Hex List) in a single compact section.
+- **Syntax tinting** — stop number in `text-[var(--muted)] opacity-70`, `: ` separator in muted, hex value in foreground at 70% opacity, trailing count in muted at 50% opacity. Matches the tinting language of the CSS and Tailwind rows.
+- **`select-all` interaction** — same click-to-select behavior as the other two rows; no copy button needed.
+- **No varName dependency** — unlike CSS vars and Tailwind, the hex-list format is prefix-free (`stop: hex`), so the hint naturally shows the plain stop number. No changes needed to the `effectiveName`/`varName` derivation logic.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 9 insertions, 0 deletions.
+
+### Key decisions
+- **Tag label `hex` (3 chars) matches `css` / `tw` visual rhythm** — all three labels fit within the `w-4 shrink-0` fixed column, keeping code blocks left-aligned.
+- **No animation** — consistent with the existing css/tw rows; the hex value is already visible without custom names, and static update avoids noise.
+- **Completes the trio, no extras** — all three export modalities are now previewed. The hint section is complete at this milestone.
+
+### What's next (Session 260)
+- **CompareModal: per-pair row entrance stagger** — stagger pair rows in with a brief cascade delay when the modal opens or pairs re-compute on swap
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **ShadeModal: export section re-evaluate** — now that all three formats are previewed, consider whether the three export buttons could show a "last exported" highlight state when the matching format was recently copied
