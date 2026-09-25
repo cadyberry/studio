@@ -2663,9 +2663,9 @@ export default function PaletteCard({ palette, onExport, onRename, onAssignColle
       </div>
 
       {/* Footer — visible on hover: age on left, keyboard hints on right */}
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-3 py-1 border-t border-[var(--border)] bg-[var(--surface-2)]/60 flex items-center justify-between gap-2">
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-3 py-1 border-t border-[var(--border)] bg-[var(--surface-2)]/60 flex items-center justify-between gap-2 min-w-0">
         <span
-          className="text-[10px] text-[var(--muted)] shrink-0 cursor-default"
+          className="text-[10px] text-[var(--muted)] min-w-0 truncate cursor-default"
           title={
             palette.updatedAt !== palette.createdAt
               ? `Edited ${formatDate(palette.updatedAt)} · Created ${formatDate(palette.createdAt)}`

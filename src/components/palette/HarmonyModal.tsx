@@ -11,6 +11,8 @@ import {
   getContrastColor,
   simulateCmykPrint,
   simulateColorBlind,
+  hexToRgb,
+  rgbToHsl,
   type RoleAssignment,
   type ColorRole,
   type PrintSimResult,
@@ -351,6 +353,20 @@ const CVD_META: Record<ColorBlindType, { label: string; shortLabel: string; desc
   tritanopia:   { label: "Tritanopia",   shortLabel: "Tritan", desc: "Blue-yellow blind · rare" },
 };
 
+// Returns true if hexB is near the complement (180° hue shift) of hexA.
+// Ignores near-gray colors (saturation < 10) whose hues are unreliable.
+function isHueComplement(hexA: string, hexB: string): boolean {
+  const rgbA = hexToRgb(hexA);
+  const rgbB = hexToRgb(hexB);
+  if (!rgbA || !rgbB) return false;
+  const hslA = rgbToHsl(rgbA.r, rgbA.g, rgbA.b);
+  const hslB = rgbToHsl(rgbB.r, rgbB.g, rgbB.b);
+  if (hslA.s < 10 || hslB.s < 10) return false;
+  const complementH = (hslA.h + 180) % 360;
+  const diff = Math.abs(((hslB.h - complementH + 540) % 360) - 180);
+  return diff < 30;
+}
+
 function buildContrastMarkdown(colors: import("@/types").ColorSwatch[]): string {
   const label = (c: import("@/types").ColorSwatch) =>
     c.name ? `${c.name} (${c.hex.toUpperCase()})` : c.hex.toUpperCase();
@@ -374,6 +390,7 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("screen");
   const [cvdType, setCvdType] = useState<ColorBlindType>("deuteranopia");
   const [matrixCopied, setMatrixCopied] = useState(false);
+  const [hoveredSwatchIdx, setHoveredSwatchIdx] = useState<number | null>(null);
 
   if (!palette) return null;
 
@@ -431,8 +448,11 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
           className="bg-[var(--surface)] rounded-[var(--radius-lg)] w-full max-w-lg shadow-2xl overflow-hidden my-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Swatch header — animated between screen / print / cvd modes */}
-          <div className="flex h-12">
+          {/* Swatch header — hover a swatch to see its complement(s) highlighted */}
+          <div
+            className="flex h-12"
+            onMouseLeave={() => setHoveredSwatchIdx(null)}
+          >
             {palette.colors.map((color, i) => {
               const sim = simCache.get(color.hex);
               const displayColor = printMode && sim
@@ -440,14 +460,46 @@ export default function HarmonyModal({ palette, onClose }: HarmonyModalProps) {
                 : blindMode
                 ? (cvdCache.get(color.hex) ?? color.hex)
                 : color.hex;
+              const isHovered = hoveredSwatchIdx === i;
+              const hoveredHex = hoveredSwatchIdx !== null ? palette.colors[hoveredSwatchIdx].hex : null;
+              const isComplement = hoveredHex !== null && !isHovered && isHueComplement(hoveredHex, color.hex);
+              const isDimmed = hoveredSwatchIdx !== null && !isHovered && !isComplement;
               return (
                 <motion.div
                   key={i}
-                  className="flex-1"
-                  animate={{ backgroundColor: displayColor }}
-                  transition={{ duration: 0.4 }}
+                  className="flex-1 relative cursor-pointer"
+                  animate={{ backgroundColor: displayColor, opacity: isDimmed ? 0.35 : 1 }}
+                  transition={{ duration: 0.25 }}
                   style={{ backgroundColor: displayColor }}
-                />
+                  onMouseEnter={() => setHoveredSwatchIdx(i)}
+                  title={
+                    isComplement
+                      ? `~complement of hovered · ${color.name || color.hex.toUpperCase()}`
+                      : color.name
+                      ? `${color.name} · ${color.hex.toUpperCase()}`
+                      : color.hex.toUpperCase()
+                  }
+                >
+                  {/* Complement ring: double inset ring for contrast on any color */}
+                  {isComplement && (
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        boxShadow:
+                          "inset 0 0 0 2.5px rgba(255,255,255,0.9), inset 0 0 0 4.5px rgba(0,0,0,0.35)",
+                      }}
+                    />
+                  )}
+                  {/* Hovered swatch: subtle inset to show which one is active */}
+                  {isHovered && (
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.55)",
+                      }}
+                    />
+                  )}
+                </motion.div>
               );
             })}
           </div>
