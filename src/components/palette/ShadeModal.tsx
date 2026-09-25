@@ -259,6 +259,15 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
                   <span className="text-[var(--muted)]">{" }"}</span>
                 </div>
               </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-[var(--muted)] opacity-60 w-4 shrink-0">hex</span>
+                <div className="font-mono text-[9px] bg-[var(--surface-2)] px-2.5 py-1.5 rounded-[var(--radius-sm)] leading-tight select-all flex-1 min-w-0 overflow-hidden">
+                  <span className="text-[var(--muted)] opacity-70">{shades[0].stop}</span>
+                  <span className="text-[var(--muted)]">: </span>
+                  <span className="text-[var(--fg)] opacity-70">{shades[0].hex.toUpperCase()}</span>
+                  <span className="text-[var(--muted)] opacity-50 ml-2">… {shades.length - 1} more</span>
+                </div>
+              </div>
             </div>
           </div>
 
