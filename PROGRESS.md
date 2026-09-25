@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-09-25 — Session 255: HarmonyModal Complement Highlight + Footer Fix
+
+### What was done
+- **HarmonyModal: complement highlight on swatch hover** — hovering any swatch in the palette strip at the top of the Harmony modal now dims non-complement swatches (opacity 0.35) and highlights near-complements (±30° from 180° hue shift) with a double inset ring (`rgba(255,255,255,0.9)` inner / `rgba(0,0,0,0.35)` outer) that reads cleanly on any color. Mouse-leave restores all swatches. Near-gray colors (saturation < 10%) are excluded since their hues are unreliable. Tooltip on matched swatches says "~complement of hovered · [name]". New `isHueComplement(hexA, hexB)` pure helper drives all the logic; uses `hexToRgb` + `rgbToHsl` already in utils. State lives in `hoveredSwatchIdx: number | null` added before the early `if (!palette) return null` guard.
+- **PaletteCard footer: age span overflow fix** — removed `shrink-0` from the age timestamp span, added `min-w-0 truncate`. On narrow 2-col cards (~302px) both the timestamp and the 6-chip kbd hints no longer collide; the timestamp gracefully truncates while hints remain fully visible. Added `min-w-0` to the outer footer flex row for belt-and-suspenders.
+- Build: clean Next.js Turbopack production build, 11 routes, 0 additional errors.
+
+### Key decisions
+- **±30° complement window** — 30° is wide enough to catch analogous-to-complement near-matches (a slightly warm red and a blue-green read as complements visually), but narrow enough to exclude triadic colors which are only 60° off. The ±30° threshold means at most ~16% of the hue wheel counts as "complement" for any given swatch.
+- **Double inset ring** — a single ring on light swatches disappears against a white-ring swatch; on dark ones a white ring is invisible without contrast. The double ring (light outer + dark inner) reads on every hue/value combination.
+- **Skipping near-grays** — achromatic colors have a notional hue in HSL that's determined by floating point; any color can appear as their "complement." Excluding saturation < 10% avoids spurious highlights on neutral swatches.
+- **State before early return** — `hoveredSwatchIdx` must be declared before `if (!palette) return null` to satisfy React's rules of hooks. No conditional hook calls.
+
+### What's next (Session 256)
+- **HarmonyModal: complement label caption** — below the swatch strip, show a one-line caption "Hover a swatch to find its complement" (when idle) / "N near-complement(s) found" or "No complement in this palette" (on hover) — thin, 9px, doesn't shift layout
+- **PaletteCard: Harmony button shortcut hint** — add "H" kbd chip to the card toolbar hover label (currently missing from the condensed footer set on the card)
+- **ShadeModal: anchor-stop indicator on saved palette name** — when "Save as Palette" is in preview, show the source stop number next to the preview name (e.g. "Coral · source at 500") so Cady knows which stop maps to the original color
+
+---
+
 ## 2026-09-22 — Session 254: CompareModal Swap Transition Animation
 
 ### What was done
