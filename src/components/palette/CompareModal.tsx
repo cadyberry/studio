@@ -576,9 +576,12 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     const isRowCopied = copiedRowPairIdx === i;
                     const isActive = isRowHovered || isStripHighlighted || isKeyboardFocused;
                     return (
-                      <div
-                        key={i}
-                        ref={(el) => { pairRowRefs.current[i] = el; }}
+                      <motion.div
+                        key={effectiveA!.id + "-" + i}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.14, delay: Math.min(i, 15) * 0.03, ease: "easeOut" }}
+                        ref={(el) => { pairRowRefs.current[i] = el as HTMLDivElement | null; }}
                         className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-all duration-100 cursor-pointer ${
                           isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
                         }${isKeyCopied ? " ring-2 ring-inset ring-emerald-400/70" : isRowCopied ? " ring-2 ring-inset ring-sky-400/70" : isKeyboardFocused && !isRowHovered ? " ring-2 ring-inset ring-violet-400/60" : isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
@@ -678,7 +681,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                             )}
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
