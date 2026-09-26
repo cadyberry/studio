@@ -276,10 +276,16 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={copyCssVars}
-                className="flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-2)] hover:bg-[var(--border)] transition-colors text-center group"
+                className={`flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-[var(--radius-sm)] transition-colors text-center group ${
+                  copied === "css"
+                    ? "bg-[var(--accent)]/10 ring-1 ring-[var(--accent)]/30"
+                    : "bg-[var(--surface-2)] hover:bg-[var(--border)]"
+                }`}
               >
-                <Code2 size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />
-                <span className="text-[11px] font-medium leading-tight">
+                {copied === "css"
+                  ? <Check size={14} className="text-[var(--accent)]" />
+                  : <Code2 size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />}
+                <span className={`text-[11px] font-medium leading-tight ${copied === "css" ? "text-[var(--accent)]" : ""}`}>
                   {copied === "css" ? "Copied!" : "CSS Vars"}
                 </span>
                 <span className="text-[9px] text-[var(--muted)] leading-tight">:root {"{"}…{"}"}</span>
@@ -287,10 +293,16 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
 
               <button
                 onClick={copyTailwind}
-                className="flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-2)] hover:bg-[var(--border)] transition-colors text-center group"
+                className={`flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-[var(--radius-sm)] transition-colors text-center group ${
+                  copied === "tailwind"
+                    ? "bg-[var(--accent)]/10 ring-1 ring-[var(--accent)]/30"
+                    : "bg-[var(--surface-2)] hover:bg-[var(--border)]"
+                }`}
               >
-                <Braces size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />
-                <span className="text-[11px] font-medium leading-tight">
+                {copied === "tailwind"
+                  ? <Check size={14} className="text-[var(--accent)]" />
+                  : <Braces size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />}
+                <span className={`text-[11px] font-medium leading-tight ${copied === "tailwind" ? "text-[var(--accent)]" : ""}`}>
                   {copied === "tailwind" ? "Copied!" : "Tailwind"}
                 </span>
                 <span className="text-[9px] text-[var(--muted)] leading-tight">color config</span>
@@ -298,10 +310,16 @@ export default function ShadeModal({ color, onClose, onSaveAsPalette }: ShadeMod
 
               <button
                 onClick={copyHexList}
-                className="flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-2)] hover:bg-[var(--border)] transition-colors text-center group"
+                className={`flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-[var(--radius-sm)] transition-colors text-center group ${
+                  copied === "hex"
+                    ? "bg-[var(--accent)]/10 ring-1 ring-[var(--accent)]/30"
+                    : "bg-[var(--surface-2)] hover:bg-[var(--border)]"
+                }`}
               >
-                <Copy size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />
-                <span className="text-[11px] font-medium leading-tight">
+                {copied === "hex"
+                  ? <Check size={14} className="text-[var(--accent)]" />
+                  : <Copy size={14} className="text-[var(--muted)] group-hover:text-[var(--fg)] transition-colors" />}
+                <span className={`text-[11px] font-medium leading-tight ${copied === "hex" ? "text-[var(--accent)]" : ""}`}>
                   {copied === "hex" ? "Copied!" : "Hex List"}
                 </span>
                 <span className="text-[9px] text-[var(--muted)] leading-tight">stop: #hex</span>
