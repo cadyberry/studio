@@ -7454,3 +7454,22 @@
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **ShadeModal: export section "last exported" highlight** — after a format is copied, briefly highlight the matching export button (e.g., the CSS Vars button glows when CSS was last copied from the preview)
 - **CompareModal: uniqueColorStats "exact matches" row highlight** — clicking the "N exact hex matches" caption could flash-highlight the pair rows that are exact matches (ΔE = 0)
+
+---
+
+## 2026-09-26 — Session 261: ShadeModal Export Button Highlight on Copy
+
+### What was done
+- **Export button "last exported" highlight** — when a format is copied (CSS Vars, Tailwind, Hex List), the matching export button now glows with an accent-tinted background (`bg-[var(--accent)]/10`) and a subtle accent ring (`ring-1 ring-[var(--accent)]/30`) for the existing 1600ms flash window. The button's icon also swaps from its default (Code2 / Braces / Copy) to a `Check` icon in accent color. The label already changed to "Copied!" in prior code; now the whole button is visually highlighted so it's instantly clear which format was last exported — especially useful when all three previews are in scope.
+- Build: clean Next.js 16.2.6 Turbopack production build, 9 routes, TypeScript zero errors. 27 insertions, 9 deletions.
+
+### Key decisions
+- **Reuse existing `copied` state** — no new state; `copied` already persists for 1600ms via `flash()`. The highlight is purely a conditional class + icon swap derived from the same boolean (`copied === "css"` etc.).
+- **Accent tint + ring, not full accent fill** — a fully filled accent button would signal "action" (like the Save as Palette button). A tint + ring signals "recently active" — a softer, informational state. The button remains pressable and doesn't feel consumed.
+- **Icon swap to Check** — mirrors the existing "Save to Library" pattern where the BookmarkPlus → Check swap confirms a completed action. Consistent within-component language.
+- **No animation on the highlight itself** — `transition-colors` already handles the enter/exit smoothly. Adding a Framer Motion scale or glow pulse would be too much for a 1.6s transient state.
+
+### What's next (Session 262)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **CompareModal: "exact matches" row highlight** — clicking the "N exact hex matches" caption could flash-highlight the pair rows that are exact matches (ΔE = 0)
+- **ShadeModal: keyboard shortcut** — add `S` (or similar) global/card-level shortcut to open ShadeModal on the focused swatch without needing to click the expand button
