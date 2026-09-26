@@ -7434,3 +7434,23 @@
 - **CompareModal: per-pair row entrance stagger** — stagger pair rows in with a brief cascade delay when the modal opens or pairs re-compute on swap
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **ShadeModal: export section re-evaluate** — now that all three formats are previewed, consider whether the three export buttons could show a "last exported" highlight state when the matching format was recently copied
+
+---
+
+## 2026-09-26 — Session 260: CompareModal Per-Pair Row Entrance Stagger
+
+### What was done
+- **Per-pair row entrance stagger in CompareModal** — each pair row is now a `motion.div` (was a plain `div`) keyed off `effectiveA.id + "-" + i`. On modal open and on every A↔B swap, rows animate in with `y: 5→0` + `opacity: 0→1`, staggered 30ms per row (capped at row 15 = 450ms max delay for very large palettes). The key flip on swap causes all rows to re-mount and replay the cascade, so the direction reversal is now visually legible at the row level — not just in the strip headers.
+- `ref` cast updated to `HTMLDivElement | null` (was implicit `HTMLDivElement`) to satisfy TypeScript's stricter type inference for Framer Motion's `ref` prop.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 7 insertions, 4 deletions.
+
+### Key decisions
+- **Key `effectiveA.id + "-" + i` not `pair.hexA + pair.hexB`** — using palette ID + index rather than the pair's hex values means the animation fires reliably on swap even when some pair hashes are unchanged. It also avoids any collision risk for palettes with duplicate hex values.
+- **Cap at row 15** — `Math.min(i, 15) * 0.03` keeps the max stagger delay at 450ms regardless of palette size. For a 50-swatch palette the last row would otherwise wait 1.5s, which feels sluggish. The first 15 rows stagger normally; rows 16+ enter together at 450ms.
+- **No exit animation on rows** — the rows exit by key-change (re-mount), not by AnimatePresence, so there's no old-row fade-out latency before the new rows start staggering in. The modal-level AnimatePresence already handles the backdrop.
+- **`y: 5` not `y: 8`** — matches the subtle slide used elsewhere in the app (ShadeModal panels, strip transitions). Keeps the animation lightweight rather than dramatic.
+
+### What's next (Session 261)
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **ShadeModal: export section "last exported" highlight** — after a format is copied, briefly highlight the matching export button (e.g., the CSS Vars button glows when CSS was last copied from the preview)
+- **CompareModal: uniqueColorStats "exact matches" row highlight** — clicking the "N exact hex matches" caption could flash-highlight the pair rows that are exact matches (ΔE = 0)
