@@ -7473,3 +7473,22 @@
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **CompareModal: "exact matches" row highlight** — clicking the "N exact hex matches" caption could flash-highlight the pair rows that are exact matches (ΔE = 0)
 - **ShadeModal: keyboard shortcut** — add `S` (or similar) global/card-level shortcut to open ShadeModal on the focused swatch without needing to click the expand button
+---
+
+## 2026-09-27 — Session 262: CompareModal Exact Match Row Highlight
+
+### What was done
+- **Exact match row highlight on caption click** — the "N exact hex matches" text in the CompareModal stats caption is now a clickable dotted-underline button. Clicking it flash-highlights all pair rows where `hexA === hexB` for 1600ms: the rows glow with an amber tinted background (`bg-amber-500/10`) and an amber ring (`ring-2 ring-inset ring-amber-400/70`). The caption button itself turns amber while the flash is active. The modal auto-scrolls to the first exact-match row when the button is clicked. The flash state resets on modal open and on A↔B swap.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 37 insertions, 7 deletions.
+
+### Key decisions
+- **Amber for exact match flash** — existing row ring colors: emerald (keyboard copy), sky (row copy), violet (keyboard focus). Amber is unused and visually distinct; it reads as "highlighted find" rather than "interaction state".
+- **Dotted underline on the caption** — signals interactivity without adding an icon or button chrome to the already-compact stats row. The amber color change on active reinforces the feedback that the button did something.
+- **Scroll to first exact match, not to the nearest** — the user is discovering where the exact matches are; scrolling to the first one is the natural starting point.
+- **`isKeyCopied` / `isRowCopied` take precedence over `isExactFlash` in the ring cascade** — copy confirmations are already in progress and shouldn't be interrupted by the flash state.
+
+### What's next (Session 263)
+- **ShadeModal: keyboard shortcut** — add `S` (or similar) global/card-level shortcut to open ShadeModal on the focused swatch without needing to click the expand button
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **CompareModal: near-identical pairs caption highlight** — extend the same click-to-highlight pattern to "N pairs within ΔE 5" so near-dups are also inspectable directly from the stats row
+
