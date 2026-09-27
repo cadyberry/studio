@@ -7492,3 +7492,21 @@
 - **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
 - **CompareModal: near-identical pairs caption highlight** — extend the same click-to-highlight pattern to "N pairs within ΔE 5" so near-dups are also inspectable directly from the stats row
 
+
+---
+
+## 2026-09-27 — Session 263: CompareModal Near-Identical Pairs Caption Highlight
+
+### What was done
+- **Near-dup pairs caption highlight** — the "N pairs within ΔE 5" text in the CompareModal stats caption is now a clickable dotted-underline button, mirroring the exact-match highlight from session 262. Clicking it flash-highlights all pair rows where `pair.dE < 5` for 1600ms: the rows glow with a teal tinted background (`bg-teal-500/10`) and a teal ring (`ring-2 ring-inset ring-teal-400/70`). The caption button turns teal while the flash is active. The modal auto-scrolls to the first near-dup row. The flash state resets on modal open and on A↔B swap.
+- Build: clean Next.js 16.2.6 Turbopack production build, 11 routes, TypeScript zero errors. 32 insertions, 5 deletions.
+
+### Key decisions
+- **Teal for near-dup flash** — existing flash colors: amber (exact match), emerald (copy confirm), sky (row copy), violet (keyboard focus). Teal is unused in flash states and semantically adjacent to "near-identical" (green-adjacent, cooler than amber). It's also the natural complement to the emerald used for the "excellent" tier (ΔE < 5) in match badges.
+- **Near-dups include exact matches** — `pair.dE < 5` includes `dE = 0` (exact matches), so clicking the near-dup button also highlights exact-match rows in teal. If `flashExactMatches` is also active, those rows stay amber (higher precedence in the ring cascade), creating a natural visual distinction between the two subsets.
+- **Dotted underline button** — consistent with the exact-match caption button introduced in session 262; no icon, no chrome, just a semantic underline signal.
+
+### What's next (Session 264)
+- **ShadeModal: keyboard shortcut** — add `S` (or similar) global/card-level shortcut to open ShadeModal on the focused swatch without needing to click the expand button
+- **Palette card: keyboard shortcut hint refinement** — verify kbd hints strip (`opacity-0 group-hover:opacity-100`) renders at correct vertical position on narrow (2-col) card widths; check for overlap with toolbar on small screens
+- **CompareModal: keyboard shortcut to trigger exact/near-dup highlights** — `E` to flash exact matches, `N` to flash near-dups from keyboard
