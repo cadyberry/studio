@@ -44,6 +44,7 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
 
   const [keyboardPairIdx, setKeyboardPairIdx] = useState<number | null>(null);
   const [copiedKeyboardPairIdx, setCopiedKeyboardPairIdx] = useState<number | null>(null);
+  const [flashExactMatches, setFlashExactMatches] = useState(false);
 
   const pairsScrollRef = useRef<HTMLDivElement | null>(null);
   const pairRowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -131,11 +132,29 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
     setTimeout(() => setDownloaded(false), 1500);
   };
 
+  const highlightExactMatches = () => {
+    setFlashExactMatches(true);
+    setTimeout(() => setFlashExactMatches(false), 1600);
+    // scroll to first exact-match row
+    const firstIdx = pairs.findIndex((p) => p.hexA.toLowerCase() === p.hexB.toLowerCase());
+    if (firstIdx >= 0) {
+      const container = pairsScrollRef.current;
+      const row = pairRowRefs.current[firstIdx];
+      if (container && row) {
+        const containerRect = container.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        if (rowRect.top < containerRect.top + 38 || rowRect.bottom > containerRect.bottom) {
+          container.scrollBy({ top: rowRect.top - containerRect.top - 38 - 8, behavior: "smooth" });
+        }
+      }
+    }
+  };
+
   // Reset on open and on swap
   useEffect(() => {
-    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); setKeyboardPairIdx(null); setCopiedKeyboardPairIdx(null); setCopiedRowPairIdx(null); }
+    if (open) { setSwapped(false); setHoveredPairIdx(null); setHoveredStripInfo(null); setCopiedInfo(null); setCopiedTextInfo(null); setCopiedAll(false); setDownloaded(false); setKeyboardPairIdx(null); setCopiedKeyboardPairIdx(null); setCopiedRowPairIdx(null); setFlashExactMatches(false); }
   }, [open]);
-  useEffect(() => { setHoveredStripInfo(null); setKeyboardPairIdx(null); }, [swapped]);
+  useEffect(() => { setHoveredStripInfo(null); setKeyboardPairIdx(null); setFlashExactMatches(false); }, [swapped]);
 
   const effectiveA = swapped ? paletteB : paletteA;
   const effectiveB = swapped ? paletteA : paletteB;
@@ -574,6 +593,8 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                     const isKeyboardFocused = keyboardPairIdx === i;
                     const isKeyCopied = copiedKeyboardPairIdx === i;
                     const isRowCopied = copiedRowPairIdx === i;
+                    const isExactMatch = pair.hexA.toLowerCase() === pair.hexB.toLowerCase();
+                    const isExactFlash = flashExactMatches && isExactMatch;
                     const isActive = isRowHovered || isStripHighlighted || isKeyboardFocused;
                     return (
                       <motion.div
@@ -583,8 +604,8 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                         transition={{ duration: 0.14, delay: Math.min(i, 15) * 0.03, ease: "easeOut" }}
                         ref={(el) => { pairRowRefs.current[i] = el as HTMLDivElement | null; }}
                         className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg px-1.5 -mx-1.5 py-0.5 transition-all duration-100 cursor-pointer ${
-                          isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
-                        }${isKeyCopied ? " ring-2 ring-inset ring-emerald-400/70" : isRowCopied ? " ring-2 ring-inset ring-sky-400/70" : isKeyboardFocused && !isRowHovered ? " ring-2 ring-inset ring-violet-400/60" : isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
+                          isExactFlash ? "bg-amber-500/10" : isActive ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]/50"
+                        }${isKeyCopied ? " ring-2 ring-inset ring-emerald-400/70" : isRowCopied ? " ring-2 ring-inset ring-sky-400/70" : isExactFlash ? " ring-2 ring-inset ring-amber-400/70" : isKeyboardFocused && !isRowHovered ? " ring-2 ring-inset ring-violet-400/60" : isStripHighlighted && !isRowHovered ? " ring-1 ring-inset ring-[var(--border)]" : ""}`}
                         title={`Click to copy pair as ${copyAllFormat} — click swatch or hex to copy individual color`}
                         onClick={() => copyRow(pair, i)}
                         onMouseEnter={() => setHoveredPairIdx(i)}
@@ -839,9 +860,18 @@ export default function CompareModal({ paletteA, paletteB, onClose }: CompareMod
                       </div>
                     </div>
                     <p className="text-[10px] text-[var(--muted)] text-center mt-2">
-                      {uniqueColorStats.exactShared > 0
-                        ? `${uniqueColorStats.exactShared} exact hex ${uniqueColorStats.exactShared === 1 ? "match" : "matches"} · `
-                        : ""}
+                      {uniqueColorStats.exactShared > 0 && (
+                        <>
+                          <button
+                            className={`underline decoration-dotted underline-offset-2 cursor-pointer transition-colors duration-150 ${flashExactMatches ? "text-amber-600 dark:text-amber-400" : "hover:text-[var(--foreground)]"}`}
+                            onClick={highlightExactMatches}
+                            title="Click to highlight exact hex matches in the list"
+                          >
+                            {uniqueColorStats.exactShared} exact hex {uniqueColorStats.exactShared === 1 ? "match" : "matches"}
+                          </button>
+                          {" · "}
+                        </>
+                      )}
                       {uniqueColorStats.nearDups > 0
                         ? `${uniqueColorStats.nearDups} pair${uniqueColorStats.nearDups === 1 ? "" : "s"} within ΔE 5`
                         : uniqueColorStats.unionCount === uniqueColorStats.totalA + uniqueColorStats.totalB
